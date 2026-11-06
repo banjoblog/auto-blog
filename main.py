@@ -1,14 +1,8 @@
 import os
 import random
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.header import Header
 import google.generativeai as genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-BLOGGER_EMAIL = os.environ.get("BLOGGER_EMAIL")
-
 genai.configure(api_key=GEMINI_API_KEY)
 
 # A8.net広告コード
@@ -77,16 +71,15 @@ def main():
             
     final_content = article + "\n\n" + AFFILIATE_HTML
     
-    print("==========================================")
-    print(f"■ 生成タイトル: {title}")
-    print(f"■ 投稿先アドレス: {BLOGGER_EMAIL}")
-    print("==========================================")
-    
-    # 記事出力の最終確認用
-    with open("latest_post.html", "w", encoding="utf-8") as f:
-        f.write(f"<h1>{title}</h1>\n" + final_content)
+    # タイトルと本文をファイルに出力（ワークフローでメール送信に使用）
+    with open("post_title.txt", "w", encoding="utf-8") as f:
+        f.write(title)
         
-    print("記事ファイル生成完了。投稿処理を実行します。")
+    with open("latest_post.html", "w", encoding="utf-8") as f:
+        f.write(final_content)
+        
+    print(f"タイトル: {title}")
+    print("送信用ファイルの出力が完了しました。")
 
 if __name__ == "__main__":
     main()
