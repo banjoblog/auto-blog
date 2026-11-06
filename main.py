@@ -17,11 +17,9 @@ X_API_SECRET = os.environ.get("X_API_SECRET")
 X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN")
 X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
-# Gemini クライアントの初期化
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_ID = 'gemini-3.8-flash'
+MODEL_ID = 'gemini-2.5-flash'
 
-# A8.net 250x250バナー（Blogger記事用）
 AFFILIATE_HTML = """
 <div style="margin: 30px 0; padding: 20px; border: 1px solid #e2e8f0; background-color: #f8fafc; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
     <p style="font-weight: bold; font-size: 15px; margin-bottom: 15px; color: #334155;">＼ おすすめのサービスをチェック ／</p>
@@ -33,7 +31,6 @@ AFFILIATE_HTML = """
 </div>
 """
 
-# X投稿用のアフィリエイトリンク集
 AFFILIATE_LINKS = [
     {"category": "最新ガジェット", "url": "https://www.amazon.co.jp/s?k=ガジェット&tag=YOUR_AMAZON_ID-22"},
     {"category": "便利家電", "url": "https://www.amazon.co.jp/s?k=便利家電&tag=YOUR_AMAZON_ID-22"},
@@ -48,44 +45,39 @@ THEMES = [
     "仕事や勉強の生産性を高めるタイムマネジメント・効率化テクニック"
 ]
 
-def generate_blogger_article():
+def generate_content_bundle():
     selected_theme = random.choice(THEMES)
-    
-    prompt = f"""
-    テーマ「{selected_theme}」に関する、検索読者の関心が高い具体的な話題・ニュースを1つ選び、ブログ記事を執筆してください。
-    
-    【構成要件】
-    1. 1行目: 読者の目を引く魅力的な記事タイトル（「タイトル: 〇〇」の形式）
-    2. 本文: 導入、主要なポイント（見出し付き）、まとめの構成
-    3. 改行や段落を<p>や<br>で整えたHTML形式で出力すること
-    4. 文字数: 1200字〜1500字程度
-    5. 自然で読みやすい日本語で書くこと
-    """
-    response = client_genai.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-    )
-    return response.text
-
-def generate_x_post():
     item = random.choice(AFFILIATE_LINKS)
     
     prompt = f"""
-    ジャンル「{item['category']}」に関する、思わず欲しくなるおすすめポイントを140文字以内でまとめたX（Twitter）用ポストを作成してください。
+    テーマ「{selected_theme}」に関するブログ記事と、ジャンル「{item['category']}」に関するX用ポストを同時に作成してください。
     
-    【要件】
-    1. 絵文字を適度に使って魅力的に紹介する
-    2. 文末に必ず「 #PR 」を記載する
-    3. リンクURLは含めないで本文テキストのみを出力する
+    出力は必ず以下の区切り線「---X_POST---」を挟んで出力してください。
+    
+    【前半：ブログ記事】
+    1行目: 読者の目を引く魅力的な記事タイトル（「タイトル: 〇〇」の形式）
+    2行目以降: 導入、主要なポイント（見出し付き）、まとめの構成（<p>や<br>を使用したHTML形式、1200〜1500字程度）
+    
+    ---X_POST---
+    
+    【後半：X用ポスト】
+    ジャンル「{item['category']}」に関する思わず欲しくなるおすすめポイント（140文字以内、絵文字使用、文末に #PR を記載、URLは含めない）
     """
+    
     response = client_genai.models.generate_content(
         model=MODEL_ID,
         contents=prompt,
     )
-    post_text = response.text.strip()
     
-    final_post = f"{post_text}\n\n👇詳細はこちら\n{item['url']}"
-    return final_post
+    full_text = response.text
+    if "---X_POST---" in full_text:
+        article_part, x_part = full_text.split("---X_POST---", 1)
+    else:
+        article_part = full_text
+        x_part = f"おすすめの{item['category']}をチェック！ #PR"
+        
+    x_post = f"{x_part.strip()}\n\n👇詳細はこちら\n{item['url']}"
+    return article_part.strip(), x_post
 
 def send_to_blogger(title, content):
     message = Mail(
@@ -121,10 +113,11 @@ def post_to_x(post_text):
 def main():
     print("=== 全自動投稿処理を開始します ===")
     
-    # 1. Blogger記事生成＆投稿
-    print("1. Blogger用記事を生成中...")
-    article = generate_blogger_article()
-    lines = article.strip().split('\n')
+    print("コンテンツを生成中（Gemini API 1回呼び出し）...")
+    article, x_post = generate_content_bundle()
+    
+    # Blogger投稿処理
+    lines = article.split('\n')
     title = "おすすめトレンドニュース"
     for line in lines:
         if line.startswith("タイトル:"):
@@ -135,12 +128,8 @@ def main():
     
     if BLOGGER_EMAIL and SENDGRID_API_KEY and SENDER_EMAIL:
         send_to_blogger(title, final_content)
-    else:
-        print("エラー: SendGrid Secretsが未設定です。")
         
-    # 2. X用アフィリエイトポスト生成＆投稿
-    print("2. X用ポストを生成中...")
-    x_post = generate_x_post()
+    # X投稿処理
     post_to_x(x_post)
 
 if __name__ == "__main__":
