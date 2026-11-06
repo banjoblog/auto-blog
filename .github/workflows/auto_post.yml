@@ -20,23 +20,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade google-generativeai
+          pip install --upgrade google-generativeai sendgrid
 
       - name: Run Auto Post Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          BLOGGER_EMAIL: ${{ secrets.BLOGGER_EMAIL }}
+          SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
         run: python main.py
-
-      - name: Send Mail to Blogger
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          secure: true
-          username: ${{ secrets.BLOGGER_EMAIL }}
-          # 代替の無料メール通知アクションで送信
-          subject: file://post_title.txt
-          to: ${{ secrets.BLOGGER_EMAIL }}
-          from: "Auto Blog Bot"
-          html_body: file://latest_post.html
-          ignore_cert: true
