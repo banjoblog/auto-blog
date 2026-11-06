@@ -1,5 +1,9 @@
 import os
 import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.header import Header
 import google.generativeai as genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -7,9 +11,7 @@ BLOGGER_EMAIL = os.environ.get("BLOGGER_EMAIL")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-# =========================================================
-# 【A8.net広告コード組み込み済み】
-# =========================================================
+# A8.net広告コード
 AFFILIATE_HTML = """
 <div style="margin: 25px 0; padding: 20px; border: 1px solid #e0e0e0; background-color: #f9f9f9; text-align: center; border-radius: 8px;">
     <p style="font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #333;">【おすすめ情報】気になるサービスを今すぐチェック！</p>
@@ -19,7 +21,6 @@ AFFILIATE_HTML = """
 </div>
 """
 
-# AIが日替わりで選ぶテーマジャンルのリスト
 THEMES = [
     "初心者向けの節約術や資産形成・ポイ活のトレンド",
     "日常作業を爆速化するAIツールやおすすめアプリ",
@@ -47,10 +48,7 @@ def generate_article():
         target_model = models[0]
         
     model = genai.GenerativeModel(target_model)
-    
-    # 毎日ランダムでテーマを選択
     selected_theme = random.choice(THEMES)
-    print(f"本日の自動選定テーマ: {selected_theme}")
     
     prompt = f"""
     テーマ「{selected_theme}」に関する、検索読者の関心が高い具体的な話題・ニュースを1つ選び、ブログ記事を執筆してください。
@@ -58,14 +56,37 @@ def generate_article():
     【構成要件】
     1. 1行目: 読者の目を引く魅力的な記事タイトル（「タイトル: 〇〇」の形式）
     2. 本文: 導入、主要なポイント（見出し付き）、まとめの構成
-    3. 記事の最後には、おすすめサービスへの自然な導入文を入れること
-    4. 文字数: 1200字〜1500字程度
-    5. 読者にとって役立つ実用的な情報を含めること
-    6. 自然で読みやすい日本語で書くこと
+    3. 文字数: 1200字〜1500字程度
+    4. 読者にとって役立つ実用的な情報を含めること
+    5. 自然で読みやすい日本語で書くこと
     """
     
     response = model.generate_content(prompt)
     return response.text
 
 def main():
-    print("
+    print("AI記事生成を開始します...")
+    article = generate_article()
+    
+    lines = article.strip().split('\n')
+    title = "おすすめトレンドニュース"
+    for line in lines:
+        if line.startswith("タイトル:"):
+            title = line.replace("タイトル:", "").strip()
+            break
+            
+    final_content = article + "\n\n" + AFFILIATE_HTML
+    
+    print("==========================================")
+    print(f"■ 生成タイトル: {title}")
+    print(f"■ 投稿先アドレス: {BLOGGER_EMAIL}")
+    print("==========================================")
+    
+    # 記事出力の最終確認用
+    with open("latest_post.html", "w", encoding="utf-8") as f:
+        f.write(f"<h1>{title}</h1>\n" + final_content)
+        
+    print("記事ファイル生成完了。投稿処理を実行します。")
+
+if __name__ == "__main__":
+    main()
