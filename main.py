@@ -1,6 +1,6 @@
 import os
 import random
-import google.generativeai as genai
+from google import genai
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 import tweepy
@@ -17,7 +17,9 @@ X_API_SECRET = os.environ.get("X_API_SECRET")
 X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN")
 X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
-genai.configure(api_key=GEMINI_API_KEY)
+# Gemini クライアントの初期化
+client_genai = genai.Client(api_key=GEMINI_API_KEY)
+MODEL_ID = 'gemini-2.5-flash'
 
 # A8.net 250x250バナー（Blogger記事用）
 AFFILIATE_HTML = """
@@ -31,7 +33,7 @@ AFFILIATE_HTML = """
 </div>
 """
 
-# X投稿用のアフィリエイトリンク集（必要に応じてご自身のID・商品リンクに差し替えてください）
+# X投稿用のアフィリエイトリンク集
 AFFILIATE_LINKS = [
     {"category": "最新ガジェット", "url": "https://www.amazon.co.jp/s?k=ガジェット&tag=YOUR_AMAZON_ID-22"},
     {"category": "便利家電", "url": "https://www.amazon.co.jp/s?k=便利家電&tag=YOUR_AMAZON_ID-22"},
@@ -46,13 +48,7 @@ THEMES = [
     "仕事や勉強の生産性を高めるタイムマネジメント・効率化テクニック"
 ]
 
-def get_model():
-    # 確実に利用可能な標準モデルを指定
-    return 'gemini-1.5-flash'
-
 def generate_blogger_article():
-    model_name = get_model()
-    model = genai.GenerativeModel(model_name)
     selected_theme = random.choice(THEMES)
     
     prompt = f"""
@@ -65,12 +61,13 @@ def generate_blogger_article():
     4. 文字数: 1200字〜1500字程度
     5. 自然で読みやすい日本語で書くこと
     """
-    response = model.generate_content(prompt)
+    response = client_genai.models.generate_content(
+        model=MODEL_ID,
+        contents=prompt,
+    )
     return response.text
 
 def generate_x_post():
-    model_name = get_model()
-    model = genai.GenerativeModel(model_name)
     item = random.choice(AFFILIATE_LINKS)
     
     prompt = f"""
@@ -81,10 +78,12 @@ def generate_x_post():
     2. 文末に必ず「 #PR 」を記載する
     3. リンクURLは含めないで本文テキストのみを出力する
     """
-    response = model.generate_content(prompt)
+    response = client_genai.models.generate_content(
+        model=MODEL_ID,
+        contents=prompt,
+    )
     post_text = response.text.strip()
     
-    # テキスト＋アフィリエイトリンクの結合
     final_post = f"{post_text}\n\n👇詳細はこちら\n{item['url']}"
     return final_post
 
