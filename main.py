@@ -19,7 +19,7 @@ X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
 # Gemini クライアントの初期化
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_ID = 'gemini-2.5-flash'
+MODEL_ID = 'gemini-3.8-flash'
 
 # A8.net 250x250バナー（Blogger記事用）
 AFFILIATE_HTML = """
