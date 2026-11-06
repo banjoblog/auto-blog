@@ -1,10 +1,13 @@
 import os
 import random
-import requests
 import google.generativeai as genai
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-BLOGGER_BLOG_ID = os.environ.get("BLOGGER_BLOG_ID")
+BLOGGER_EMAIL = os.environ.get("BLOGGER_EMAIL")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
@@ -61,25 +64,22 @@ def generate_article():
     response = model.generate_content(prompt)
     return response.text
 
-def post_to_blogger_via_api(title, content):
-    url = f"https://www.googleapis.com/blogger/v3/blogs/{BLOGGER_BLOG_ID}/posts/"
-    payload = {
-        "kind": "blogger#post",
-        "title": title,
-        "content": content
-    }
-    params = {
-        "key": GEMINI_API_KEY
-    }
-    
-    response = requests.post(url, json=payload, params=params)
-    if response.status_code == 200:
-        print("【成功】Blogger API経由で記事が即座に公開されました！")
-    else:
-        print(f"API投稿失敗 (ステータスコード: {response.status_code}): {response.text}")
+def send_to_blogger(title, content):
+    message = Mail(
+        from_email=SENDER_EMAIL,
+        to_emails=BLOGGER_EMAIL,
+        subject=title,
+        html_content=content
+    )
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        print(f"【成功】SendGrid経由でBlogger宛てにメールを送信しました！ (ステータスコード: {response.status_code})")
+    except Exception as e:
+        print(f"送信エラー: {e}")
 
 def main():
-    print("AI記事生成とAPI投稿処理を開始します...")
+    print("AI記事自動生成と送信処理を開始します...")
     article = generate_article()
     
     lines = article.strip().split('\n')
@@ -91,10 +91,10 @@ def main():
             
     final_content = article + "\n\n" + AFFILIATE_HTML
     
-    if BLOGGER_BLOG_ID:
-        post_to_blogger_via_api(title, final_content)
+    if BLOGGER_EMAIL and SENDGRID_API_KEY and SENDER_EMAIL:
+        send_to_blogger(title, final_content)
     else:
-        print("エラー: BLOGGER_BLOG_ID がSecretsに設定されていません。")
+        print("エラー: Secretsの設定（BLOGGER_EMAIL, SENDGRID_API_KEY, SENDER_EMAIL）を確認してください。")
 
 if __name__ == "__main__":
     main()
