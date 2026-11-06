@@ -1,8 +1,13 @@
 import os
 import random
 import google.generativeai as genai
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+BLOGGER_EMAIL = os.environ.get("BLOGGER_EMAIL")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
+
 genai.configure(api_key=GEMINI_API_KEY)
 
 # A8.net広告コード
@@ -58,8 +63,22 @@ def generate_article():
     response = model.generate_content(prompt)
     return response.text
 
+def send_to_blogger(title, content):
+    message = Mail(
+        from_email='bot@autoblog.com',
+        to_emails=BLOGGER_EMAIL,
+        subject=title,
+        html_content=content
+    )
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        response = sg.send(message)
+        print(f"Bloggerへ投稿完了 (ステータスコード: {response.status_code})")
+    except Exception as e:
+        print(f"送信エラー: {e}")
+
 def main():
-    print("AI記事生成を開始します...")
+    print("AI記事自動生成を開始します...")
     article = generate_article()
     
     lines = article.strip().split('\n')
@@ -71,15 +90,10 @@ def main():
             
     final_content = article + "\n\n" + AFFILIATE_HTML
     
-    # タイトルと本文をファイルに出力（ワークフローでメール送信に使用）
-    with open("post_title.txt", "w", encoding="utf-8") as f:
-        f.write(title)
-        
-    with open("latest_post.html", "w", encoding="utf-8") as f:
-        f.write(final_content)
-        
-    print(f"タイトル: {title}")
-    print("送信用ファイルの出力が完了しました。")
+    if BLOGGER_EMAIL and SENDGRID_API_KEY:
+        send_to_blogger(title, final_content)
+    else:
+        print("エラー: Secretsに BLOGGER_EMAIL または SENDGRID_API_KEY が設定されていません。")
 
 if __name__ == "__main__":
     main()
