@@ -11,13 +11,15 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
-# A8.net広告コード
+# A8.net 250x250バナー（中央揃え・カード装飾版）
 AFFILIATE_HTML = """
-<div style="margin: 25px 0; padding: 20px; border: 1px solid #e0e0e0; background-color: #f9f9f9; text-align: center; border-radius: 8px;">
-    <p style="font-weight: bold; font-size: 16px; margin-bottom: 12px; color: #333;">【おすすめ情報】気になるサービスを今すぐチェック！</p>
-    <a href="https://px.a8.net/svt/ejp?a8mat=3BBXGT+8HFFNM+1WP2+6H729" rel="nofollow">
-    <img border="0" width="100" height="60" alt="" src="https://www21.a8.net/svt/bgt?aid=200430893513&wid=003&eno=01&mid=s00000008903001088000&mc=1"></a>
-    <img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=3BBXGT+8HFFNM+1WP2+6H729" alt="">
+<div style="margin: 30px 0; padding: 20px; border: 1px solid #e2e8f0; background-color: #f8fafc; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+    <p style="font-weight: bold; font-size: 15px; margin-bottom: 15px; color: #334155;">＼ おすすめのサービスをチェック ／</p>
+    <div style="display: inline-block;">
+        <a href="https://px.a8.net/svt/ejp?a8mat=3BBXGT+8HFFNM+1WP2+6G4HD" rel="nofollow">
+        <img border="0" width="250" height="250" alt="" src="https://www26.a8.net/svt/bgt?aid=200430893513&wid=003&eno=01&mid=s00000008903001083000&mc=1" style="border-radius: 8px; max-width: 100%; height: auto;"></a>
+        <img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=3BBXGT+8HFFNM+1WP2+6G4HD" alt="">
+    </div>
 </div>
 """
 
@@ -74,7 +76,7 @@ def send_to_blogger(title, content):
     try:
         sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
-        print(f"【成功】SendGrid経由でBlogger宛てにメールを送信しました！ (ステータスコード: {response.status_code})")
+        print(f"【成功】新しいバナーでBloggerへ投稿しました！ (ステータスコード: {response.status_code})")
     except Exception as e:
         print(f"送信エラー: {e}")
 
