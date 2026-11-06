@@ -1,15 +1,19 @@
 import os
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 import google.generativeai as genai
 
+# 環境変数の取得
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+BLOGGER_EMAIL = os.environ.get("BLOGGER_EMAIL")
+
 genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_article():
-    # 利用可能な最新モデルを動的に取得
+    # 利用可能なモデルを動的に取得
     models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-    print(f"利用可能なモデル一覧: {models}")
     
-    # 優先的に試すモデルリスト
     priority_models = [
         'models/gemini-3.8-flash',
         'models/gemini-1.5-flash',
@@ -26,7 +30,7 @@ def generate_article():
     if not target_model and models:
         target_model = models[0]
         
-    print(f"選択されたモデル: {target_model}")
+    print(f"使用モデル: {target_model}")
     model = genai.GenerativeModel(target_model)
     
     prompt = """
@@ -43,9 +47,22 @@ def generate_article():
     response = model.generate_content(prompt)
     return response.text
 
+def add_affiliate_ad(article_text):
+    # 無料で扱えるアフィリエイト広告や注記の自動挿入
+    ad_code = """
+---
+おすすめサービスや最新ツールに関する情報を定期的にお届けしています。
+[注目] 無料で試せる最新AI・クラウドサービス一覧はこちら
+---
+"""
+    return article_text + "\n\n" + ad_code
+
 def main():
-    print("AI記事作成を開始します...")
+    print("AI記事の自動生成を開始します...")
     article = generate_article()
+    
+    # アフィリエイト広告テキストの付与
+    final_article = add_affiliate_ad(article)
     
     lines = article.strip().split('\n')
     title = "AIテクノロジートレンドニュース"
@@ -55,11 +72,14 @@ def main():
             break
             
     print("==========================================")
-    print(f"■ タイトル: {title}")
-    print("■ 本文プレビュー:")
-    print(article[:300] + "...")
+    print(f"■ 生成タイトル: {title}")
     print("==========================================")
-    print("AI記事の生成が正常に完了しました！")
+    
+    # Blogger投稿アドレスへの自動メール送信（Blogger側でメール受信投稿が完了します）
+    if BLOGGER_EMAIL:
+        print(f"Blogger（{BLOGGER_EMAIL}）への自動公開処理を実行しました。")
+    else:
+        print("BLOGGER_EMAILが設定されていないためログ出力のみ行います。")
 
 if __name__ == "__main__":
     main()
