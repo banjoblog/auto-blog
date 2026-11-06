@@ -1,19 +1,27 @@
 import os
 import google.generativeai as genai
 
-# Gemini APIキーの取得
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-
 genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_article():
-    # 動作確認済みのモデル候補を順に試行
-    candidate_models = [
-        'gemini-1.5-flash',
-        'gemini-2.0-flash',
-        'gemini-1.5-pro',
-        'gemini-pro'
-    ]
+    # 確実に利用できるモデル一覧を取得して自動選択
+    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    print(f"利用可能なモデル一覧: {available_models}")
+
+    # 優先順位に従って使用モデルを確定
+    target_model = None
+    for preferred in ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.5-pro']:
+        if preferred in available_models:
+            target_model = preferred
+            break
+    
+    if not target_model and available_models:
+        target_model = available_models[0]
+        
+    print(f"使用するモデル: {target_model}")
+    
+    model = genai.GenerativeModel(target_model)
     
     prompt = """
     最新のテクノロジー、AI、ガジェット、または効率化テクニックに関する興味深いトレンドニュース記事を1つ執筆してください。
@@ -26,19 +34,8 @@ def generate_article():
     5. 自然で読みやすい日本語で書くこと
     """
     
-    last_exception = None
-    for model_name in candidate_models:
-        try:
-            print(f"モデル '{model_name}' で生成を試みています...")
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(prompt)
-            print(f"成功: モデル '{model_name}' が使用されました。")
-            return response.text
-        except Exception as e:
-            print(f"失敗: モデル '{model_name}' ({e})")
-            last_exception = e
-            
-    raise last_exception
+    response = model.generate_content(prompt)
+    return response.text
 
 def main():
     print("AI記事作成を開始します...")
