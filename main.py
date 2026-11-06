@@ -5,22 +5,28 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
 
 def generate_article():
-    # 確実に利用できるモデル一覧を取得して自動選択
-    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-    print(f"利用可能なモデル一覧: {available_models}")
-
-    # 優先順位に従って使用モデルを確定
+    # 利用可能な最新モデルを動的に取得
+    models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    print(f"利用可能なモデル一覧: {models}")
+    
+    # 優先的に試すモデルリスト
+    priority_models = [
+        'models/gemini-3.8-flash',
+        'models/gemini-1.5-flash',
+        'models/gemini-2.5-flash',
+        'models/gemini-pro'
+    ]
+    
     target_model = None
-    for preferred in ['models/gemini-1.5-flash', 'models/gemini-pro', 'models/gemini-1.5-pro']:
-        if preferred in available_models:
-            target_model = preferred
+    for pm in priority_models:
+        if pm in models:
+            target_model = pm
             break
-    
-    if not target_model and available_models:
-        target_model = available_models[0]
+            
+    if not target_model and models:
+        target_model = models[0]
         
-    print(f"使用するモデル: {target_model}")
-    
+    print(f"選択されたモデル: {target_model}")
     model = genai.GenerativeModel(target_model)
     
     prompt = """
