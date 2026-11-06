@@ -47,16 +47,8 @@ THEMES = [
 ]
 
 def get_model():
-    models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-    priority_models = [
-        'models/gemini-2.5-flash',
-        'models/gemini-1.5-flash',
-        'models/gemini-pro'
-    ]
-    for pm in priority_models:
-        if pm in models:
-            return pm
-    return models[0] if models else 'gemini-1.5-flash'
+    # 確実に利用可能な標準モデルを指定
+    return 'gemini-1.5-flash'
 
 def generate_blogger_article():
     model_name = get_model()
