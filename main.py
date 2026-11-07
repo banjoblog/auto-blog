@@ -20,11 +20,11 @@ X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
-# 混雑時に順次試行するモデル候補
+# APIエラーメッセージが推奨する現在利用可能なモデルリスト
 MODEL_CANDIDATES = [
     'gemini-2.5-flash',
-    'gemini-1.5-flash',
-    'gemini-2.5-pro'
+    'gemini-3.8-flash',
+    'gemini-3.1-pro-preview'
 ]
 
 AFFILIATE_HTML = """
@@ -74,7 +74,6 @@ def generate_content_bundle():
     response = None
     last_exception = None
 
-    # モデル自動切替 ＆ リトライ処理
     for model_name in MODEL_CANDIDATES:
         for attempt in range(3):
             try:
@@ -88,8 +87,8 @@ def generate_content_bundle():
                     break
             except Exception as e:
                 last_exception = e
-                print(f"[{model_name}] 一時的なエラー/高負荷を検知: {e}")
-                time.sleep(5)  # 503エラーなどの一時的混雑を回避するために5秒待機
+                print(f"[{model_name}] エラー検知: {e}")
+                time.sleep(3)
         if response and response.text:
             break
 
@@ -143,7 +142,6 @@ def main():
     print("コンテンツを生成中（Gemini API 1回呼び出し）...")
     article, x_post = generate_content_bundle()
     
-    # Blogger投稿処理
     lines = article.split('\n')
     title = "おすすめトレンドニュース"
     for line in lines:
@@ -156,7 +154,6 @@ def main():
     if BLOGGER_EMAIL and SENDGRID_API_KEY and SENDER_EMAIL:
         send_to_blogger(title, final_content)
         
-    # X投稿処理
     post_to_x(x_post)
 
 if __name__ == "__main__":
