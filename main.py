@@ -103,4 +103,34 @@ def post_to_x(post_text):
             consumer_key=X_API_KEY,
             consumer_secret=X_API_SECRET,
             access_token=X_ACCESS_TOKEN,
-            access_token_secret
+            access_token_secret=X_ACCESS_SECRET
+        )
+        response = client.create_tweet(text=post_text)
+        print(f"【成功】Xへの自動ポストが完了しました！ (Tweet ID: {response.data['id']})")
+    except Exception as e:
+        print(f"X投稿エラー: {e}")
+
+def main():
+    print("=== 全自動投稿処理を開始します ===")
+    
+    print("コンテンツを生成中（Gemini API 1回呼び出し）...")
+    article, x_post = generate_content_bundle()
+    
+    # Blogger投稿処理
+    lines = article.split('\n')
+    title = "おすすめトレンドニュース"
+    for line in lines:
+        if line.startswith("タイトル:"):
+            title = line.replace("タイトル:", "").strip()
+            break
+            
+    final_content = article + "\n\n" + AFFILIATE_HTML
+    
+    if BLOGGER_EMAIL and SENDGRID_API_KEY and SENDER_EMAIL:
+        send_to_blogger(title, final_content)
+        
+    # X投稿処理
+    post_to_x(x_post)
+
+if __name__ == "__main__":
+    main()
