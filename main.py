@@ -1,5 +1,6 @@
 import os
 import random
+import time
 from google import genai
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
@@ -18,8 +19,13 @@ X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN")
 X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
-# 実証済みの推奨モデルを指定
-MODEL_ID = 'gemini-3.8-flash'
+
+# 混雑時に順次試行するモデル候補
+MODEL_CANDIDATES = [
+    'gemini-2.5-flash',
+    'gemini-1.5-flash',
+    'gemini-2.5-pro'
+]
 
 AFFILIATE_HTML = """
 <div style="margin: 30px 0; padding: 20px; border: 1px solid #e2e8f0; background-color: #f8fafc; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
@@ -65,11 +71,31 @@ def generate_content_bundle():
     ジャンル「{item['category']}」に関する思わず欲しくなるおすすめポイント（140文字以内、絵文字使用、文末に #PR を記載、URLは含めない）
     """
     
-    response = client_genai.models.generate_content(
-        model=MODEL_ID,
-        contents=prompt,
-    )
-    
+    response = None
+    last_exception = None
+
+    # モデル自動切替 ＆ リトライ処理
+    for model_name in MODEL_CANDIDATES:
+        for attempt in range(3):
+            try:
+                print(f"[{model_name}] 生成リクエスト送信中 (試行 {attempt + 1}/3)...")
+                response = client_genai.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                if response and response.text:
+                    print(f"【成功】{model_name} でコンテンツを生成しました！")
+                    break
+            except Exception as e:
+                last_exception = e
+                print(f"[{model_name}] 一時的なエラー/高負荷を検知: {e}")
+                time.sleep(5)  # 503エラーなどの一時的混雑を回避するために5秒待機
+        if response and response.text:
+            break
+
+    if not response or not response.text:
+        raise Exception(f"全モデルでのコンテンツ生成に失敗しました: {last_exception}")
+
     full_text = response.text
     if "---X_POST---" in full_text:
         article_part, x_part = full_text.split("---X_POST---", 1)
