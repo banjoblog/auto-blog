@@ -18,33 +18,8 @@ X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN")
 X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
-
-# 利用可能なモデルを自動取得して決定する関数
-def get_available_model():
-    try:
-        available_models = [m.name for m in client_genai.models.list()]
-        # 優先したいモデル名のリスト（Prefix含む/含まない両対応）
-        priority_candidates = [
-            'models/gemini-2.5-flash',
-            'gemini-2.5-flash',
-            'models/gemini-1.5-flash',
-            'gemini-1.5-flash',
-            'models/gemini-pro',
-            'gemini-pro'
-        ]
-        for candidate in priority_candidates:
-            if candidate in available_models:
-                print(f"【使用モデル】{candidate} を選択しました。")
-                return candidate
-        # 見つからない場合は一覧の最初のモデルを使用
-        if available_models:
-            print(f"【使用モデル】一覧から {available_models[0]} を選択しました。")
-            return available_models[0]
-    except Exception as e:
-        print(f"モデル一覧取得警告: {e}")
-    
-    # フォールバック指定
-    return 'gemini-2.5-flash'
+# 実証済みの推奨モデルを指定
+MODEL_ID = 'gemini-3.8-flash'
 
 AFFILIATE_HTML = """
 <div style="margin: 30px 0; padding: 20px; border: 1px solid #e2e8f0; background-color: #f8fafc; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
@@ -72,7 +47,6 @@ THEMES = [
 ]
 
 def generate_content_bundle():
-    model_name = get_available_model()
     selected_theme = random.choice(THEMES)
     item = random.choice(AFFILIATE_LINKS)
     
@@ -92,7 +66,7 @@ def generate_content_bundle():
     """
     
     response = client_genai.models.generate_content(
-        model=model_name,
+        model=MODEL_ID,
         contents=prompt,
     )
     
