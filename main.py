@@ -18,7 +18,8 @@ X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN")
 X_ACCESS_SECRET = os.environ.get("X_ACCESS_SECRET")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_ID = 'gemini-2.5-flash'
+# 確実に利用可能な安定版モデルを指定
+MODEL_ID = 'gemini-1.5-flash'
 
 AFFILIATE_HTML = """
 <div style="margin: 30px 0; padding: 20px; border: 1px solid #e2e8f0; background-color: #f8fafc; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
