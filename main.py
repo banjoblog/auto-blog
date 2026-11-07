@@ -103,6 +103,4 @@ def post_to_x(post_text):
             consumer_key=X_API_KEY,
             consumer_secret=X_API_SECRET,
             access_token=X_ACCESS_TOKEN,
-            access_token_secret=X_ACCESS_SECRET
-        )
-        response =
+            access_token_secret
