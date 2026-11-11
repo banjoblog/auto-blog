@@ -126,7 +126,6 @@ WEEKLY_THEMES = {
 }
 
 def generate_json_ld(title, description):
-    """Google検索用の構造化データ (JSON-LD) を自動生成"""
     schema = {
         "@context": "https://schema.org",
         "@type": "BlogPosting",
@@ -154,6 +153,15 @@ def create_text_link_html(label, url):
     return f"""
 <div style="margin: 22px 0; padding: 14px 18px; background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">
     <a href="{url}" rel="nofollow" target="_blank" style="color: #15803d; font-weight: bold; font-size: 15px; text-decoration: underline;">{label}</a>
+</div>
+"""
+
+def create_share_box():
+    """SNSでのシェアを促すバイラル促進パーツ"""
+    return """
+<div style="margin: 30px 0; padding: 15px 20px; background-color: #faf5ff; border: 1px dashed #a855f7; border-radius: 8px; text-align: center;">
+    <p style="font-weight: bold; color: #7e22ce; margin-bottom: 5px;">📢 この記事が役立ったらシェアをお願いします！</p>
+    <p style="font-size: 13px; color: #6b21a8; margin: 0;">SNSやブログで紹介していただけると、今後の記事更新の励みになります✨</p>
 </div>
 """
 
@@ -194,8 +202,8 @@ def generate_toc_and_inject(html_body, text_link_box):
 
 def create_affiliate_html(label, html_code):
     return f"""
-<div style="margin: 35px 0; padding: 25px; border: 1px solid #e2e8f0; background-color: #f8fafc; text-align: center; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-    <p style="font-weight: bold; font-size: 16px; margin-bottom: 15px; color: #1e293b;">{label}</p>
+<div style="margin: 35px 0; padding: 25px; border: 2px solid #3b82f6; background-color: #f0f9ff; text-align: center; border-radius: 12px; box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.15);">
+    <p style="font-weight: bold; font-size: 17px; margin-bottom: 15px; color: #1e3a8a;">🔥 【おすすめ】{label}</p>
     <div style="display: inline-block;">
         {html_code}
     </div>
@@ -305,6 +313,7 @@ def generate_seo_article():
 
     final_title = f"{raw_title} [{theme_info['tags']}]"
 
+    share_box = create_share_box()
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
     json_ld_html = generate_json_ld(raw_title, meta_desc)
@@ -321,6 +330,7 @@ def generate_seo_article():
     {meta_lead_html}
     {header_img_html}
     {body_processed}
+    {share_box}
     {related_box}
     {affiliate_box}
     """
@@ -346,7 +356,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（構造化データ＆通知機能強化版）を開始します ===")
+    print("=== ブログ自動投稿システム（CTA最適化＆SNSバイラル枠追加版）を開始します ===")
     try:
         title, content = generate_seo_article()
         send_to_blogger(title, content)
