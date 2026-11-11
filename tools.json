@@ -2,10 +2,11 @@
   {
     "id": "gemini-api",
     "name": "Gemini API",
-    "category": "AI text & vision",
-    "pricing": "Free tier available",
+    "category": "AI Development",
+    "pricing": "Free tier / Pay-as-you-go",
     "features": ["Multimodal", "Fast response", "High context limit"],
-    "target": "Developers, Content creators"
+    "target": "Developers, Content creators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
   },
   {
     "id": "chatgpt",
@@ -13,14 +14,79 @@
     "category": "Chat & AI Assistant",
     "pricing": "Free / $20/mo",
     "features": ["GPT-4o access", "DALL-E 3 integration", "Custom GPTs"],
-    "target": "General users, Professionals"
+    "target": "General users, Professionals",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
   },
   {
     "id": "claude",
     "name": "Claude",
-    "category": "AI text & Analysis",
+    "category": "AI Text & Analysis",
     "pricing": "Free / $20/mo",
     "features": ["Long context handling", "Natural writing style", "Artifacts feature"],
-    "target": "Writers, Researchers, Developers"
+    "target": "Writers, Researchers, Developers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity AI",
+    "category": "AI Search Engine",
+    "pricing": "Free / $20/mo",
+    "features": ["Real-time web search", "Source citations", "Pro Search mode"],
+    "target": "Researchers, Students, Business Users",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "midjourney",
+    "name": "Midjourney",
+    "category": "AI Image Generation",
+    "pricing": "From $10/mo",
+    "features": ["Photorealistic images", "Discord integration", "Web editor"],
+    "target": "Designers, Marketers, Creators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "notion-ai",
+    "name": "Notion AI",
+    "category": "Productivity & Docs",
+    "pricing": "$10/user/mo",
+    "features": ["Automated summaries", "Q&A with docs", "Draft generation"],
+    "target": "Teams, Project Managers, Writers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "runway-gen2",
+    "name": "Runway Gen-2",
+    "category": "AI Video Generation",
+    "pricing": "Free tier / Credit plans",
+    "features": ["Text-to-video", "Image-to-video", "Motion brush"],
+    "target": "Video editors, Animators, Filmmakers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "stable-diffusion",
+    "name": "Stable Diffusion",
+    "category": "Open Source Image AI",
+    "pricing": "Free (Open Source)",
+    "features": ["Local execution", "High customization", "LoRA models"],
+    "target": "Engineers, Advanced Creators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "sora",
+    "name": "OpenAI Sora",
+    "category": "Advanced AI Video",
+    "pricing": "Subscription required",
+    "features": ["Hyper-realistic video", "Complex scenes", "60s generation"],
+    "target": "Video production, Agencies",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "copilot",
+    "name": "Microsoft Copilot",
+    "category": "AI Productivity Suite",
+    "pricing": "Free / $20/mo",
+    "features": ["Office integration", "Web browsing", "DALL-E image creation"],
+    "target": "Office workers, Enterprise",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
   }
 ]
