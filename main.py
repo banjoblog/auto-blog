@@ -197,6 +197,7 @@ def create_related_box(genre_name):
 def generate_seo_article():
     weekday = datetime.now().weekday()
     theme_info = WEEKLY_THEMES.get(weekday, WEEKLY_THEMES[0])
+    current_year = datetime.now().year
     
     print(f"【本日のテーマ】{theme_info['genre']}（{theme_info['desc']}）")
 
@@ -207,14 +208,14 @@ def generate_seo_article():
     以下の出力フォーマットを厳密に守り、「---META---」の区切り線を挟んで出力してください。
 
     【出力フォーマット】
-    タイトル: [読者の検索意図を満たす魅力的でクリックしたくなる記事タイトル]
+    タイトル: [{current_year}年最新のキーワードを含めた魅力的でクリックしたくなる記事タイトル]
     ---META---
     [100〜120文字程度の記事の要約（Meta Description用）]
     ---META---
     <p>[読者の悩みに共感し、記事を読むメリットを伝える導入文]</p>
 
     <h2>1. [主要な見出し1]</h2>
-    <p>[具体的な解説文。適宜 <br> や <strong>太字</strong> を使用して読みやすく構成]</p>
+    <p>[具体的な解説文。適宜 <br> や <strong style="background: linear-gradient(transparent 60%, #fff9c4 60%);">蛍光ペン風太字</strong> を使用して読みやすく構成]</p>
     <ul>
         <li>[具体的なポイント1]</li>
         <li>[具体的なポイント2]</li>
@@ -265,7 +266,7 @@ def generate_seo_article():
 
     full_text = response.text
     
-    raw_title = f"{theme_info['genre']}のおすすめガイド"
+    raw_title = f"【{current_year}年最新】{theme_info['genre']}のおすすめガイド"
     meta_desc = ""
     body = full_text
 
@@ -327,7 +328,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（Q&Aセクション追加版）を開始します ===")
+    print("=== ブログ自動投稿システム（SEO年号＆蛍光ペン装飾対応版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
