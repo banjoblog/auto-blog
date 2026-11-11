@@ -31,9 +31,9 @@ def generate_tool_content(tool_info):
     last_error = ""
     for attempt in range(3):
         try:
-            # 安定動作する正式モデル名 'gemini-1.5-flash' に指定
+            # 最新標準モデル 'gemini-2.5-flash' を使用
             response = client_genai.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.5-flash',
                 contents=prompt
             )
             if response and response.text:
@@ -41,10 +41,9 @@ def generate_tool_content(tool_info):
         except Exception as e:
             last_error = str(e)
             print(f"API Retry ({tool_info['name']}) attempt {attempt+1}: {e}")
-            time.sleep(3)
+            time.sleep(2)
             
-    # エラー時の原因特定用にログをHTMLに出力
-    return f"<p style='color:red;'>[APIエラー] 生成に失敗しました: {last_error}</p>"
+    return f"<p style='color:red;'>[APIエラー] 生成失敗: {last_error}</p>"
 
 def build():
     with open("tools.json", "r", encoding="utf-8") as f:
@@ -55,9 +54,9 @@ def build():
     for i, tool in enumerate(tools):
         print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
         
-        # 1.5秒だけ空けて API レート制限を回避
+        # API制限回避用ウェイト（2秒）
         if i > 0:
-            time.sleep(1.5)
+            time.sleep(2)
             
         content_html = generate_tool_content(tool)
         
