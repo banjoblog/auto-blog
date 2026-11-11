@@ -31,7 +31,6 @@ def generate_tool_content(tool_info):
     last_error = ""
     for attempt in range(3):
         try:
-            # 指定された最新モデル 'gemini-3.8-flash' を使用
             response = client_genai.models.generate_content(
                 model='gemini-3.8-flash',
                 contents=prompt
@@ -45,7 +44,7 @@ def generate_tool_content(tool_info):
             
     return f"""
     <div style="background: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
-        <p><strong>⚠️ 生成エラーが発生しました</strong></p>
+        <p><strong>⚠️ 生成エラーが発生しました（API制限など）</strong></p>
         <p style="font-family: monospace; font-size: 13px; word-break: break-all;">{last_error}</p>
     </div>
     """
@@ -57,24 +56,35 @@ def build():
     tool_links = []
 
     for i, tool in enumerate(tools):
-        print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
+        file_path = f"dist/tools/{tool['id']}.html"
         
-        # レート制限回避のためリクエスト間隔を5秒空ける
-        if i > 0:
-            time.sleep(5)
+        # 既存ページが存在し、エラーでない場合は再生成せずにスキップ
+        already_exists = False
+        existing_content = ""
+        if os.path.exists(file_path):
+            with open(file_path, "r", encoding="utf-8") as existing_file:
+                existing_html = existing_file.read()
+                if "⚠️ 生成エラー" not in existing_html:
+                    already_exists = True
+
+        if already_exists:
+            print(f"[{i+1}/{len(tools)}] Skipping {tool['name']} (Already generated)")
+        else:
+            print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
+            if i > 0:
+                time.sleep(5)
+            content_html = generate_tool_content(tool)
             
-        content_html = generate_tool_content(tool)
-        affiliate_url = tool.get("affiliate_url", "#")
-        
-        cta_box_html = f"""
-        <div style="margin: 35px 0; padding: 25px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-            <h3 style="margin-top: 0; color: #1e40af; font-size: 18px;">🔥 {tool['name']} を今すぐ試してみる</h3>
-            <p style="font-size: 14px; color: #334155; margin-bottom: 20px;">最新機能やプランの詳細は公式サイトからチェックできます。</p>
-            <a href="{affiliate_url}" target="_blank" rel="nofollow" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px;">{tool['name']} 公式サイトはこちら ➔</a>
-        </div>
-        """
-        
-        page_html = f"""<!DOCTYPE html>
+            affiliate_url = tool.get("affiliate_url", "#")
+            cta_box_html = f"""
+            <div style="margin: 35px 0; padding: 25px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                <h3 style="margin-top: 0; color: #1e40af; font-size: 18px;">🔥 {tool['name']} を今すぐ試してみる</h3>
+                <p style="font-size: 14px; color: #334155; margin-bottom: 20px;">最新機能やプランの詳細は公式サイトからチェックできます。</p>
+                <a href="{affiliate_url}" target="_blank" rel="nofollow" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px;">{tool['name']} 公式サイトはこちら ➔</a>
+            </div>
+            """
+            
+            page_html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -111,10 +121,9 @@ def build():
     </div>
 </body>
 </html>"""
-        
-        file_path = f"dist/tools/{tool['id']}.html"
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(page_html)
+            
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(page_html)
         
         tool_links.append(f'''
         <li style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
