@@ -153,7 +153,6 @@ WEEKLY_THEMES = {
 }
 
 def add_tracking_param(url, lang="ja", weekday=0):
-    """アフィリエイトURLに動的トラッキングパラメータを付与"""
     if not url:
         return url
     param = f"utm_source=autoblog&utm_medium={lang}&utm_campaign=day{weekday}"
@@ -220,8 +219,9 @@ def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
     h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
     matches = list(h2_pattern.finditer(html_body))
 
+    # 見出しが見つからない場合は安全にそのまま返す（IndexErrorの防止）
     if not matches:
-        return html_body
+        return html_body + (text_link_box if text_link_box else "")
 
     section_counter = 1
     def add_id_to_h2(match):
@@ -253,6 +253,9 @@ def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
 """
 
     matches_with_ids = list(h2_pattern.finditer(html_body_with_ids))
+    if not matches_with_ids:
+        return html_body_with_ids + (text_link_box if text_link_box else "")
+
     first_idx = matches_with_ids[0].start()
     result_html = html_body_with_ids[:first_idx] + toc_html + html_body_with_ids[first_idx:]
 
@@ -319,6 +322,7 @@ def generate_ja_article(theme_info, current_year, weekday):
     トレンドキーワード（{trend_str}）を含めて作成してください。
 
     以下のフォーマットを厳密に守り、「---META---」で区切って出力してください。
+    ※本文中の各主要見出しは、必ず <h2>1. [見出しタイトル]</h2> のように <h2> タグを使用してください。
 
     タイトル: [{current_year}年最新のキーワードとトレンドを含めた魅力的でクリックしたくなる記事タイトル]
     ---META---
@@ -434,6 +438,7 @@ def generate_en_article(theme_info, current_year, weekday):
     Incorporate key trend keywords: [{trend_str_en}] naturally.
 
     Follow this structure strictly and separate sections using "---META---":
+    * Make sure each main heading uses the <h2> tag, like <h2>1. [Heading Title]</h2>.
 
     Title: [Catchy, high-CTR blog title incorporating {current_year} trends]
     ---META---
@@ -554,7 +559,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（動的トラッキング＆デザイン強化版）を開始します ===")
+    print("=== ブログ自動投稿システム（IndexErrorガード完全適用版）を開始します ===")
     try:
         weekday = datetime.now().weekday()
         theme_info = WEEKLY_THEMES.get(weekday, WEEKLY_THEMES[0])
@@ -570,7 +575,7 @@ def main():
         en_title, en_content = generate_en_article(theme_info, current_year, weekday)
         send_to_blogger(en_title, en_content)
 
-        print("=== 全処理（パラメータ付与＆装飾強化）が正常に完了しました ===")
+        print("=== 全処理（バグ修正完了）が正常に完了しました ===")
     except Exception as e:
         print(f"【致命的エラー】パイプライン実行失敗: {e}")
         raise e
