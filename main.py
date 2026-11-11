@@ -168,16 +168,12 @@ def generate_json_ld(title, description, lang="ja"):
     return f'<script type="application/ld+json">{json.dumps(schema, ensure_ascii=False)}</script>'
 
 def create_header_image_html(keyword, alt_title):
-    """高品質高画質テーマ画像の自動バインド"""
-    keyword_encoded = urllib.parse.quote(keyword)
     random_sig = int(time.time()) % 1000
-    img_url = f"https://source.unsplash.com/800x400/?{keyword_encoded}"
-    # バックアップフォールバック
-    fallback_url = f"https://picsum.photos/800/400?random={random_sig}"
+    img_url = f"https://picsum.photos/800/400?random={random_sig}"
     
     return f"""
 <div style="margin: 20px 0 30px 0; text-align: center;">
-    <img src="{img_url}" onerror="this.onerror=null;this.src='{fallback_url}';" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" />
+    <img src="{img_url}" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" />
 </div>
 """
 
@@ -213,17 +209,32 @@ def create_share_box(lang="ja"):
 """
 
 def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
+    """h2に見出しIDを自動付与し、目次から内部アンカーリンクを張る機能"""
     h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
     matches = list(h2_pattern.finditer(html_body))
 
     if not matches:
         return html_body
 
+    # h2タグに id="section1", id="section2" などを自動挿入
+    section_counter = 1
+    def add_id_to_h2(match):
+        nonlocal section_counter
+        content = match.group(1)
+        res = f'<h2 id="section{section_counter}">{content}</h2>'
+        section_counter += 1
+        return res
+
+    html_body_with_ids = h2_pattern.sub(add_id_to_h2, html_body)
+
+    # 目次用リストリンクHTMLを生成
     toc_items = []
-    for match in matches:
+    for idx, match in enumerate(matches, start=1):
         h_text = match.group(1)
         clean_text = re.sub(r'^\d+[\.\s\-]+', '', h_text).strip()
-        toc_items.append(f'<li style="margin-bottom: 6px;"><span style="color: #2563eb; font-weight: bold;">{clean_text}</span></li>')
+        toc_items.append(
+            f'<li style="margin-bottom: 6px;"><a href="#section{idx}" style="color: #2563eb; font-weight: bold; text-decoration: underline;">{clean_text}</a></li>'
+        )
 
     toc_title = "📌 Table of Contents" if lang == "en" else "📌 目次"
     toc_list_html = "".join(toc_items)
@@ -236,8 +247,9 @@ def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
 </div>
 """
 
-    first_idx = matches[0].start()
-    result_html = html_body[:first_idx] + toc_html + html_body[first_idx:]
+    matches_with_ids = list(h2_pattern.finditer(html_body_with_ids))
+    first_idx = matches_with_ids[0].start()
+    result_html = html_body_with_ids[:first_idx] + toc_html + html_body_with_ids[first_idx:]
 
     if text_link_box:
         matches_after_toc = list(h2_pattern.finditer(result_html))
@@ -337,10 +349,10 @@ def generate_ja_article(theme_info, current_year):
     <div style="margin: 30px 0; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
         <p style="font-weight: bold; color: #0f172a; margin-bottom: 12px; font-size: 15px;">📖 あわせて読みたい関連記事</p>
         <div style="padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px;">
-            <p style="font-size: 14px; font-weight: bold; color: #2563eb; margin: 0;">👉 [{theme_info['genre']}に関するおすすめ関連記事タイトル1]</p>
+            <a href="/" style="font-size: 14px; font-weight: bold; color: #2563eb; text-decoration: underline; display: block;">👉 [{theme_info['genre']}に関するおすすめ関連記事タイトル1]</a>
         </div>
         <div style="padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
-            <p style="font-size: 14px; font-weight: bold; color: #2563eb; margin: 0;">👉 [{theme_info['genre']}に関するおすすめ関連記事タイトル2]</p>
+            <a href="/" style="font-size: 14px; font-weight: bold; color: #2563eb; text-decoration: underline; display: block;">👉 [{theme_info['genre']}に関するおすすめ関連記事タイトル2]</a>
         </div>
     </div>
 
@@ -365,7 +377,7 @@ def generate_ja_article(theme_info, current_year):
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
-    print("\n==================== 【X(Twitter) コピペ用コピペテキスト (JP)】 ====================")
+    print("\n==================== 【X(Twitter) コピペ用テキスト (JP)】 ====================")
     print(f"{raw_title}\n\n{sns_text}\n#{theme_info['tags'].replace(', ', ' #')}")
     print("=================================================================================\n")
 
@@ -445,10 +457,10 @@ def generate_en_article(theme_info, current_year):
     <div style="margin: 30px 0; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
         <p style="font-weight: bold; color: #0f172a; margin-bottom: 12px; font-size: 15px;">📖 Recommended Reads</p>
         <div style="padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px;">
-            <p style="font-size: 14px; font-weight: bold; color: #2563eb; margin: 0;">👉 [Recommended Related Article 1 in {theme_info['genre_en']}]</p>
+            <a href="/" style="font-size: 14px; font-weight: bold; color: #2563eb; text-decoration: underline; display: block;">👉 [Recommended Related Article 1 in {theme_info['genre_en']}]</a>
         </div>
         <div style="padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
-            <p style="font-size: 14px; font-weight: bold; color: #2563eb; margin: 0;">👉 [Recommended Related Article 2 in {theme_info['genre_en']}]</p>
+            <a href="/" style="font-size: 14px; font-weight: bold; color: #2563eb; text-decoration: underline; display: block;">👉 [Recommended Related Article 2 in {theme_info['genre_en']}]</a>
         </div>
     </div>
 
@@ -524,7 +536,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（完全無料運用＆SNS告知テキスト生成版）を開始します ===")
+    print("=== ブログ自動投稿システム（目次・関連記事リンク完全有効化版）を開始します ===")
     try:
         weekday = datetime.now().weekday()
         theme_info = WEEKLY_THEMES.get(weekday, WEEKLY_THEMES[0])
@@ -540,7 +552,7 @@ def main():
         en_title, en_content = generate_en_article(theme_info, current_year)
         send_to_blogger(en_title, en_content)
 
-        print("=== 全処理（完全自動化＆SNS用テキストビルド）が正常に完了しました ===")
+        print("=== 全処理（リンク機能修正完了）が正常に完了しました ===")
     except Exception as e:
         print(f"【致命的エラー】パイプライン実行失敗: {e}")
         raise e
