@@ -234,6 +234,8 @@ def generate_seo_article():
     ---META---
     [100〜120文字程度の記事の要約（Meta Description用）]
     ---META---
+    [X(Twitter)投稿用の宣伝文（100文字程度＋ハッシュタグ2個）]
+    ---META---
     <p>[読者の悩みに共感し、記事を読むメリットを伝える導入文]</p>
 
     <h2>1. [主要な見出し1]</h2>
@@ -266,7 +268,6 @@ def generate_seo_article():
     last_exception = None
 
     for model_name in MODEL_CANDIDATES:
-        # バックオフ付きで最大5回までトライ
         for attempt in range(5):
             try:
                 print(f"[{model_name}] 記事生成中 (モデル: {model_name}, 試行 {attempt + 1}/5)...")
@@ -279,7 +280,7 @@ def generate_seo_article():
                     break
             except Exception as e:
                 last_exception = e
-                wait_sec = (attempt + 1) * 6  # 6秒, 12秒, 18秒, 24秒, 30秒 待機
+                wait_sec = (attempt + 1) * 6
                 print(f"[{model_name}] 一時的エラー検知 ({e}) -> {wait_sec}秒待機して再試行...")
                 time.sleep(wait_sec)
         if response and response.text:
@@ -292,19 +293,26 @@ def generate_seo_article():
     
     raw_title = f"【{current_year}年最新】{theme_info['genre']}のおすすめガイド"
     meta_desc = ""
+    sns_post_text = ""
     body = full_text
 
     if "---META---" in full_text:
         parts = full_text.split("---META---")
-        if len(parts) >= 3:
+        if len(parts) >= 4:
             title_part = parts[0].strip()
             meta_desc = parts[1].strip()
-            body = parts[2].strip()
+            sns_post_text = parts[2].strip()
+            body = parts[3].strip()
             
             for line in title_part.split('\n'):
                 if line.startswith("タイトル:"):
                     raw_title = line.replace("タイトル:", "").strip()
                     break
+
+    # X(Twitter)用投稿文をコンソールに出力
+    print("\n==================== 【X(Twitter) 投稿用テキスト】 ====================")
+    print(f"{raw_title}\n\n{sns_post_text}\n#{theme_info['tags'].replace(', ', ' #')}")
+    print("=======================================================================\n")
 
     header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
 
@@ -356,7 +364,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（最新API＆バックオフ再試行強化版）を開始します ===")
+    print("=== ブログ自動投稿システム（SNS告知機能＆完全自動化版）を開始します ===")
     try:
         title, content = generate_seo_article()
         send_to_blogger(title, content)
