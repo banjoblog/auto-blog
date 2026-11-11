@@ -125,10 +125,8 @@ WEEKLY_THEMES = {
 }
 
 def create_header_image_html(keyword, alt_title):
-    """テーマに応じたアイキャッチ画像を自動生成してHTML化"""
-    encoded_keyword = urllib.parse.quote(keyword)
     random_sig = int(time.time()) % 1000
-    img_url = f"https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" if "gadget" in keyword else f"https://picsum.photos/800/400?random={random_sig}"
+    img_url = f"https://picsum.photos/800/400?random={random_sig}"
     
     return f"""
 <div style="margin: 20px 0 30px 0; text-align: center;">
@@ -225,10 +223,20 @@ def generate_seo_article():
     <h2>2. [主要な見出し2]</h2>
     <p>[具体的な解説文や実践方法]</p>
 
-    <h2>3. まとめ</h2>
+    <h2>3. よくある質問（Q&A）</h2>
+    <div style="margin: 15px 0; padding: 15px; background-color: #f8fafc; border-radius: 6px;">
+        <p style="font-weight: bold; color: #2563eb; margin-bottom: 5px;">Q. [読者が抱く疑問1]</p>
+        <p style="margin: 0; color: #334155;">A. [わかりやすい回答1]</p>
+    </div>
+    <div style="margin: 15px 0; padding: 15px; background-color: #f8fafc; border-radius: 6px;">
+        <p style="font-weight: bold; color: #2563eb; margin-bottom: 5px;">Q. [読者が抱く疑問2]</p>
+        <p style="margin: 0; color: #334155;">A. [わかりやすい回答2]</p>
+    </div>
+
+    <h2>4. まとめ</h2>
     <p>[この記事のまとめと、読者へのアクションを促す結び文]</p>
 
-    ※文字数は全体で1500文字程度、HTMLタグ（<h2>, <p>, <ul>, <li>, <strong>, <br>）を適切に使用してください。
+    ※文字数は全体で1500〜1800文字程度、HTMLタグ（<h2>, <p>, <ul>, <li>, <strong>, <br>）を適切に使用してください。
     """
 
     response = None
@@ -319,7 +327,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（アイキャッチ画像自動セット版）を開始します ===")
+    print("=== ブログ自動投稿システム（Q&Aセクション追加版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
