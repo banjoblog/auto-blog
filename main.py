@@ -2,6 +2,7 @@ import os
 import random
 import re
 import time
+import json
 import urllib.parse
 from datetime import datetime
 from google import genai
@@ -123,6 +124,21 @@ WEEKLY_THEMES = {
         """
     }
 }
+
+def generate_json_ld(title, description):
+    """Google検索用の構造化データ (JSON-LD) を自動生成"""
+    schema = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": title,
+        "description": description,
+        "datePublished": datetime.now().isoformat(),
+        "author": {
+            "@type": "Person",
+            "name": "編集部ライター"
+        }
+    }
+    return f'<script type="application/ld+json">{json.dumps(schema, ensure_ascii=False)}</script>'
 
 def create_header_image_html(keyword, alt_title):
     random_sig = int(time.time()) % 1000
@@ -291,15 +307,17 @@ def generate_seo_article():
 
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
+    json_ld_html = generate_json_ld(raw_title, meta_desc)
 
     meta_lead_html = f"""
     <!-- meta:description:{meta_desc} -->
-    <div style="background-color: #f8fafc; border-left: 4px solid #64748b; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; color: #475569; font-style: italic;">
-        <strong>この記事の要約：</strong>{meta_desc}
+    <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 14px 18px; margin-bottom: 22px; font-size: 14px; color: #334155; border-radius: 0 6px 6px 0;">
+        <strong style="color: #1d4ed8;">✨ この記事のポイント：</strong>{meta_desc}
     </div>
     """
 
     final_html = f"""
+    {json_ld_html}
     {meta_lead_html}
     {header_img_html}
     {body_processed}
@@ -328,10 +346,14 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（SEO年号＆蛍光ペン装飾対応版）を開始します ===")
-    title, content = generate_seo_article()
-    send_to_blogger(title, content)
-    print("=== 全処理が正常に完了しました ===")
+    print("=== ブログ自動投稿システム（構造化データ＆通知機能強化版）を開始します ===")
+    try:
+        title, content = generate_seo_article()
+        send_to_blogger(title, content)
+        print("=== 全処理が正常に完了しました ===")
+    except Exception as e:
+        print(f"【致命的エラー】パイプライン実行失敗: {e}")
+        raise e
 
 if __name__ == "__main__":
     main()
