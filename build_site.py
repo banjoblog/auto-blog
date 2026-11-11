@@ -28,17 +28,20 @@ def generate_tool_content(tool_info):
     - まとめ・どんな人におすすめか
     """
     
-    for attempt in range(3):
+    # 5回までリトライ＆待ち時間を段階的に増やす（レート制限回避）
+    for attempt in range(5):
         try:
             response = client_genai.models.generate_content(
-                model='gemini-3.8-flash',
+                model='gemini-2.5-flash',
                 contents=prompt
             )
             if response and response.text:
                 return response.text
         except Exception as e:
-            time.sleep(5)
-    return "<p>コンテンツの自動生成中にエラーが発生しました。</p>"
+            print(f"API Error ({tool_info['name']}) attempt {attempt+1}: {e}")
+            time.sleep(10 * (attempt + 1))
+            
+    return "<p>現在コンテンツを自動生成中です。しばらく時間を置いてから再読み込みしてください。</p>"
 
 def build():
     with open("tools.json", "r", encoding="utf-8") as f:
@@ -46,8 +49,13 @@ def build():
 
     tool_links = []
 
-    for tool in tools:
-        print(f"Generating page for {tool['name']}...")
+    for i, tool in enumerate(tools):
+        print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
+        
+        # API制限を防ぐためリクエスト間隔を6秒空ける
+        if i > 0:
+            time.sleep(6)
+            
         content_html = generate_tool_content(tool)
         
         affiliate_url = tool.get("affiliate_url", "#")
