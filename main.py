@@ -20,11 +20,12 @@ MODEL_CANDIDATES = [
     'gemini-3.1-pro-preview'
 ]
 
-# 曜日別テーマ ＆ 実際の提携アフィリエイト設定 (0:月曜日 ~ 6:日曜日)
+# 曜日別テーマ ＆ 提携アフィリエイト設定 (0:月曜日 ~ 6:日曜日)
 WEEKLY_THEMES = {
     0: {
         "genre": "最新ガジェット・家電",
         "desc": "仕事や暮らしを便利にする買ってよかったガジェットや生活家電",
+        "tags": "ガジェット, 家電, 暮らし",
         "affiliate_label": "＼ 楽天市場で話題の最新ガジェットをチェック ／",
         "affiliate_html": """
         <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
@@ -35,6 +36,7 @@ WEEKLY_THEMES = {
     1: {
         "genre": "節約・資産形成・ポイ活",
         "desc": "初心者向けの固定費削減、ポイ活トレンド、貯金・投資のコツ",
+        "tags": "節約, ポイ活, 資産運用",
         "affiliate_label": "＼ ポイントが貯まる！楽天市場でお得にお買い物 ／",
         "affiliate_html": """
         <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
@@ -45,6 +47,7 @@ WEEKLY_THEMES = {
     2: {
         "genre": "AIツール・作業効率化",
         "desc": "業務効率化を図る最新AIツールや、時短に繋がるデジタル活用術",
+        "tags": "AI, 効率化, ワークスタイル",
         "affiliate_label": "＼ 高速・安定のレンタルサーバーでブログ・AI活用 ／",
         "affiliate_html": """
         <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
@@ -55,6 +58,7 @@ WEEKLY_THEMES = {
     3: {
         "genre": "在宅副業・スキルアップ",
         "desc": "未経験から始められる人気の在宅ワークや副業、おすすめ資格・学び",
+        "tags": "副業, スキルアップ, 在宅ワーク",
         "affiliate_label": "＼ 自分だけの独自ドメインを取得して副業スタート ／",
         "affiliate_html": """
         <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7Q1GAA+348+1BUE69" rel="nofollow">
@@ -65,6 +69,7 @@ WEEKLY_THEMES = {
     4: {
         "genre": "ライフハック・生産性向上",
         "desc": "時間術、集中力を高める環境作り、日常のストレスを減らすテクニック",
+        "tags": "ライフハック, 集中力, 習慣",
         "affiliate_label": "＼ Amazonで生活を快適にする便利アイテムを見る ／",
         "affiliate_html": """
         <div style="margin-top: 15px;">
@@ -75,6 +80,7 @@ WEEKLY_THEMES = {
     5: {
         "genre": "おすすめ本・Kindle活用",
         "desc": "ビジネスパーソンが読むべき名著やKindleを使った読書術",
+        "tags": "読書, 書評, Kindle",
         "affiliate_label": "＼ 聴く読書！Audible（オーディブル）を無料体験 ／",
         "affiliate_html": """
         <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
@@ -85,6 +91,7 @@ WEEKLY_THEMES = {
     6: {
         "genre": "週末のトレンド・旅行・お出かけ",
         "desc": "週末の過ごし方、話題のスポット、おすすめの旅行・ホテル情報",
+        "tags": "旅行, 週末, トレンド",
         "affiliate_label": "＼ 楽天トラベルで週末の旅行やホテルをお得に予約 ／",
         "affiliate_html": """
         <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F" rel="nofollow">
@@ -101,6 +108,15 @@ def create_affiliate_html(label, html_code):
     <div style="display: inline-block;">
         {html_code}
     </div>
+</div>
+"""
+
+def create_related_box(genre_name):
+    """回遊率を上げる関連記事案内パーツ"""
+    return f"""
+<div style="margin: 30px 0; padding: 20px; background-color: #eff6ff; border-left: 5px solid #3b82f6; border-radius: 4px;">
+    <p style="font-weight: bold; color: #1e3a8a; margin-bottom: 8px;">💡 「{genre_name}」カテゴリの他の記事もチェック</p>
+    <p style="font-size: 14px; color: #1e40af; margin: 0;">当ブログでは毎週役に立つ最新情報を更新しています。ぜひトップページや他のカテゴリ記事もご覧ください！</p>
 </div>
 """
 
@@ -165,7 +181,7 @@ def generate_seo_article():
 
     full_text = response.text
     
-    title = f"{theme_info['genre']}のおすすめガイド"
+    raw_title = f"{theme_info['genre']}のおすすめガイド"
     meta_desc = ""
     body = full_text
 
@@ -178,18 +194,23 @@ def generate_seo_article():
             
             for line in title_part.split('\n'):
                 if line.startswith("タイトル:"):
-                    title = line.replace("タイトル:", "").strip()
+                    raw_title = line.replace("タイトル:", "").strip()
                     break
 
+    # Bloggerでタグ（ラベル）を自動反映させるためのタイトル装飾
+    final_title = f"{raw_title} [{theme_info['tags']}]"
+
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
+    related_box = create_related_box(theme_info['genre'])
 
     final_html = f"""
     <!-- Meta Description: {meta_desc} -->
     {body}
+    {related_box}
     {affiliate_box}
     """
     
-    return title, final_html
+    return final_title, final_html
 
 def send_to_blogger(title, content):
     if not all([BLOGGER_EMAIL, SENDGRID_API_KEY, SENDER_EMAIL]):
@@ -210,7 +231,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（提携アフィリエイト連動版）を開始します ===")
+    print("=== ブログ自動投稿システム（タグ・回遊率強化版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
