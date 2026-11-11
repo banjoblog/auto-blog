@@ -17,10 +17,10 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
-# 利用可能なモデルリスト
+# 利用可能なモデルリスト（安定稼働モデルへ修正）
 MODEL_CANDIDATES = [
-    'gemini-3.8-flash',
-    'gemini-3.1-pro-preview'
+    'gemini-2.5-flash',
+    'gemini-2.5-pro'
 ]
 
 # 曜日別テーマ ＆ 提携アフィリエイト設定 (0:月曜日 ~ 6:日曜日)
@@ -157,7 +157,6 @@ def create_text_link_html(label, url):
 """
 
 def create_share_box():
-    """SNSでのシェアを促すバイラル促進パーツ"""
     return """
 <div style="margin: 30px 0; padding: 15px 20px; background-color: #faf5ff; border: 1px dashed #a855f7; border-radius: 8px; text-align: center;">
     <p style="font-weight: bold; color: #7e22ce; margin-bottom: 5px;">📢 この記事が役立ったらシェアをお願いします！</p>
@@ -270,7 +269,7 @@ def generate_seo_article():
     for model_name in MODEL_CANDIDATES:
         for attempt in range(3):
             try:
-                print(f"[{model_name}] 記事生成中 (試行 {attempt + 1}/3)...")
+                print(f"[{model_name}] 記事生成中 (モデル: {model_name}, 試行 {attempt + 1}/3)...")
                 response = client_genai.models.generate_content(
                     model=model_name,
                     contents=prompt,
@@ -280,8 +279,8 @@ def generate_seo_article():
                     break
             except Exception as e:
                 last_exception = e
-                print(f"[{model_name}] エラー検知: {e}")
-                time.sleep(3)
+                print(f"[{model_name}] 一時的エラー検知: {e}")
+                time.sleep(5 * (attempt + 1))  # 5秒, 10秒, 15秒と待機時間を伸ばす
         if response and response.text:
             break
 
@@ -356,7 +355,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（CTA最適化＆SNSバイラル枠追加版）を開始します ===")
+    print("=== ブログ自動投稿システム（モデル設定＆エラー安定化版）を開始します ===")
     try:
         title, content = generate_seo_article()
         send_to_blogger(title, content)
