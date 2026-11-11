@@ -28,19 +28,23 @@ def generate_tool_content(tool_info):
     - まとめ・どんな人におすすめか
     """
     
+    last_error = ""
     for attempt in range(3):
         try:
+            # 安定動作する正式モデル名 'gemini-1.5-flash' に指定
             response = client_genai.models.generate_content(
-                model='gemini-2.5-flash',
+                model='gemini-1.5-flash',
                 contents=prompt
             )
             if response and response.text:
                 return response.text
         except Exception as e:
+            last_error = str(e)
             print(f"API Retry ({tool_info['name']}) attempt {attempt+1}: {e}")
             time.sleep(3)
             
-    return "<p>現在コンテンツを自動更新中です。しばらく時間を置いてからご覧ください。</p>"
+    # エラー時の原因特定用にログをHTMLに出力
+    return f"<p style='color:red;'>[APIエラー] 生成に失敗しました: {last_error}</p>"
 
 def build():
     with open("tools.json", "r", encoding="utf-8") as f:
@@ -51,9 +55,9 @@ def build():
     for i, tool in enumerate(tools):
         print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
         
-        # レート制限回避（最低限の2.5秒ウェイト）
+        # 1.5秒だけ空けて API レート制限を回避
         if i > 0:
-            time.sleep(2.5)
+            time.sleep(1.5)
             
         content_html = generate_tool_content(tool)
         
