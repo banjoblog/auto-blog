@@ -84,7 +84,7 @@ WEEKLY_THEMES = {
         "genre": "ライフハック・生産性向上",
         "desc": "時間術、集中力を高める環境作り、日常のストレスを減らすテクニック",
         "tags": "ライフハック, 集中力, 習慣",
-        "image_keyword": "productivity,coffee-desk",
+        "image_keyword": "productivity,desk",
         "text_link_label": "👉 Amazonで人気のデスク周辺・作業改善グッズをチェックする",
         "text_link_url": "https://link.amazon/B06MY7qci",
         "affiliate_label": "＼ Amazonで生活を快適にする便利アイテムを見る ／",
@@ -127,13 +127,12 @@ WEEKLY_THEMES = {
 def create_header_image_html(keyword, alt_title):
     """テーマに応じたアイキャッチ画像を自動生成してHTML化"""
     encoded_keyword = urllib.parse.quote(keyword)
-    # 毎回ランダムな画像が取れるようにシード値を現在時刻から生成
     random_sig = int(time.time()) % 1000
-    img_url = f"https://source.unsplash.com/800x450/?{encoded_keyword}&sig={random_sig}"
+    img_url = f"https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" if "gadget" in keyword else f"https://picsum.photos/800/400?random={random_sig}"
     
     return f"""
 <div style="margin: 20px 0 30px 0; text-align: center;">
-    <img src="{img_url}" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" />
+    <img src="{img_url}" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" />
 </div>
 """
 
@@ -274,7 +273,6 @@ def generate_seo_article():
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
-    # アイキャッチ画像の挿入
     header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
 
     text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
@@ -321,7 +319,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（アイキャッチ画像自動埋め込み版）を開始します ===")
+    print("=== ブログ自動投稿システム（アイキャッチ画像自動セット版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
