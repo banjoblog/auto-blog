@@ -28,22 +28,25 @@ def generate_tool_content(tool_info):
     - まとめ・どんな人におすすめか
     """
     
-    last_error = ""
-    for attempt in range(3):
-        try:
-            # 最新標準モデル 'gemini-2.5-flash' を使用
-            response = client_genai.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt
-            )
-            if response and response.text:
-                return response.text
-        except Exception as e:
-            last_error = str(e)
-            print(f"API Retry ({tool_info['name']}) attempt {attempt+1}: {e}")
-            time.sleep(2)
-            
-    return f"<p style='color:red;'>[APIエラー] 生成失敗: {last_error}</p>"
+    try:
+        # 確実に利用可能なモデルを指定
+        response = client_genai.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        if response and response.text:
+            return response.text
+        else:
+            return "<p>APIからの応答が空でした。</p>"
+    except Exception as e:
+        # エラーログを画面に直接出力して原因を可視化
+        print(f"Error for {tool_info['name']}: {e}")
+        return f"""
+        <div style="background: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
+            <p><strong>⚠️ 生成エラーが発生しました</strong></p>
+            <p style="font-family: monospace; font-size: 13px; word-break: break-all;">{str(e)}</p>
+        </div>
+        """
 
 def build():
     with open("tools.json", "r", encoding="utf-8") as f:
@@ -54,12 +57,11 @@ def build():
     for i, tool in enumerate(tools):
         print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
         
-        # API制限回避用ウェイト（2秒）
+        # 連続実行による制限回避（3秒間隔）
         if i > 0:
-            time.sleep(2)
+            time.sleep(3)
             
         content_html = generate_tool_content(tool)
-        
         affiliate_url = tool.get("affiliate_url", "#")
         
         cta_box_html = f"""
