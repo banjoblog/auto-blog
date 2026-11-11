@@ -9,6 +9,7 @@ on:
 jobs:
   build-and-post:
     runs-on: ubuntu-latest
+    timeout-minutes: 10 # 10分以上かかった場合は自動停止してフリーズを防ぐ
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
