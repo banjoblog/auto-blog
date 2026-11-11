@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import shutil
 from datetime import datetime
 from google import genai
 
@@ -8,6 +9,11 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
 os.makedirs("dist/tools", exist_ok=True)
+
+# Google Search Console の所有権確認ファイルを dist にコピー
+for file_name in os.listdir("."):
+    if file_name.startswith("google") and file_name.endswith(".html"):
+        shutil.copy(file_name, os.path.join("dist", file_name))
 
 def generate_tool_content(tool_info):
     prompt = f"""
@@ -139,7 +145,6 @@ def build():
         </li>
         ''')
 
-    # インデックス（トップ）ページの生成
     links_html = "\n".join(tool_links)
     index_html = f"""<!DOCTYPE html>
 <html lang="ja">
@@ -172,7 +177,6 @@ def build():
     with open("dist/index.html", "w", encoding="utf-8") as f:
         f.write(index_html)
 
-    # SEO用 sitemap.xml の自動生成
     today_date = datetime.now().strftime("%Y-%m-%d")
     sitemap_urls = [f"<url><loc>https://index.html</loc><lastmod>{today_date}</lastmod></url>"]
     for page in generated_pages:
