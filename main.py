@@ -27,7 +27,7 @@ WEEKLY_THEMES = {
         "genre": "最新ガジェット・家電",
         "desc": "仕事や暮らしを便利にする買ってよかったガジェットや生活家電",
         "tags": "ガジェット, 家電, 暮らし",
-        "text_link_label": "👉 楽天市場で話題の人気ガジェット一覧を見てみる",
+        "text_link_label": "👉 楽天市場で話題の人気ガジェット・最新家電一覧を見てみる",
         "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F",
         "affiliate_label": "＼ 楽天市場で話題の最新ガジェットをチェック ／",
         "affiliate_html": """
@@ -40,7 +40,7 @@ WEEKLY_THEMES = {
         "genre": "節約・資産形成・ポイ活",
         "desc": "初心者向けの固定費削減、ポイ活トレンド、貯金・投資のコツ",
         "tags": "節約, ポイ活, 資産運用",
-        "text_link_label": "👉 ポイント最大還元！楽天市場のセール会場をチェック",
+        "text_link_label": "👉 ポイント最大還元！楽天市場のポイ活・限定セール会場へ",
         "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F",
         "affiliate_label": "＼ ポイントが貯まる！楽天市場でお得にお買い物 ／",
         "affiliate_html": """
@@ -53,7 +53,7 @@ WEEKLY_THEMES = {
         "genre": "AIツール・作業効率化",
         "desc": "業務効率化を図る最新AIツールや、時短に繋がるデジタル活用術",
         "tags": "AI, 効率化, ワークスタイル",
-        "text_link_label": "👉 国内最速級！Xサーバーで爆速なWeb・ブログ環境を構築する",
+        "text_link_label": "👉 国内最速級！Xサーバーで爆速なWeb・AIツール環境を構築する",
         "text_link_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5",
         "affiliate_label": "＼ 高速・安定のレンタルサーバーでブログ・AI活用 ／",
         "affiliate_html": """
@@ -106,28 +106,37 @@ WEEKLY_THEMES = {
         "desc": "週末の過ごし方、話題のスポット、おすすめの旅行・ホテル情報",
         "tags": "旅行, 週末, トレンド",
         "text_link_label": "👉 クーポン配布中！楽天トラベルで人気のホテル・宿を探す",
-        "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F",
+        "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F",
         "affiliate_label": "＼ 楽天トラベルで週末の旅行やホテルをお得に予約 ／",
         "affiliate_html": """
-        <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F" rel="nofollow">
+        <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F" rel="nofollow">
         <img src="http://hbb.afl.rakuten.co.jp/hsb/0ea7f9a4.79280dcb.0ea7f99d.1ac92fca/153145/" border="0"></a>
         <img border="0" width="1" height="1" src="https://www16.a8.net/0.gif?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5" alt="">
         """
     }
 }
 
-def generate_toc_and_inject(html_body):
-    """HTML本文の<h2>タグを抽出して「目次」を重複なしで生成・埋め込む関数"""
-    h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
-    headings = h2_pattern.findall(html_body)
+def create_text_link_html(label, url):
+    """高CTRなテキストリンクパーツ"""
+    return f"""
+<div style="margin: 20px 0; padding: 14px 18px; background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">
+    <a href="{url}" rel="nofollow" target="_blank" style="color: #15803d; font-weight: bold; font-size: 15px; text-decoration: underline;">{label}</a>
+</div>
+"""
 
-    if not headings:
+def generate_toc_and_inject(html_body, text_link_box):
+    """目次の自動生成 ＆ 2番目の見出し直後へのテキストリンク挿入"""
+    h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
+    matches = list(h2_pattern.finditer(html_body))
+
+    if not matches:
         return html_body
 
+    # 1. 重複数字を除去して目次を組み立て
     toc_items = []
-    for h in headings:
-        # 先頭についている「1. 」「1- 」などの重複数字を綺麗に除去
-        clean_text = re.sub(r'^\d+[\.\s\-]+', '', h).strip()
+    for match in matches:
+        h_text = match.group(1)
+        clean_text = re.sub(r'^\d+[\.\s\-]+', '', h_text).strip()
         toc_items.append(f'<li style="margin-bottom: 6px;"><span style="color: #2563eb; font-weight: bold;">{clean_text}</span></li>')
 
     toc_list_html = "".join(toc_items)
@@ -139,11 +148,21 @@ def generate_toc_and_inject(html_body):
     </ol>
 </div>
 """
-    first_h2_match = h2_pattern.search(html_body)
-    if first_h2_match:
-        idx = first_h2_match.start()
-        return html_body[:idx] + toc_html + html_body[idx:]
-    return toc_html + html_body
+
+    # 2. 最初のH2直前に目次を挿入
+    first_idx = matches[0].start()
+    result_html = html_body[:first_idx] + toc_html + html_body[first_idx:]
+
+    # 3. 2番目のH2の直前にテキストアフィリエイトリンクを自然に挿入（存在する場合）
+    matches_after_toc = list(h2_pattern.finditer(result_html))
+    if len(matches_after_toc) >= 2:
+        second_idx = matches_after_toc[1].start()
+        result_html = result_html[:second_idx] + text_link_box + result_html[second_idx:]
+    else:
+        # 見出しが少ない場合は末尾近くに挿入
+        result_html += text_link_box
+
+    return result_html
 
 def create_affiliate_html(label, html_code):
     return f"""
@@ -153,13 +172,6 @@ def create_affiliate_html(label, html_code):
         {html_code}
     </div>
 </div>
-"""
-
-def create_text_link_html(label, url):
-    return f"""
-<p style="margin: 25px 0; padding: 15px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 15px;">
-    <a href="{url}" rel="nofollow" target="_blank" style="color: #166534; font-weight: bold; text-decoration: underline;">{label}</a>
-</p>
 """
 
 def create_related_box(genre_name):
@@ -247,19 +259,19 @@ def generate_seo_article():
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
-    # 重複部分を自動除去して目次挿入
-    body_with_toc = generate_toc_and_inject(body)
+    text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
+    
+    # 目次の生成 ＆ 本文内へのテキストリンク埋め込み
+    body_processed = generate_toc_and_inject(body, text_link_box)
 
     final_title = f"{raw_title} [{theme_info['tags']}]"
 
-    text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
 
     final_html = f"""
     <!-- Meta Description: {meta_desc} -->
-    {body_with_toc}
-    {text_link_box}
+    {body_processed}
     {related_box}
     {affiliate_box}
     """
@@ -285,7 +297,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（目次番号修正版）を開始します ===")
+    print("=== ブログ自動投稿システム（本文内テキストアフィリエイト連動版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
