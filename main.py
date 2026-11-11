@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import time
 from datetime import datetime
 from google import genai
@@ -26,6 +27,8 @@ WEEKLY_THEMES = {
         "genre": "最新ガジェット・家電",
         "desc": "仕事や暮らしを便利にする買ってよかったガジェットや生活家電",
         "tags": "ガジェット, 家電, 暮らし",
+        "text_link_label": "👉 楽天市場で話題の人気ガジェット一覧を見てみる",
+        "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F",
         "affiliate_label": "＼ 楽天市場で話題の最新ガジェットをチェック ／",
         "affiliate_html": """
         <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
@@ -37,6 +40,8 @@ WEEKLY_THEMES = {
         "genre": "節約・資産形成・ポイ活",
         "desc": "初心者向けの固定費削減、ポイ活トレンド、貯金・投資のコツ",
         "tags": "節約, ポイ活, 資産運用",
+        "text_link_label": "👉 ポイント最大還元！楽天市場のセール会場をチェック",
+        "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F",
         "affiliate_label": "＼ ポイントが貯まる！楽天市場でお得にお買い物 ／",
         "affiliate_html": """
         <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
@@ -48,6 +53,8 @@ WEEKLY_THEMES = {
         "genre": "AIツール・作業効率化",
         "desc": "業務効率化を図る最新AIツールや、時短に繋がるデジタル活用術",
         "tags": "AI, 効率化, ワークスタイル",
+        "text_link_label": "👉 国内最速級！Xサーバーで爆速なWeb・ブログ環境を構築する",
+        "text_link_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5",
         "affiliate_label": "＼ 高速・安定のレンタルサーバーでブログ・AI活用 ／",
         "affiliate_html": """
         <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
@@ -59,6 +66,8 @@ WEEKLY_THEMES = {
         "genre": "在宅副業・スキルアップ",
         "desc": "未経験から始められる人気の在宅ワークや副業、おすすめ資格・学び",
         "tags": "副業, スキルアップ, 在宅ワーク",
+        "text_link_label": "👉 副業の第一歩！自分だけの独自ドメインを安く取得する",
+        "text_link_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7Q1GAA+348+1BUE69",
         "affiliate_label": "＼ 自分だけの独自ドメインを取得して副業スタート ／",
         "affiliate_html": """
         <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7Q1GAA+348+1BUE69" rel="nofollow">
@@ -70,6 +79,8 @@ WEEKLY_THEMES = {
         "genre": "ライフハック・生産性向上",
         "desc": "時間術、集中力を高める環境作り、日常のストレスを減らすテクニック",
         "tags": "ライフハック, 集中力, 習慣",
+        "text_link_label": "👉 Amazonで人気のデスク周辺・作業改善グッズをチェックする",
+        "text_link_url": "https://link.amazon/B06MY7qci",
         "affiliate_label": "＼ Amazonで生活を快適にする便利アイテムを見る ／",
         "affiliate_html": """
         <div style="margin-top: 15px;">
@@ -81,6 +92,8 @@ WEEKLY_THEMES = {
         "genre": "おすすめ本・Kindle活用",
         "desc": "ビジネスパーソンが読むべき名著やKindleを使った読書術",
         "tags": "読書, 書評, Kindle",
+        "text_link_label": "👉 最初の1冊が無料！Audibleで通勤中や家事中に「聴く読書」を体験",
+        "text_link_url": "https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH",
         "affiliate_label": "＼ 聴く読書！Audible（オーディブル）を無料体験 ／",
         "affiliate_html": """
         <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
@@ -92,6 +105,8 @@ WEEKLY_THEMES = {
         "genre": "週末のトレンド・旅行・お出かけ",
         "desc": "週末の過ごし方、話題のスポット、おすすめの旅行・ホテル情報",
         "tags": "旅行, 週末, トレンド",
+        "text_link_label": "👉 クーポン配布中！楽天トラベルで人気のホテル・宿を探す",
+        "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F",
         "affiliate_label": "＼ 楽天トラベルで週末の旅行やホテルをお得に予約 ／",
         "affiliate_html": """
         <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F" rel="nofollow">
@@ -100,6 +115,30 @@ WEEKLY_THEMES = {
         """
     }
 }
+
+def generate_toc_and_inject(html_body):
+    """HTML本文の<h2>タグを抽出して「目次」を生成・埋め込む関数"""
+    h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
+    headings = h2_pattern.findall(html_body)
+
+    if not headings:
+        return html_body
+
+    toc_items = "".join([f'<li style="margin-bottom: 6px;"><span style="color: #2563eb; font-weight: bold;">{h}</span></li>' for h in headings])
+    toc_html = f"""
+<div style="margin: 25px 0; padding: 20px; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px;">
+    <p style="font-weight: bold; font-size: 16px; margin: 0 0 12px 0; color: #0f172a; border-bottom: 2px solid #2563eb; padding-bottom: 5px; display: inline-block;">📌 目次</p>
+    <ul style="margin: 0; padding-left: 20px; list-style-type: decimal; color: #334155; font-size: 14px;">
+        {toc_items}
+    </ul>
+</div>
+"""
+    # 最初の<h2>タグの直前に目次を挿入
+    first_h2_match = h2_pattern.search(html_body)
+    if first_h2_match:
+        idx = first_h2_match.start()
+        return html_body[:idx] + toc_html + html_body[idx:]
+    return toc_html + html_body
 
 def create_affiliate_html(label, html_code):
     return f"""
@@ -111,8 +150,15 @@ def create_affiliate_html(label, html_code):
 </div>
 """
 
+def create_text_link_html(label, url):
+    """本文末尾やまとめ直前に自然に挿入する高CTRテキストリンク"""
+    return f"""
+<p style="margin: 25px 0; padding: 15px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 15px;">
+    <a href="{url}" rel="nofollow" target="_blank" style="color: #166534; font-weight: bold; text-decoration: underline;">{label}</a>
+</p>
+"""
+
 def create_related_box(genre_name):
-    """回遊率を上げる関連記事案内パーツ"""
     return f"""
 <div style="margin: 30px 0; padding: 20px; background-color: #eff6ff; border-left: 5px solid #3b82f6; border-radius: 4px;">
     <p style="font-weight: bold; color: #1e3a8a; margin-bottom: 8px;">💡 「{genre_name}」カテゴリの他の記事もチェック</p>
@@ -197,15 +243,21 @@ def generate_seo_article():
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
-    # Bloggerでタグ（ラベル）を自動反映させるためのタイトル装飾
+    # 1. 目次を本文内に自動生成・挿入
+    body_with_toc = generate_toc_and_inject(body)
+
+    # 2. タイトルとタグの装飾
     final_title = f"{raw_title} [{theme_info['tags']}]"
 
+    # 3. 各種パーツの組み立て
+    text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
 
     final_html = f"""
     <!-- Meta Description: {meta_desc} -->
-    {body}
+    {body_with_toc}
+    {text_link_box}
     {related_box}
     {affiliate_box}
     """
@@ -231,7 +283,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（タグ・回遊率強化版）を開始します ===")
+    print("=== ブログ自動投稿システム（目次＆高CTRテキストリンク版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
