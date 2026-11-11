@@ -28,8 +28,7 @@ def generate_tool_content(tool_info):
     - まとめ・どんな人におすすめか
     """
     
-    # 5回までリトライ＆待ち時間を段階的に増やす（レート制限回避）
-    for attempt in range(5):
+    for attempt in range(3):
         try:
             response = client_genai.models.generate_content(
                 model='gemini-2.5-flash',
@@ -38,10 +37,10 @@ def generate_tool_content(tool_info):
             if response and response.text:
                 return response.text
         except Exception as e:
-            print(f"API Error ({tool_info['name']}) attempt {attempt+1}: {e}")
-            time.sleep(10 * (attempt + 1))
+            print(f"API Retry ({tool_info['name']}) attempt {attempt+1}: {e}")
+            time.sleep(3)
             
-    return "<p>現在コンテンツを自動生成中です。しばらく時間を置いてから再読み込みしてください。</p>"
+    return "<p>現在コンテンツを自動更新中です。しばらく時間を置いてからご覧ください。</p>"
 
 def build():
     with open("tools.json", "r", encoding="utf-8") as f:
@@ -52,9 +51,9 @@ def build():
     for i, tool in enumerate(tools):
         print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
         
-        # API制限を防ぐためリクエスト間隔を6秒空ける
+        # レート制限回避（最低限の2.5秒ウェイト）
         if i > 0:
-            time.sleep(6)
+            time.sleep(2.5)
             
         content_html = generate_tool_content(tool)
         
@@ -64,7 +63,7 @@ def build():
         <div style="margin: 35px 0; padding: 25px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
             <h3 style="margin-top: 0; color: #1e40af; font-size: 18px;">🔥 {tool['name']} を今すぐ試してみる</h3>
             <p style="font-size: 14px; color: #334155; margin-bottom: 20px;">最新機能やプランの詳細は公式サイトからチェックできます。</p>
-            <a href="{affiliate_url}" target="_blank" rel="nofollow" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px; transition: background 0.2s;">{tool['name']} 公式サイトはこちら ➔</a>
+            <a href="{affiliate_url}" target="_blank" rel="nofollow" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px;">{tool['name']} 公式サイトはこちら ➔</a>
         </div>
         """
         
@@ -83,7 +82,6 @@ def build():
         .meta-info {{ background: #f1f5f9; padding: 12px 18px; border-radius: 6px; font-size: 14px; color: #475569; }}
         h3 {{ color: #1e293b; border-left: 4px solid #2563eb; padding-left: 10px; margin-top: 30px; }}
         a {{ color: #2563eb; text-decoration: none; font-weight: bold; }}
-        a:hover {{ text-decoration: underline; }}
     </style>
 </head>
 <body>
@@ -124,7 +122,6 @@ def build():
         </li>
         ''')
 
-    # トップ（インデックス）ページの生成
     links_html = "\n".join(tool_links)
     index_html = f"""<!DOCTYPE html>
 <html lang="ja">
