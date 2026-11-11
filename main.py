@@ -117,23 +117,28 @@ WEEKLY_THEMES = {
 }
 
 def generate_toc_and_inject(html_body):
-    """HTML本文の<h2>タグを抽出して「目次」を生成・埋め込む関数"""
+    """HTML本文の<h2>タグを抽出して「目次」を重複なしで生成・埋め込む関数"""
     h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
     headings = h2_pattern.findall(html_body)
 
     if not headings:
         return html_body
 
-    toc_items = "".join([f'<li style="margin-bottom: 6px;"><span style="color: #2563eb; font-weight: bold;">{h}</span></li>' for h in headings])
+    toc_items = []
+    for h in headings:
+        # 先頭についている「1. 」「1- 」などの重複数字を綺麗に除去
+        clean_text = re.sub(r'^\d+[\.\s\-]+', '', h).strip()
+        toc_items.append(f'<li style="margin-bottom: 6px;"><span style="color: #2563eb; font-weight: bold;">{clean_text}</span></li>')
+
+    toc_list_html = "".join(toc_items)
     toc_html = f"""
 <div style="margin: 25px 0; padding: 20px; background-color: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px;">
     <p style="font-weight: bold; font-size: 16px; margin: 0 0 12px 0; color: #0f172a; border-bottom: 2px solid #2563eb; padding-bottom: 5px; display: inline-block;">📌 目次</p>
-    <ul style="margin: 0; padding-left: 20px; list-style-type: decimal; color: #334155; font-size: 14px;">
-        {toc_items}
-    </ul>
+    <ol style="margin: 0; padding-left: 20px; color: #334155; font-size: 14px; list-style-type: decimal;">
+        {toc_list_html}
+    </ol>
 </div>
 """
-    # 最初の<h2>タグの直前に目次を挿入
     first_h2_match = h2_pattern.search(html_body)
     if first_h2_match:
         idx = first_h2_match.start()
@@ -151,7 +156,6 @@ def create_affiliate_html(label, html_code):
 """
 
 def create_text_link_html(label, url):
-    """本文末尾やまとめ直前に自然に挿入する高CTRテキストリンク"""
     return f"""
 <p style="margin: 25px 0; padding: 15px; background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 15px;">
     <a href="{url}" rel="nofollow" target="_blank" style="color: #166534; font-weight: bold; text-decoration: underline;">{label}</a>
@@ -243,13 +247,11 @@ def generate_seo_article():
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
-    # 1. 目次を本文内に自動生成・挿入
+    # 重複部分を自動除去して目次挿入
     body_with_toc = generate_toc_and_inject(body)
 
-    # 2. タイトルとタグの装飾
     final_title = f"{raw_title} [{theme_info['tags']}]"
 
-    # 3. 各種パーツの組み立て
     text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
@@ -283,7 +285,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（目次＆高CTRテキストリンク版）を開始します ===")
+    print("=== ブログ自動投稿システム（目次番号修正版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
