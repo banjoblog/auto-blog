@@ -152,6 +152,14 @@ WEEKLY_THEMES = {
     }
 }
 
+def add_tracking_param(url, lang="ja", weekday=0):
+    """アフィリエイトURLに動的トラッキングパラメータを付与"""
+    if not url:
+        return url
+    param = f"utm_source=autoblog&utm_medium={lang}&utm_campaign=day{weekday}"
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{param}"
+
 def generate_json_ld(title, description, lang="ja"):
     schema = {
         "@context": "https://schema.org",
@@ -184,12 +192,12 @@ def create_text_link_html(label, url):
 </div>
 """
 
-def create_global_cta_html(genre_en):
+def create_global_cta_html(genre_en, tracking_url):
     return f"""
 <div style="margin: 35px 0; padding: 25px; border: 2px solid #2563eb; background-color: #f0f9ff; text-align: center; border-radius: 12px; box-shadow: 0 6px 12px -2px rgba(37, 99, 235, 0.15);">
     <p style="font-weight: bold; font-size: 17px; margin-bottom: 12px; color: #1e3a8a;">🔥 Explore Popular Deals in {genre_en}</p>
     <p style="font-size: 14px; color: #334155; margin-bottom: 18px;">Check out top-rated recommendations and trending gear on Amazon Global.</p>
-    <a href="https://www.amazon.com" target="_blank" rel="nofollow" style="background-color: #ff9900; color: #ffffff; padding: 12px 28px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block;">Shop Best Sellers on Amazon ➔</a>
+    <a href="{tracking_url}" target="_blank" rel="nofollow" style="background-color: #ff9900; color: #ffffff; padding: 12px 28px; font-weight: bold; text-decoration: none; border-radius: 6px; display: inline-block;">Shop Best Sellers on Amazon ➔</a>
 </div>
 """
 
@@ -209,14 +217,12 @@ def create_share_box(lang="ja"):
 """
 
 def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
-    """h2に見出しIDを自動付与し、目次から内部アンカーリンクを張る機能"""
     h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
     matches = list(h2_pattern.finditer(html_body))
 
     if not matches:
         return html_body
 
-    # h2タグに id="section1", id="section2" などを自動挿入
     section_counter = 1
     def add_id_to_h2(match):
         nonlocal section_counter
@@ -227,7 +233,6 @@ def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
 
     html_body_with_ids = h2_pattern.sub(add_id_to_h2, html_body)
 
-    # 目次用リストリンクHTMLを生成
     toc_items = []
     for idx, match in enumerate(matches, start=1):
         h_text = match.group(1)
@@ -302,7 +307,7 @@ def call_gemini_api(prompt):
                 time.sleep(wait_sec)
     raise Exception("APIからの応答取得に失敗しました。")
 
-def generate_ja_article(theme_info, current_year):
+def generate_ja_article(theme_info, current_year, weekday):
     selected_trends = random.sample(theme_info['trend_keywords'], 2)
     trend_str = "・".join(selected_trends)
     
@@ -325,6 +330,10 @@ def generate_ja_article(theme_info, current_year):
 
     <h2>1. [主要な見出し1]</h2>
     <p>[具体的な解説文。適宜 <br> や <strong style="background: linear-gradient(transparent 60%, #fff9c4 60%);">蛍光ペン風太字</strong> を使用]</p>
+    <div style="margin: 20px 0; padding: 15px; background-color: #fffbebf7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+        <p style="font-weight: bold; color: #b45309; margin: 0 0 5px 0;">💡 補足ポイント</p>
+        <p style="margin: 0; font-size: 14px; color: #78350f;">[ここで役立つ補足知識やワンポイントアドバイス]</p>
+    </div>
     <ul>
         <li>[具体的なポイント1]</li>
         <li>[具体的なポイント2]</li>
@@ -382,7 +391,10 @@ def generate_ja_article(theme_info, current_year):
     print("=================================================================================\n")
 
     header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
-    text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
+    
+    tracked_text_url = add_tracking_param(theme_info['text_link_url'], lang="ja", weekday=weekday)
+    text_link_box = create_text_link_html(theme_info['text_link_label'], tracked_text_url)
+    
     body_processed = generate_toc_and_inject(body, text_link_box, lang="ja")
 
     final_title = f"{raw_title} [{theme_info['tags']}]"
@@ -410,7 +422,7 @@ def generate_ja_article(theme_info, current_year):
 
     return final_title, final_html
 
-def generate_en_article(theme_info, current_year):
+def generate_en_article(theme_info, current_year, weekday):
     selected_trends_en = random.sample(theme_info['trend_keywords_en'], 2)
     trend_str_en = ", ".join(selected_trends_en)
 
@@ -433,6 +445,10 @@ def generate_en_article(theme_info, current_year):
 
     <h2>1. [Main Section 1 Title]</h2>
     <p>[Detailed explanation using <br> and <strong style="background: linear-gradient(transparent 60%, #fff9c4 60%);">highlighted bold text</strong>]</p>
+    <div style="margin: 20px 0; padding: 15px; background-color: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
+        <p style="font-weight: bold; color: #1e40af; margin: 0 0 5px 0;">💡 Pro Tip</p>
+        <p style="margin: 0; font-size: 14px; color: #1e3a8a;">[Actionable tip or key advice for readers]</p>
+    </div>
     <ul>
         <li>[Key Takeaway 1]</li>
         <li>[Key Takeaway 2]</li>
@@ -492,9 +508,11 @@ def generate_en_article(theme_info, current_year):
     header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
     body_processed = generate_toc_and_inject(body, text_link_box=None, lang="en")
 
+    tracked_global_url = add_tracking_param("https://www.amazon.com", lang="en", weekday=weekday)
+
     final_title = f"[EN] {raw_title} [{theme_info['tags_en']}]"
     share_box = create_share_box(lang="en")
-    global_cta_box = create_global_cta_html(theme_info['genre_en'])
+    global_cta_box = create_global_cta_html(theme_info['genre_en'], tracked_global_url)
     related_box = create_related_box(theme_info['genre_en'], lang="en")
     json_ld_html = generate_json_ld(raw_title, meta_desc, lang="en")
 
@@ -536,23 +554,23 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（目次・関連記事リンク完全有効化版）を開始します ===")
+    print("=== ブログ自動投稿システム（動的トラッキング＆デザイン強化版）を開始します ===")
     try:
         weekday = datetime.now().weekday()
         theme_info = WEEKLY_THEMES.get(weekday, WEEKLY_THEMES[0])
         current_year = datetime.now().year
 
         # 1. 日本語記事の生成 ＆ 投稿
-        ja_title, ja_content = generate_ja_article(theme_info, current_year)
+        ja_title, ja_content = generate_ja_article(theme_info, current_year, weekday)
         send_to_blogger(ja_title, ja_content)
 
         time.sleep(3)
 
         # 2. 英語（グローバル）記事の生成 ＆ 投稿
-        en_title, en_content = generate_en_article(theme_info, current_year)
+        en_title, en_content = generate_en_article(theme_info, current_year, weekday)
         send_to_blogger(en_title, en_content)
 
-        print("=== 全処理（リンク機能修正完了）が正常に完了しました ===")
+        print("=== 全処理（パラメータ付与＆装飾強化）が正常に完了しました ===")
     except Exception as e:
         print(f"【致命的エラー】パイプライン実行失敗: {e}")
         raise e
