@@ -117,22 +117,19 @@ WEEKLY_THEMES = {
 }
 
 def create_text_link_html(label, url):
-    """高CTRなテキストリンクパーツ"""
     return f"""
-<div style="margin: 20px 0; padding: 14px 18px; background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">
+<div style="margin: 22px 0; padding: 14px 18px; background-color: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 4px;">
     <a href="{url}" rel="nofollow" target="_blank" style="color: #15803d; font-weight: bold; font-size: 15px; text-decoration: underline;">{label}</a>
 </div>
 """
 
 def generate_toc_and_inject(html_body, text_link_box):
-    """目次の自動生成 ＆ 2番目の見出し直後へのテキストリンク挿入"""
     h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
     matches = list(h2_pattern.finditer(html_body))
 
     if not matches:
         return html_body
 
-    # 1. 重複数字を除去して目次を組み立て
     toc_items = []
     for match in matches:
         h_text = match.group(1)
@@ -149,17 +146,14 @@ def generate_toc_and_inject(html_body, text_link_box):
 </div>
 """
 
-    # 2. 最初のH2直前に目次を挿入
     first_idx = matches[0].start()
     result_html = html_body[:first_idx] + toc_html + html_body[first_idx:]
 
-    # 3. 2番目のH2の直前にテキストアフィリエイトリンクを自然に挿入（存在する場合）
     matches_after_toc = list(h2_pattern.finditer(result_html))
     if len(matches_after_toc) >= 2:
         second_idx = matches_after_toc[1].start()
         result_html = result_html[:second_idx] + text_link_box + result_html[second_idx:]
     else:
-        # 見出しが少ない場合は末尾近くに挿入
         result_html += text_link_box
 
     return result_html
@@ -260,8 +254,6 @@ def generate_seo_article():
                     break
 
     text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
-    
-    # 目次の生成 ＆ 本文内へのテキストリンク埋め込み
     body_processed = generate_toc_and_inject(body, text_link_box)
 
     final_title = f"{raw_title} [{theme_info['tags']}]"
@@ -269,8 +261,16 @@ def generate_seo_article():
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
 
+    # Meta Descriptionを検索エンジンが取得しやすいリード文ブロックとして挿入
+    meta_lead_html = f"""
+    <!-- meta:description:{meta_desc} -->
+    <div style="background-color: #f8fafc; border-left: 4px solid #64748b; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; color: #475569; font-style: italic;">
+        <strong>この記事の要約：</strong>{meta_desc}
+    </div>
+    """
+
     final_html = f"""
-    <!-- Meta Description: {meta_desc} -->
+    {meta_lead_html}
     {body_processed}
     {related_box}
     {affiliate_box}
@@ -297,7 +297,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（本文内テキストアフィリエイト連動版）を開始します ===")
+    print("=== ブログ自動投稿システム（SEO Meta Description連動版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
