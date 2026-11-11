@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from datetime import datetime
 from google import genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -54,13 +55,12 @@ def build():
         tools = json.load(f)
 
     tool_links = []
+    generated_pages = []
 
     for i, tool in enumerate(tools):
         file_path = f"dist/tools/{tool['id']}.html"
         
-        # 既存ページが存在し、エラーでない場合は再生成せずにスキップ
         already_exists = False
-        existing_content = ""
         if os.path.exists(file_path):
             with open(file_path, "r", encoding="utf-8") as existing_file:
                 existing_html = existing_file.read()
@@ -125,6 +125,7 @@ def build():
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(page_html)
         
+        generated_pages.append(f"tools/{tool['id']}.html")
         tool_links.append(f'''
         <li style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -138,6 +139,7 @@ def build():
         </li>
         ''')
 
+    # インデックス（トップ）ページの生成
     links_html = "\n".join(tool_links)
     index_html = f"""<!DOCTYPE html>
 <html lang="ja">
@@ -169,8 +171,22 @@ def build():
 
     with open("dist/index.html", "w", encoding="utf-8") as f:
         f.write(index_html)
+
+    # SEO用 sitemap.xml の自動生成
+    today_date = datetime.now().strftime("%Y-%m-%d")
+    sitemap_urls = [f"<url><loc>https://index.html</loc><lastmod>{today_date}</lastmod></url>"]
+    for page in generated_pages:
+        sitemap_urls.append(f"<url><loc>{page}</loc><lastmod>{today_date}</lastmod></url>")
+    
+    sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{"".join(sitemap_urls)}
+</urlset>"""
+
+    with open("dist/sitemap.xml", "w", encoding="utf-8") as f:
+        f.write(sitemap_xml)
         
-    print("Build completed! Output directory: dist/")
+    print("Build completed with sitemap! Output directory: dist/")
 
 if __name__ == "__main__":
     build()
