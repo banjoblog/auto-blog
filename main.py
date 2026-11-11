@@ -261,7 +261,17 @@ def generate_seo_article():
     <h2>4. まとめ</h2>
     <p>[この記事のまとめと、読者へのアクションを促す結び文]</p>
 
-    ※文字数は全体で1500〜1800文字程度、HTMLタグ（<h2>, <p>, <ul>, <li>, <strong>, <br>）を適切に使用してください。
+    <div style="margin: 30px 0; padding: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+        <p style="font-weight: bold; color: #0f172a; margin-bottom: 12px; font-size: 15px;">📖 あわせて読みたい関連記事</p>
+        <div style="padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 8px;">
+            <p style="font-size: 14px; font-weight: bold; color: #2563eb; margin: 0;">👉 [{theme_info['genre']}に関するおすすめ関連記事タイトル1]</p>
+        </div>
+        <div style="padding: 10px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px;">
+            <p style="font-size: 14px; font-weight: bold; color: #2563eb; margin: 0;">👉 [{theme_info['genre']}に関するおすすめ関連記事タイトル2]</p>
+        </div>
+    </div>
+
+    ※文字数は全体で1600〜1900文字程度、HTMLタグ（<h2>, <p>, <ul>, <li>, <strong>, <br>）を適切に使用してください。
     """
 
     response = None
@@ -364,7 +374,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（SNS告知機能＆完全自動化版）を開始します ===")
+    print("=== ブログ自動投稿システム（あわせて読みたい枠追加版）を開始します ===")
     try:
         title, content = generate_seo_article()
         send_to_blogger(title, content)
