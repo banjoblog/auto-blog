@@ -168,12 +168,16 @@ def generate_json_ld(title, description, lang="ja"):
     return f'<script type="application/ld+json">{json.dumps(schema, ensure_ascii=False)}</script>'
 
 def create_header_image_html(keyword, alt_title):
+    """高品質高画質テーマ画像の自動バインド"""
+    keyword_encoded = urllib.parse.quote(keyword)
     random_sig = int(time.time()) % 1000
-    img_url = f"https://picsum.photos/800/400?random={random_sig}"
+    img_url = f"https://source.unsplash.com/800x400/?{keyword_encoded}"
+    # バックアップフォールバック
+    fallback_url = f"https://picsum.photos/800/400?random={random_sig}"
     
     return f"""
 <div style="margin: 20px 0 30px 0; text-align: center;">
-    <img src="{img_url}" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" />
+    <img src="{img_url}" onerror="this.onerror=null;this.src='{fallback_url}';" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" />
 </div>
 """
 
@@ -271,7 +275,6 @@ def create_related_box(genre_name, lang="ja"):
 """
 
 def call_gemini_api(prompt):
-    """Gemini API呼び出し（堅牢バックオフ機能付）"""
     for model_name in MODEL_CANDIDATES:
         for attempt in range(5):
             try:
@@ -362,9 +365,9 @@ def generate_ja_article(theme_info, current_year):
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
-    print("\n==================== 【X(Twitter) 日本語投稿テキスト】 ====================")
+    print("\n==================== 【X(Twitter) コピペ用コピペテキスト (JP)】 ====================")
     print(f"{raw_title}\n\n{sns_text}\n#{theme_info['tags'].replace(', ', ' #')}")
-    print("========================================================================\n")
+    print("=================================================================================\n")
 
     header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
     text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
@@ -470,9 +473,9 @@ def generate_en_article(theme_info, current_year):
                     raw_title = line.replace("Title:", "").strip()
                     break
 
-    print("\n==================== 【X(Twitter) English Post Text】 ====================")
+    print("\n==================== 【X(Twitter) Copy-Paste Text (EN)】 ====================")
     print(f"{raw_title}\n\n{sns_text}\n#{theme_info['tags_en'].replace(', ', ' #')}")
-    print("=========================================================================\n")
+    print("============================================================================\n")
 
     header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
     body_processed = generate_toc_and_inject(body, text_link_box=None, lang="en")
@@ -521,7 +524,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（多言語・グローバル展開対応版）を開始します ===")
+    print("=== ブログ自動投稿システム（完全無料運用＆SNS告知テキスト生成版）を開始します ===")
     try:
         weekday = datetime.now().weekday()
         theme_info = WEEKLY_THEMES.get(weekday, WEEKLY_THEMES[0])
@@ -531,14 +534,13 @@ def main():
         ja_title, ja_content = generate_ja_article(theme_info, current_year)
         send_to_blogger(ja_title, ja_content)
 
-        # 待機を入れてAPI負荷軽減
         time.sleep(3)
 
         # 2. 英語（グローバル）記事の生成 ＆ 投稿
         en_title, en_content = generate_en_article(theme_info, current_year)
         send_to_blogger(en_title, en_content)
 
-        print("=== 全処理（多言語同時投稿）が正常に完了しました ===")
+        print("=== 全処理（完全自動化＆SNS用テキストビルド）が正常に完了しました ===")
     except Exception as e:
         print(f"【致命的エラー】パイプライン実行失敗: {e}")
         raise e
