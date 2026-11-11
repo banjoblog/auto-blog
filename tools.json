@@ -1,0 +1,26 @@
+[
+  {
+    "id": "gemini-api",
+    "name": "Gemini API",
+    "category": "AI text & vision",
+    "pricing": "Free tier available",
+    "features": ["Multimodal", "Fast response", "High context limit"],
+    "target": "Developers, Content creators"
+  },
+  {
+    "id": "chatgpt",
+    "name": "ChatGPT",
+    "category": "Chat & AI Assistant",
+    "pricing": "Free / $20/mo",
+    "features": ["GPT-4o access", "DALL-E 3 integration", "Custom GPTs"],
+    "target": "General users, Professionals"
+  },
+  {
+    "id": "claude",
+    "name": "Claude",
+    "category": "AI text & Analysis",
+    "pricing": "Free / $20/mo",
+    "features": ["Long context handling", "Natural writing style", "Artifacts feature"],
+    "target": "Writers, Researchers, Developers"
+  }
+]
