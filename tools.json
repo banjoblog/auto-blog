@@ -88,5 +88,95 @@
     "features": ["Office integration", "Web browsing", "DALL-E image creation"],
     "target": "Office workers, Enterprise",
     "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "v0-dev",
+    "name": "v0 by Vercel",
+    "category": "AI Code & UI",
+    "pricing": "Free tier / $20/mo",
+    "features": ["Generative UI", "React/Tailwind output", "Instant preview"],
+    "target": "Frontend Developers, Designers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "elevenlabs",
+    "name": "ElevenLabs",
+    "category": "AI Voice & Audio",
+    "pricing": "Free tier / From $5/mo",
+    "features": ["Realistic text-to-speech", "Voice cloning", "Multi-language"],
+    "target": "Podcasters, Video creators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "canva-magic",
+    "name": "Canva Magic Studio",
+    "category": "Design & Marketing",
+    "pricing": "Free / $12/mo",
+    "features": ["Magic Write", "Image generator", "Auto-resize"],
+    "target": "Marketers, Social Media Managers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor Editor",
+    "category": "AI Code Editor",
+    "pricing": "Free / $20/mo",
+    "features": ["AI code auto-complete", "Chat with codebase", "Bug fixing"],
+    "target": "Software Engineers, Programmers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "suno-ai",
+    "name": "Suno AI",
+    "category": "AI Music Generation",
+    "pricing": "Free tier / From $10/mo",
+    "features": ["Text-to-song", "Vocal generation", "Multiple genres"],
+    "target": "Musicians, Content Creators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "gamma-app",
+    "name": "Gamma App",
+    "category": "AI Presentations & Docs",
+    "pricing": "Free tier / $10/mo",
+    "features": ["Slide generation", "Webpage creation", "Interactive cards"],
+    "target": "Presenters, Business Pros",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "luma-dream-machine",
+    "name": "Luma Dream Machine",
+    "category": "AI Video & 3D",
+    "pricing": "Free tier / Paid plans",
+    "features": ["High quality video", "Camera motion control", "Fast generation"],
+    "target": "3D Artists, Video Creators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "photoroom",
+    "name": "PhotoRoom",
+    "category": "AI Photo Editing",
+    "pricing": "Free / Pro subscription",
+    "features": ["Background removal", "Product staging", "Batch edit"],
+    "target": "E-commerce sellers, Resellers",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "kling-ai",
+    "name": "Kling AI",
+    "category": "AI Video Generation",
+    "pricing": "Free tier / Credit plans",
+    "features": ["Hyper-realistic motion", "1080p resolution", "Long duration"],
+    "target": "Filmmakers, Animators",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
+  },
+  {
+    "id": "deepl",
+    "name": "DeepL Translator",
+    "category": "AI Translation",
+    "pricing": "Free / Pro plans",
+    "features": ["Accurate translation", "Document translation", "Glossary"],
+    "target": "Translators, Global Business",
+    "affiliate_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5"
   }
 ]
