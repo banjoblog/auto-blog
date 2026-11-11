@@ -17,10 +17,9 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
-# 利用可能なモデルリスト（安定稼働モデルへ修正）
+# 推奨されている最新安定モデル
 MODEL_CANDIDATES = [
-    'gemini-2.5-flash',
-    'gemini-2.5-pro'
+    'gemini-3.8-flash'
 ]
 
 # 曜日別テーマ ＆ 提携アフィリエイト設定 (0:月曜日 ~ 6:日曜日)
@@ -267,9 +266,10 @@ def generate_seo_article():
     last_exception = None
 
     for model_name in MODEL_CANDIDATES:
-        for attempt in range(3):
+        # バックオフ付きで最大5回までトライ
+        for attempt in range(5):
             try:
-                print(f"[{model_name}] 記事生成中 (モデル: {model_name}, 試行 {attempt + 1}/3)...")
+                print(f"[{model_name}] 記事生成中 (モデル: {model_name}, 試行 {attempt + 1}/5)...")
                 response = client_genai.models.generate_content(
                     model=model_name,
                     contents=prompt,
@@ -279,8 +279,9 @@ def generate_seo_article():
                     break
             except Exception as e:
                 last_exception = e
-                print(f"[{model_name}] 一時的エラー検知: {e}")
-                time.sleep(5 * (attempt + 1))  # 5秒, 10秒, 15秒と待機時間を伸ばす
+                wait_sec = (attempt + 1) * 6  # 6秒, 12秒, 18秒, 24秒, 30秒 待機
+                print(f"[{model_name}] 一時的エラー検知 ({e}) -> {wait_sec}秒待機して再試行...")
+                time.sleep(wait_sec)
         if response and response.text:
             break
 
@@ -355,7 +356,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（モデル設定＆エラー安定化版）を開始します ===")
+    print("=== ブログ自動投稿システム（最新API＆バックオフ再試行強化版）を開始します ===")
     try:
         title, content = generate_seo_article()
         send_to_blogger(title, content)
