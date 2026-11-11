@@ -2,6 +2,7 @@ import os
 import random
 import re
 import time
+import urllib.parse
 from datetime import datetime
 from google import genai
 from sendgrid import SendGridAPIClient
@@ -27,6 +28,7 @@ WEEKLY_THEMES = {
         "genre": "最新ガジェット・家電",
         "desc": "仕事や暮らしを便利にする買ってよかったガジェットや生活家電",
         "tags": "ガジェット, 家電, 暮らし",
+        "image_keyword": "gadget,technology",
         "text_link_label": "👉 楽天市場で話題の人気ガジェット・最新家電一覧を見てみる",
         "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F",
         "affiliate_label": "＼ 楽天市場で話題の最新ガジェットをチェック ／",
@@ -40,6 +42,7 @@ WEEKLY_THEMES = {
         "genre": "節約・資産形成・ポイ活",
         "desc": "初心者向けの固定費削減、ポイ活トレンド、貯金・投資のコツ",
         "tags": "節約, ポイ活, 資産運用",
+        "image_keyword": "money,savings",
         "text_link_label": "👉 ポイント最大還元！楽天市場のポイ活・限定セール会場へ",
         "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F",
         "affiliate_label": "＼ ポイントが貯まる！楽天市場でお得にお買い物 ／",
@@ -53,6 +56,7 @@ WEEKLY_THEMES = {
         "genre": "AIツール・作業効率化",
         "desc": "業務効率化を図る最新AIツールや、時短に繋がるデジタル活用術",
         "tags": "AI, 効率化, ワークスタイル",
+        "image_keyword": "artificial-intelligence,laptop",
         "text_link_label": "👉 国内最速級！Xサーバーで爆速なWeb・AIツール環境を構築する",
         "text_link_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5",
         "affiliate_label": "＼ 高速・安定のレンタルサーバーでブログ・AI活用 ／",
@@ -66,6 +70,7 @@ WEEKLY_THEMES = {
         "genre": "在宅副業・スキルアップ",
         "desc": "未経験から始められる人気の在宅ワークや副業、おすすめ資格・学び",
         "tags": "副業, スキルアップ, 在宅ワーク",
+        "image_keyword": "workspace,freelance",
         "text_link_label": "👉 副業の第一歩！自分だけの独自ドメインを安く取得する",
         "text_link_url": "https://px.a8.net/svt/ejp?a8mat=3BHUM6+7Q1GAA+348+1BUE69",
         "affiliate_label": "＼ 自分だけの独自ドメインを取得して副業スタート ／",
@@ -79,6 +84,7 @@ WEEKLY_THEMES = {
         "genre": "ライフハック・生産性向上",
         "desc": "時間術、集中力を高める環境作り、日常のストレスを減らすテクニック",
         "tags": "ライフハック, 集中力, 習慣",
+        "image_keyword": "productivity,coffee-desk",
         "text_link_label": "👉 Amazonで人気のデスク周辺・作業改善グッズをチェックする",
         "text_link_url": "https://link.amazon/B06MY7qci",
         "affiliate_label": "＼ Amazonで生活を快適にする便利アイテムを見る ／",
@@ -92,6 +98,7 @@ WEEKLY_THEMES = {
         "genre": "おすすめ本・Kindle活用",
         "desc": "ビジネスパーソンが読むべき名著やKindleを使った読書術",
         "tags": "読書, 書評, Kindle",
+        "image_keyword": "books,reading",
         "text_link_label": "👉 最初の1冊が無料！Audibleで通勤中や家事中に「聴く読書」を体験",
         "text_link_url": "https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH",
         "affiliate_label": "＼ 聴く読書！Audible（オーディブル）を無料体験 ／",
@@ -105,6 +112,7 @@ WEEKLY_THEMES = {
         "genre": "週末のトレンド・旅行・お出かけ",
         "desc": "週末の過ごし方、話題のスポット、おすすめの旅行・ホテル情報",
         "tags": "旅行, 週末, トレンド",
+        "image_keyword": "travel,hotel",
         "text_link_label": "👉 クーポン配布中！楽天トラベルで人気のホテル・宿を探す",
         "text_link_url": "https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F",
         "affiliate_label": "＼ 楽天トラベルで週末の旅行やホテルをお得に予約 ／",
@@ -115,6 +123,19 @@ WEEKLY_THEMES = {
         """
     }
 }
+
+def create_header_image_html(keyword, alt_title):
+    """テーマに応じたアイキャッチ画像を自動生成してHTML化"""
+    encoded_keyword = urllib.parse.quote(keyword)
+    # 毎回ランダムな画像が取れるようにシード値を現在時刻から生成
+    random_sig = int(time.time()) % 1000
+    img_url = f"https://source.unsplash.com/800x450/?{encoded_keyword}&sig={random_sig}"
+    
+    return f"""
+<div style="margin: 20px 0 30px 0; text-align: center;">
+    <img src="{img_url}" alt="{alt_title}" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);" />
+</div>
+"""
 
 def create_text_link_html(label, url):
     return f"""
@@ -253,6 +274,9 @@ def generate_seo_article():
                     raw_title = line.replace("タイトル:", "").strip()
                     break
 
+    # アイキャッチ画像の挿入
+    header_img_html = create_header_image_html(theme_info.get("image_keyword", "technology"), raw_title)
+
     text_link_box = create_text_link_html(theme_info['text_link_label'], theme_info['text_link_url'])
     body_processed = generate_toc_and_inject(body, text_link_box)
 
@@ -261,7 +285,6 @@ def generate_seo_article():
     affiliate_box = create_affiliate_html(theme_info['affiliate_label'], theme_info['affiliate_html'])
     related_box = create_related_box(theme_info['genre'])
 
-    # Meta Descriptionを検索エンジンが取得しやすいリード文ブロックとして挿入
     meta_lead_html = f"""
     <!-- meta:description:{meta_desc} -->
     <div style="background-color: #f8fafc; border-left: 4px solid #64748b; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; color: #475569; font-style: italic;">
@@ -271,6 +294,7 @@ def generate_seo_article():
 
     final_html = f"""
     {meta_lead_html}
+    {header_img_html}
     {body_processed}
     {related_box}
     {affiliate_box}
@@ -297,7 +321,7 @@ def send_to_blogger(title, content):
         print(f"Blogger送信エラー: {e}")
 
 def main():
-    print("=== ブログ自動投稿システム（SEO Meta Description連動版）を開始します ===")
+    print("=== ブログ自動投稿システム（アイキャッチ画像自動埋め込み版）を開始します ===")
     title, content = generate_seo_article()
     send_to_blogger(title, content)
     print("=== 全処理が正常に完了しました ===")
