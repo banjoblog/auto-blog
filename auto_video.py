@@ -1,14 +1,17 @@
 import os
 import re
+import glob
 import json
 import time
 import asyncio
 import urllib.parse
 import requests
 import edge_tts
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
-from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ColorClip
+from moviepy.editor import VideoFileClip, AudioFileClip, ImageClip, CompositeVideoClip, ColorClip
 from moviepy.audio.AudioClip import CompositeAudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -19,6 +22,44 @@ def clean_url(u):
     if m:
         return m.group(1)
     return u.replace("[", "").replace("]", "")
+
+def get_jp_font(size):
+    font_candidates = [
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc",
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    ] + glob.glob("/usr/share/fonts/**/*Noto*CJK*", recursive=True) + glob.glob("/usr/share/fonts/**/*Gothic*", recursive=True)
+    for path in font_candidates:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+def make_subtitle_clip(text, duration, start_time):
+    W, H = 1080, 1920
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = get_jp_font(68)
+    
+    wrapped = "\n".join([text[j:j+12] for j in range(0, len(text), 12)])
+    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=16, align="center")
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    x = (W - tw) // 2
+    y = (H - th) // 2
+    
+    draw.multiline_text(
+        (x, y),
+        wrapped,
+        font=font,
+        fill=(255, 255, 255, 255),
+        stroke_width=6,
+        stroke_fill=(0, 0, 0, 255),
+        spacing=16,
+        align="center",
+    )
+    return ImageClip(np.array(img)).set_start(start_time).set_duration(duration)
 
 # ==========================================
 # 1. 環境変数・APIキーの読み込み
@@ -121,7 +162,7 @@ else:
     print("PEXELS_API_KEYが未設定のため、デフォルト背景を使用します。")
 
 # ==========================================
-# 4. 音声生成（Edge-TTS）＆ 動画合成（MoviePy）
+# 4. 音声生成（Edge-TTS）＆ 動画合成（Pillow + MoviePy）
 # ==========================================
 print("音声と字幕動画を合成中...")
 VOICE = "ja-JP-NanamiNeural"
@@ -141,24 +182,8 @@ for i, line in enumerate(script_lines):
     duration = a_clip.duration + 0.2
     audio_clips.append(a_clip.set_start(current_time))
     
-    wrapped_line = "\n".join([line[j:j+12] for j in range(0, len(line), 12)])
-    
-    txt_clip = (
-        TextClip(
-            wrapped_line,
-            fontsize=65,
-            color="white",
-            font="Noto-Sans-CJK-JP-Bold",
-            stroke_color="black",
-            stroke_width=3,
-            method="caption",
-            size=(950, None),
-        )
-        .set_position("center")
-        .set_start(current_time)
-        .set_duration(duration)
-    )
-    clips.append(txt_clip)
+    sub_clip = make_subtitle_clip(line, duration, current_time)
+    clips.append(sub_clip)
     current_time += duration
 
 total_duration = current_time
