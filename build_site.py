@@ -1,196 +1,129 @@
 import os
-import json
+import sys
 import time
-import shutil
-from datetime import datetime
 from google import genai
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-client_genai = genai.Client(api_key=GEMINI_API_KEY)
+# 1回の実行で生成する上限数（タイムアウト防止）
+MAX_BATCH_SIZE = 5
 
-os.makedirs("dist/tools", exist_ok=True)
+# 出力ディレクトリ
+OUTPUT_DIR = "dist"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Google Search Console の所有権確認ファイルを dist にコピー
-for file_name in os.listdir("."):
-    if file_name.startswith("google") and file_name.endswith(".html"):
-        shutil.copy(file_name, os.path.join("dist", file_name))
+# 20件のAIツールデータベース（一例）
+TOOLS_DB = [
+    {"slug": "chatgpt", "name": "ChatGPT", "category": "Text Generator"},
+    {"slug": "claude", "name": "Claude", "category": "Text Generator"},
+    {"slug": "gemini", "name": "Gemini", "category": "Text Generator"},
+    {"slug": "midjourney", "name": "Midjourney", "category": "Image Generator"},
+    {"slug": "stable-diffusion", "name": "Stable Diffusion", "category": "Image Generator"},
+    {"slug": "runway", "name": "Runway", "category": "Video Generator"},
+    {"slug": "sora", "name": "Sora", "category": "Video Generator"},
+    {"slug": "elevenlabs", "name": "ElevenLabs", "category": "Voice Generator"},
+    {"slug": "suno", "name": "Suno AI", "category": "Music Generator"},
+    {"slug": "udio", "name": "Udio", "category": "Music Generator"},
+    {"slug": "perplexitiy", "name": "Perplexity", "category": "Search Engine"},
+    {"slug": "v0-dev", "name": "v0.dev", "category": "Code Generator"},
+    {"slug": "cursor", "name": "Cursor", "category": "Code Editor"},
+    {"slug": "github-copilot", "name": "GitHub Copilot", "category": "Code Generator"},
+    {"slug": "notion-ai", "name": "Notion AI", "category": "Productivity"},
+    {"slug": "canva-ai", "name": "Canva AI", "category": "Design"},
+    {"slug": "jasper", "name": "Jasper AI", "category": "Copywriting"},
+    {"slug": "copy-ai", "name": "Copy.ai", "category": "Copywriting"},
+    {"slug": "descript", "name": "Descript", "category": "Video Editor"},
+    {"slug": "heygen", "name": "HeyGen", "category": "Avatar Generator"},
+]
 
-def generate_tool_content(tool_info):
-    prompt = f"""
-    あなたはWebツールの専門アナリストです。
-    以下のツールに関するSEOに強くて読みやすい詳細解説レビュー（日本語）を作成してください。
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    print("GEMINI_API_KEY が設定されていません。")
+    sys.exit(1)
 
-    【ツール情報】
-    - 名前: {tool_info['name']}
-    - カテゴリ: {tool_info['category']}
-    - 価格帯: {tool_info['pricing']}
-    - 主な機能: {', '.join(tool_info['features'])}
-    - おすすめ対象: {tool_info['target']}
+client = genai.Client(api_key=api_key)
 
-    【出力形式】
-    以下の構成でHTML本文（<div>...</div>）のみを出力してください。見出しは<h3>を使ってください。
-    - 概要とおすすめの理由
-    - 主な特徴・メリット（箇条書き）
-    - 想定される活用シーン
-    - まとめ・どんな人におすすめか
-    """
+generated_count = 0
+
+for item in TOOLS_DB:
+    file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
     
-    last_error = ""
-    for attempt in range(3):
-        try:
-            response = client_genai.models.generate_content(
-                model='gemini-3.8-flash',
-                contents=prompt
-            )
-            if response and response.text:
-                return response.text
-        except Exception as e:
-            last_error = str(e)
-            print(f"API Retry ({tool_info['name']}) attempt {attempt+1}: {e}")
-            time.sleep(5)
-            
-    return f"""
-    <div style="background: #fef2f2; border: 1px solid #fca5a5; padding: 15px; border-radius: 8px; color: #991b1b;">
-        <p><strong>⚠️ 生成エラーが発生しました（API制限など）</strong></p>
-        <p style="font-family: monospace; font-size: 13px; word-break: break-all;">{last_error}</p>
-    </div>
-    """
-
-def build():
-    with open("tools.json", "r", encoding="utf-8") as f:
-        tools = json.load(f)
-
-    tool_links = []
-    generated_pages = []
-
-    for i, tool in enumerate(tools):
-        file_path = f"dist/tools/{tool['id']}.html"
+    # すでに作成済みのページはスキップ（キャッシュ機能）
+    if os.path.exists(file_path):
+        print(f"スキップ（生成済み）: {item['name']}")
+        continue
+    
+    # 1回の実行で5件に達したら安全に終了
+    if generated_count >= MAX_BATCH_SIZE:
+        print(f"\n1回の最大生成上限（{MAX_BATCH_SIZE}件）に達したため、本日の新規生成を終了します。")
+        break
         
-        already_exists = False
-        if os.path.exists(file_path):
-            with open(file_path, "r", encoding="utf-8") as existing_file:
-                existing_html = existing_file.read()
-                if "⚠️ 生成エラー" not in existing_html:
-                    already_exists = True
-
-        if already_exists:
-            print(f"[{i+1}/{len(tools)}] Skipping {tool['name']} (Already generated)")
-        else:
-            print(f"[{i+1}/{len(tools)}] Generating page for {tool['name']}...")
-            if i > 0:
-                time.sleep(5)
-            content_html = generate_tool_content(tool)
-            
-            affiliate_url = tool.get("affiliate_url", "#")
-            cta_box_html = f"""
-            <div style="margin: 35px 0; padding: 25px; background: #eff6ff; border: 2px solid #3b82f6; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-                <h3 style="margin-top: 0; color: #1e40af; font-size: 18px;">🔥 {tool['name']} を今すぐ試してみる</h3>
-                <p style="font-size: 14px; color: #334155; margin-bottom: 20px;">最新機能やプランの詳細は公式サイトからチェックできます。</p>
-                <a href="{affiliate_url}" target="_blank" rel="nofollow" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block; font-size: 16px;">{tool['name']} 公式サイトはこちら ➔</a>
-            </div>
-            """
-            
-            page_html = f"""<!DOCTYPE html>
+    print(f"生成中 ({generated_count + 1}/{MAX_BATCH_SIZE}): {item['name']}...")
+    
+    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の詳細な紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で作成してください。"
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        content_html = response.text
+        
+        # HTMLファイルの保存
+        full_html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{tool['name']} の特徴・料金・徹底比較カタログ | AI & Web Tools Database</title>
-    <style>
-        body {{ font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 850px; margin: 0 auto; padding: 20px; line-height: 1.7; color: #1e293b; background-color: #f8fafc; }}
-        .container {{ background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
-        header {{ border-bottom: 2px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 25px; }}
-        .badge {{ background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; display: inline-block; margin-bottom: 10px; }}
-        h1 {{ margin: 5px 0 15px 0; color: #0f172a; font-size: 28px; }}
-        .meta-info {{ background: #f1f5f9; padding: 12px 18px; border-radius: 6px; font-size: 14px; color: #475569; }}
-        h3 {{ color: #1e293b; border-left: 4px solid #2563eb; padding-left: 10px; margin-top: 30px; }}
-        a {{ color: #2563eb; text-decoration: none; font-weight: bold; }}
-    </style>
+    <title>{item['name']} の使い方・特徴まとめ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
 </head>
 <body>
-    <div class="container">
-        <p><a href="../index.html">← ツール一覧に戻る</a></p>
-        <header>
-            <span class="badge">{tool['category']}</span>
-            <h1>{tool['name']}</h1>
-            <div class="meta-info">
-                💰 料金モデル: <strong>{tool['pricing']}</strong> &nbsp;|&nbsp; 🎯 主な対象: <strong>{tool['target']}</strong>
-            </div>
-        </header>
-        <main>
-            {content_html}
-            {cta_box_html}
-        </main>
-        <footer style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 15px; font-size: 12px; color: #94a3b8; text-align: center;">
-            © AI & Web Tools Database - Programmatic SEO Directory
-        </footer>
-    </div>
+    <main class="container">
+        <a href="index.html">← トップに戻る</a>
+        <h1>{item['name']}</h1>
+        <div>{content_html}</div>
+    </main>
 </body>
 </html>"""
-            
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(page_html)
-        
-        generated_pages.append(f"tools/{tool['id']}.html")
-        tool_links.append(f'''
-        <li style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; margin-bottom: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <span style="background: #eff6ff; color: #1d4ed8; font-size: 12px; padding: 2px 8px; border-radius: 4px; font-weight: bold;">{tool["category"]}</span>
-                    <h3 style="margin: 8px 0 4px 0; border: none; padding: 0; font-size: 18px;"><a href="tools/{tool["id"]}.html">{tool["name"]}</a></h3>
-                    <p style="margin: 0; font-size: 13px; color: #64748b;">料金: {tool["pricing"]} | 対象: {tool["target"]}</p>
-                </div>
-                <a href="tools/{tool["id"]}.html" style="background: #2563eb; color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px;">詳細を見る ➔</a>
-            </div>
-        </li>
-        ''')
 
-    links_html = "\n".join(tool_links)
-    index_html = f"""<!DOCTYPE html>
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(full_html)
+            
+        generated_count += 1
+        time.sleep(5)  # レートリミット回避の待機
+        
+    except Exception as e:
+        print(f"APIエラーが発生しました（制限到達の可能性）: {e}")
+        print("ここまでに生成されたページを保存して正常終了します。")
+        break
+
+# トップページ (index.html) の一覧更新
+index_items_html = ""
+for item in TOOLS_DB:
+    file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
+    status = "✅ 公開中" if os.path.exists(file_path) else "⏳ 順次生成中"
+    link = f"<a href='{item['slug']}.html'>{item['name']}</a>" if os.path.exists(file_path) else item['name']
+    index_items_html += f"<li>{link} - {item['category']} ({status})</li>\n"
+
+index_html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI & Webツール徹底比較データベース</title>
-    <style>
-        body {{ font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 850px; margin: 0 auto; padding: 20px; line-height: 1.6; color: #1e293b; background-color: #f8fafc; }}
-        header {{ background: #ffffff; padding: 30px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }}
-        h1 {{ margin: 0 0 10px 0; color: #0f172a; font-size: 26px; }}
-        ul {{ list-style-type: none; padding: 0; }}
-        a {{ text-decoration: none; }}
-    </style>
+    <title>AI Tool Database</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
 </head>
 <body>
-    <header>
-        <h1>🚀 最新AI & Webツール比較データベース</h1>
-        <p style="margin: 0; color: #64748b; font-size: 15px;">注目の最新AIツールやWebアシスタントの料金・特徴をプログラムで自動収集・比較しています。</p>
-    </header>
-    <main>
-        <h2 style="font-size: 20px; color: #334155; margin-bottom: 15px;">掲載ツール一覧 ({len(tools)}件)</h2>
+    <main class="container">
+        <h1>AI Tool Database (pSEO)</h1>
+        <p>自動生成された最新AIツール一覧</p>
         <ul>
-            {links_html}
+            {index_items_html}
         </ul>
     </main>
 </body>
 </html>"""
 
-    with open("dist/index.html", "w", encoding="utf-8") as f:
-        f.write(index_html)
+with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
+    f.write(index_html)
 
-    today_date = datetime.now().strftime("%Y-%m-%d")
-    sitemap_urls = [f"<url><loc>https://index.html</loc><lastmod>{today_date}</lastmod></url>"]
-    for page in generated_pages:
-        sitemap_urls.append(f"<url><loc>{page}</loc><lastmod>{today_date}</lastmod></url>")
-    
-    sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-{"".join(sitemap_urls)}
-</urlset>"""
-
-    with open("dist/sitemap.xml", "w", encoding="utf-8") as f:
-        f.write(sitemap_xml)
-        
-    print("Build completed with sitemap! Output directory: dist/")
-
-if __name__ == "__main__":
-    build()
+print(f"ビルド完了: 新規作成 {generated_count} 件")
