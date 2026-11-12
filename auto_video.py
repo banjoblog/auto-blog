@@ -8,14 +8,13 @@ import requests
 import edge_tts
 from google import genai
 from google.genai import types
-from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip
+from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip, ColorClip
 from moviepy.audio.AudioClip import CompositeAudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 def clean_url(u):
-    # 万が一マークダウンリンクが混入しても純粋なURLだけを抽出する安全装置
     m = re.search(r'\((https?://[^\)]+)\)', u)
     if m:
         return m.group(1)
@@ -89,28 +88,37 @@ script_lines = data["script"]
 print(f"生成完了: {title} (検索ワード: {search_keyword})")
 
 # ==========================================
-# 3. 背景動画のダウンロード（Pexels API）
+# 3. 背景動画のダウンロード（Pexels API + 自動フォールバック）
 # ==========================================
 print("背景動画をダウンロード中...")
 bg_video_path = "bg_video.mp4"
-headers = {"Authorization": PEXELS_API_KEY}
-encoded_kw = urllib.parse.quote(search_keyword)
-PEXELS_BASE = clean_url("https://" + "api." + "pexels." + "com/videos/search")
-pexels_url = f"{PEXELS_BASE}?query={encoded_kw}&orientation=portrait&size=medium&per_page=5"
-res = requests.get(pexels_url, headers=headers).json()
+has_bg_video = False
 
-videos = res.get("videos", [])
-if not videos:
-    fallback_url = f"{PEXELS_BASE}?query=nature&orientation=portrait&size=medium&per_page=5"
-    res = requests.get(fallback_url, headers=headers).json()
-    videos = res.get("videos", [])
-
-video_files = videos[0]["video_files"]
-hd_files = [f for f in video_files if f.get("width", 0) >= 720 and f.get("file_type") == "video/mp4"]
-download_url = hd_files[0]["link"] if hd_files else video_files[0]["link"]
-
-with open(bg_video_path, "wb") as f:
-    f.write(requests.get(download_url).content)
+if PEXELS_API_KEY:
+    headers = {"Authorization": PEXELS_API_KEY}
+    encoded_kw = urllib.parse.quote(search_keyword)
+    PEXELS_BASE = clean_url("https://" + "api." + "pexels." + "com/videos/search")
+    
+    for query_url in [
+        f"{PEXELS_BASE}?query={encoded_kw}&orientation=portrait&per_page=5",
+        f"{PEXELS_BASE}?query=nature&per_page=5",
+    ]:
+        r = requests.get(query_url, headers=headers)
+        if r.status_code != 200:
+            print(f"Pexels API警告 (Status {r.status_code}): {r.text}")
+            break
+        videos = r.json().get("videos", [])
+        if videos:
+            video_files = videos[0]["video_files"]
+            hd_files = [f for f in video_files if f.get("width", 0) >= 720 and f.get("file_type") == "video/mp4"]
+            download_url = hd_files[0]["link"] if hd_files else video_files[0]["link"]
+            with open(bg_video_path, "wb") as f:
+                f.write(requests.get(download_url).content)
+            has_bg_video = True
+            print("Pexelsから背景動画を取得しました。")
+            break
+else:
+    print("PEXELS_API_KEYが未設定のため、デフォルト背景を使用します。")
 
 # ==========================================
 # 4. 音声生成（Edge-TTS）＆ 動画合成（MoviePy）
@@ -133,7 +141,6 @@ for i, line in enumerate(script_lines):
     duration = a_clip.duration + 0.2
     audio_clips.append(a_clip.set_start(current_time))
     
-    # 改行処理（12文字ごとに改行）
     wrapped_line = "\n".join([line[j:j+12] for j in range(0, len(line), 12)])
     
     txt_clip = (
@@ -157,17 +164,20 @@ for i, line in enumerate(script_lines):
 total_duration = current_time
 final_audio = CompositeAudioClip(audio_clips)
 
-bg_clip = VideoFileClip(bg_video_path).without_audio()
-if bg_clip.duration < total_duration:
-    bg_clip = bg_clip.loop(duration=total_duration)
-else:
-    bg_clip = bg_clip.subclip(0, total_duration)
+if has_bg_video:
+    bg_clip = VideoFileClip(bg_video_path).without_audio()
+    if bg_clip.duration < total_duration:
+        bg_clip = bg_clip.loop(duration=total_duration)
+    else:
+        bg_clip = bg_clip.subclip(0, total_duration)
 
-bg_clip = bg_clip.resize(height=1920)
-if bg_clip.w > 1080:
-    bg_clip = bg_clip.crop(x_center=bg_clip.w / 2, width=1080)
+    bg_clip = bg_clip.resize(height=1920)
+    if bg_clip.w > 1080:
+        bg_clip = bg_clip.crop(x_center=bg_clip.w / 2, width=1080)
+    else:
+        bg_clip = bg_clip.resize(width=1080)
 else:
-    bg_clip = bg_clip.resize(width=1080)
+    bg_clip = ColorClip(size=(1080, 1920), color=(20, 28, 48), duration=total_duration)
 
 output_video = "output_short.mp4"
 final_video = CompositeVideoClip([bg_clip] + clips).set_audio(final_audio)
