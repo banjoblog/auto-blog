@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
 from moviepy.editor import VideoFileClip, AudioFileClip, ImageClip, VideoClip, CompositeVideoClip, ColorClip
-from moviepy.audio.AudioClip import CompositeAudioClip
+from moviepy.audio.AudioClip import CompositeAudioClip, AudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -49,12 +49,10 @@ def make_animated_bg(total_duration):
     ]
     c1, c2 = random.choice(palettes)
     
-    # ベースグラデーション画像を事前生成
     y_grid = np.linspace(0, 1, H)[:, None, None]
     grad = (np.array(c1) * (1 - y_grid) + np.array(c2) * y_grid).astype(np.uint8)
     base_bg = np.broadcast_to(grad, (H, W, 3)).copy()
     
-    # 浮遊する光のパーティクル（25個）
     rng = np.random.default_rng(42)
     particles = []
     for _ in range(25):
@@ -142,6 +140,29 @@ def make_subtitle_clip(text, duration, start_time):
         align="center",
     )
     return ImageClip(np.array(img)).set_start(start_time).set_duration(duration)
+
+def make_bgm_clip(total_duration):
+    chords = [
+        [261.63, 329.63, 392.00, 493.88],  # Cmaj7
+        [220.00, 261.63, 329.63, 392.00],  # Am7
+        [174.61, 220.00, 261.63, 329.63],  # Fmaj7
+        [196.00, 246.94, 293.66, 349.23],  # G7
+    ]
+
+    def make_frame(t):
+        t_arr = np.atleast_1d(t)
+        idx = ((t_arr // 4.0).astype(int)) % len(chords)
+        out = np.zeros_like(t_arr, dtype=np.float64)
+        for c_i, freqs in enumerate(chords):
+            mask = (idx == c_i)
+            if np.any(mask):
+                t_sub = t_arr[mask]
+                wave = sum(np.sin(2 * np.pi * f * t_sub) for f in freqs) / len(freqs)
+                out[mask] = wave * 0.055
+        stereo = np.column_stack([out, out])
+        return stereo[0] if np.isscalar(t) else stereo
+
+    return AudioClip(make_frame, duration=total_duration, fps=44100)
 
 # ==========================================
 # 1. 環境変数・APIキーの読み込み
@@ -247,9 +268,9 @@ if PEXELS_API_KEY:
             break
 
 # ==========================================
-# 4. 音声生成（Edge-TTS）＆ 動画合成（Pillow + MoviePy）
+# 4. 音声生成（Edge-TTS）＆ BGM・動画合成（Pillow + MoviePy）
 # ==========================================
-print("音声と字幕動画を合成中...")
+print("音声とBGM・字幕動画を合成中...")
 VOICE = "ja-JP-NanamiNeural"
 clips = []
 audio_clips = []
@@ -272,7 +293,8 @@ for i, line in enumerate(script_lines):
     current_time += duration
 
 total_duration = current_time
-final_audio = CompositeAudioClip(audio_clips)
+bgm_clip = make_bgm_clip(total_duration)
+final_audio = CompositeAudioClip(audio_clips + [bgm_clip])
 
 if has_bg_video:
     bg_clip = VideoFileClip(bg_video_path).without_audio()
@@ -331,9 +353,6 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
     except Exception as e:
         print(f"YouTube アップロードエラー: {e}")
 
-# ==========================================
-# 6. TikTok へアップロード（Inbox/下書き送信）
-# ==========================================
 # ==========================================
 # 6. TikTok へアップロード（Inbox/下書き送信）
 # ==========================================
