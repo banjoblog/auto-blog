@@ -334,3 +334,65 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
 # ==========================================
 # 6. TikTok へアップロード（Inbox/下書き送信）
 # ==========================================
+# ==========================================
+# 6. TikTok へアップロード（Inbox/下書き送信）
+# ==========================================
+if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
+    try:
+        print("TikTok アクセストークンを更新中...")
+        TIKTOK_TOKEN_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/oauth/token/")
+        token_res = requests.post(
+            TIKTOK_TOKEN_URL,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+            data={
+                "client_key": TIKTOK_CLIENT_KEY,
+                "client_secret": TIKTOK_CLIENT_SECRET,
+                "grant_type": "refresh_token",
+                "refresh_token": TIKTOK_REFRESH_TOKEN,
+            },
+        ).json()
+
+        access_token = token_res.get("access_token")
+        if not access_token:
+            raise RuntimeError(f"TikTok トークン取得失敗: {token_res}")
+
+        video_size = os.path.getsize(output_video)
+        print(f"TikTok 動画アップロード初期化中... (サイズ: {video_size} bytes)")
+
+        TIKTOK_INIT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
+        init_res = requests.post(
+            TIKTOK_INIT_URL,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "source_info": {
+                    "source": "FILE_UPLOAD",
+                    "video_size": video_size,
+                    "chunk_size": video_size,
+                    "total_chunk_count": 1,
+                }
+            },
+        ).json()
+
+        upload_url = init_res.get("data", {}).get("upload_url")
+        publish_id = init_res.get("data", {}).get("publish_id")
+        if not upload_url:
+            raise RuntimeError(f"TikTok 初期化失敗: {init_res}")
+
+        print("TikTok へ動画データを送信中...")
+        with open(output_video, "rb") as vf:
+            video_bytes = vf.read()
+
+        put_res = requests.put(
+            upload_url,
+            headers={
+                "Content-Range": f"bytes 0-{video_size - 1}/{video_size}",
+                "Content-Type": "video/mp4",
+            },
+            data=video_bytes,
+        )
+        print(f"TikTok アップロード完了！ (Status: {put_res.status_code}, Publish ID: {publish_id})")
+    except Exception as e:
+        print(f"TikTok アップロードエラー: {e}")
