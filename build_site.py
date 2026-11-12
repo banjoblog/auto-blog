@@ -18,7 +18,7 @@ if not api_key:
     sys.exit(1)
 
 client = genai.Client(api_key=api_key)
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-3.8-pro"
 
 # ==========================================
 # 1. 毎日の自動ブログ記事生成
