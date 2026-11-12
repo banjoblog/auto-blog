@@ -29,14 +29,7 @@ blog_filepath = os.path.join(BLOG_DIR, blog_filename)
 
 if not os.path.exists(blog_filepath):
     print(f"本日のブログ記事を生成中 ({today_str})...")
-    blog_prompt = f"""
-    今日は {today_str} です。
-    最新のAIトレンド、業務効率化、または最新テクノロジーに関する読み応えのあるブログ記事を1本作成してください。
-    以下のルールに従ってください：
-    - 1行目に「TITLE: 記事のタイトル」の形式で魅力的なタイトルを出力する
-    - 2行目以降に、SEOを意識した見出し（h2, h3）と本文（p, ul, li）をHTML形式で記述する（htmlタグやbodyタグは不要）
-    - 日本語で分かりやすく、実用的で親しみやすいトーンで書く
-    """
+    blog_prompt = f"今日は {today_str} です。最新のAIトレンドや活用法に関するSEO最適化されたブログ記事を日本語で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, h3, pタグを使用した本文を出力してください。"
     try:
         response = client.models.generate_content(
             model=MODEL_NAME,
@@ -54,7 +47,7 @@ if not os.path.exists(blog_filepath):
                 
         body_html = "\n".join(body_lines)
         
-        full_blog_html = f"""<!DOCTYPE html>
+        blog_template = """<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -67,14 +60,16 @@ if not os.path.exists(blog_filepath):
         <nav><a href="../index.html">← トップページに戻る</a></nav>
         <article>
             <header>
-                <small>{today_str}</small>
+                <small>{date}</small>
                 <h1>{title}</h1>
             </header>
-            <div>{body_html}</div>
+            <div>{body}</div>
         </article>
     </main>
 </body>
 </html>"""
+        
+        full_blog_html = blog_template.format(title=title, date=today_str, body=body_html)
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
         print(f"ブログ記事を作成しました: {title}")
@@ -110,6 +105,23 @@ TOOLS_DB = [
     {"slug": "heygen", "name": "HeyGen", "category": "Avatar Generator"},
 ]
 
+tool_template = """<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{name} の使い方・特徴まとめ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+    <main class="container">
+        <nav><a href="index.html">← トップページに戻る</a></nav>
+        <h1>{name}</h1>
+        <div>{body}</div>
+    </main>
+</body>
+</html>"""
+
 generated_tools = 0
 for item in TOOLS_DB:
     file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
@@ -126,9 +138,73 @@ for item in TOOLS_DB:
             model=MODEL_NAME,
             contents=prompt,
         )
-        full_html = f"""<!DOCTYPE html>
+        full_html = tool_template.format(name=item['name'], body=response.text)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(full_html)
+        generated_tools += 1
+        time.sleep(5)
+    except Exception as e:
+        print(f"ツール生成エラー: {e}")
+        break
+
+# ==========================================
+# 3. トップページ (index.html) の更新
+# ==========================================
+blog_list_html = ""
+blog_files = sorted([f for f in os.listdir(BLOG_DIR) if f.endswith(".html")], reverse=True)
+for bf in blog_files:
+    date_label = bf.replace("post-", "").replace(".html", "")
+    with open(os.path.join(BLOG_DIR, bf), "r", encoding="utf-8") as f:
+        content = f.read()
+        start = content.find("<title>") + 7
+        end = content.find("</title>")
+        b_title = content[start:end] if start > 6 and end > start else bf
+    blog_list_html += f"<li><strong>[{date_label}]</strong> <a href='blog/{bf}'>{b_title}</a></li>\n"
+
+if not blog_list_html:
+    blog_list_html = "<li>まだ記事がありません。</li>"
+
+index_items_html = ""
+for item in TOOLS_DB:
+    file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
+    status = "✅ 公開中" if os.path.exists(file_path) else "⏳ 順次生成中"
+    link = f"<a href='{item['slug']}.html'>{item['name']}</a>" if os.path.exists(file_path) else item['name']
+    index_items_html += f"<li>{link} - {item['category']} ({status})</li>\n"
+
+index_template = """<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{item['
+    <title>AI Tech Blog & Tool Database</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+    <main class="container">
+        <h1>AI Tech Blog & Tool Database</h1>
+        
+        <section>
+            <h2>📝 最新の自動生成ブログ記事</h2>
+            <ul>
+                {blogs}
+            </ul>
+        </section>
+
+        <hr>
+
+        <section>
+            <h2>🛠️ AIツールデータベース</h2>
+            <ul>
+                {tools}
+            </ul>
+        </section>
+    </main>
+</body>
+</html>"""
+
+index_html = index_template.format(blogs=blog_list_html, tools=index_items_html)
+
+with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
+    f.write(index_html)
+
+print("すべてのビルド処理が正常に完了しました。")
