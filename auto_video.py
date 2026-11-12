@@ -2,7 +2,9 @@ import os
 import re
 import glob
 import json
+import math
 import time
+import random
 import asyncio
 import urllib.parse
 import requests
@@ -11,7 +13,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
-from moviepy.editor import VideoFileClip, AudioFileClip, ImageClip, CompositeVideoClip, ColorClip
+from moviepy.editor import VideoFileClip, AudioFileClip, ImageClip, VideoClip, CompositeVideoClip, ColorClip
 from moviepy.audio.AudioClip import CompositeAudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -37,26 +39,106 @@ def get_jp_font(size):
                 continue
     return ImageFont.load_default()
 
+def make_animated_bg(total_duration):
+    W, H = 1080, 1920
+    palettes = [
+        ((15, 23, 42), (49, 46, 129)),   # ディープネイビー × インディゴ
+        ((20, 30, 48), (36, 59, 85)),    # ロイヤルダークブルー
+        ((28, 25, 23), (87, 37, 45)),    # ダーククリムゾン
+        ((17, 24, 39), (19, 78, 74)),    # ダークティール
+    ]
+    c1, c2 = random.choice(palettes)
+    
+    # ベースグラデーション画像を事前生成
+    y_grid = np.linspace(0, 1, H)[:, None, None]
+    grad = (np.array(c1) * (1 - y_grid) + np.array(c2) * y_grid).astype(np.uint8)
+    base_bg = np.broadcast_to(grad, (H, W, 3)).copy()
+    
+    # 浮遊する光のパーティクル（25個）
+    rng = np.random.default_rng(42)
+    particles = []
+    for _ in range(25):
+        particles.append({
+            "x": rng.uniform(0, W),
+            "y": rng.uniform(0, H),
+            "r": rng.uniform(8, 36),
+            "speed_y": rng.uniform(30, 90),
+            "phase": rng.uniform(0, 2 * math.pi),
+            "alpha": rng.uniform(0.08, 0.25),
+        })
+
+    def make_frame(t):
+        frame = base_bg.copy()
+        img = Image.fromarray(frame).convert("RGBA")
+        overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        for p in particles:
+            px = (p["x"] + math.sin(t * 1.2 + p["phase"]) * 40) % W
+            py = (p["y"] - t * p["speed_y"]) % H
+            r = p["r"]
+            a = int(255 * p["alpha"])
+            draw.ellipse([px - r, py - r, px + r, py + r], fill=(255, 255, 255, a))
+        out = Image.alpha_composite(img, overlay).convert("RGB")
+        return np.array(out)
+
+    return VideoClip(make_frame, duration=total_duration)
+
+def make_header_clip(title_text, total_duration):
+    W, H = 1080, 1920
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = get_jp_font(56)
+    
+    wrapped = "\n".join([title_text[j:j+14] for j in range(0, len(title_text), 14)])
+    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=12, align="center")
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    
+    box_pad_x, box_pad_y = 50, 28
+    box_w = min(W - 80, tw + box_pad_x * 2)
+    box_h = th + box_pad_y * 2
+    box_x = (W - box_w) // 2
+    box_y = 220
+    
+    draw.rounded_rectangle(
+        [box_x, box_y, box_x + box_w, box_y + box_h],
+        radius=24,
+        fill=(255, 215, 0, 245),
+        outline=(0, 0, 0, 255),
+        width=6,
+    )
+    
+    tx = (W - tw) // 2
+    ty = box_y + box_pad_y
+    draw.multiline_text(
+        (tx, ty),
+        wrapped,
+        font=font,
+        fill=(15, 15, 15, 255),
+        spacing=12,
+        align="center",
+    )
+    return ImageClip(np.array(img)).set_start(0).set_duration(total_duration)
+
 def make_subtitle_clip(text, duration, start_time):
     W, H = 1080, 1920
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = get_jp_font(68)
+    font = get_jp_font(66)
     
-    wrapped = "\n".join([text[j:j+12] for j in range(0, len(text), 12)])
-    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=16, align="center")
+    wrapped = "\n".join([text[j:j+13] for j in range(0, len(text), 13)])
+    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=18, align="center")
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     x = (W - tw) // 2
-    y = (H - th) // 2
+    y = (H - th) // 2 + 80
     
     draw.multiline_text(
         (x, y),
         wrapped,
         font=font,
         fill=(255, 255, 255, 255),
-        stroke_width=6,
+        stroke_width=8,
         stroke_fill=(0, 0, 0, 255),
-        spacing=16,
+        spacing=18,
         align="center",
     )
     return ImageClip(np.array(img)).set_start(start_time).set_duration(duration)
@@ -67,12 +149,10 @@ def make_subtitle_clip(text, duration, start_time):
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
 
-# YouTube用
 YT_CLIENT_ID = os.environ.get("YT_CLIENT_ID")
 YT_CLIENT_SECRET = os.environ.get("YT_CLIENT_SECRET")
 YT_REFRESH_TOKEN = os.environ.get("YT_REFRESH_TOKEN")
 
-# TikTok用
 TIKTOK_CLIENT_KEY = os.environ.get("TIKTOK_CLIENT_KEY")
 TIKTOK_CLIENT_SECRET = os.environ.get("TIKTOK_CLIENT_SECRET")
 TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
@@ -80,22 +160,27 @@ TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ==========================================
-# 2. 雑学台本の生成（混雑・制限回避リトライ付）
+# 2. 中身の濃い雑学台本の生成
 # ==========================================
-print("収益化向け雑学動画台本を生成中...")
+print("高クオリティ雑学動画台本を生成中...")
 prompt = """
-YouTube ShortsとTikTok向けの、思わず最後まで見てしまう面白い雑学・豆知識の台本を1つ作成してください。
-必ず以下のJSON形式のみで出力してください（マークダウンの ```json などは不要です）。
+YouTube ShortsとTikTok向けの、知的好奇心をくすぐる具体的な雑学・豆知識の台本を1つ作成してください。
+
+【絶対に守るルール】
+1. 抽象的な表現は禁止。必ず「具体的な生物名・地名・歴史上の人物名・企業名・数値」を台本の中に明記すること。（例：「世界で最も危険な鳥」なら必ず「ヒクイドリ」と名前を出し、時速50kmや12cmの爪などの具体例を入れる）
+2. 視聴者が「へぇ〜！」と納得するオチまで完結させること。
+3. 必ず以下のJSON形式のみで出力すること（マークダウン記法は不要）。
 
 {
-  "title": "動画のキャッチーなタイトル（30文字以内・ハッシュタグなし）",
-  "description": "動画の説明文と関連ハッシュタグ3〜5個（#雑学 #豆知識 など）",
-  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: space, ocean, brain, money, nature）",
+  "title": "画面上部に常時表示する短い見出し（18文字以内・ハッシュタグなし）",
+  "description": "動画の説明文と関連ハッシュタグ4〜5個（#雑学 #豆知識 など）",
+  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: bird, ocean, space, money, forest, city）",
   "script": [
-    "1文目（視聴者を引き込むフック・疑問形など、15〜20文字程度）",
-    "2文目（意外な事実・解説1、20〜25文字程度）",
-    "3文目（詳しい理由・解説2、20〜25文字程度）",
-    "4文目（まとめ・オチ、15〜20文字程度）"
+    "1文目：視聴者を引き込む問いかけやフック（20〜28文字）",
+    "2文目：結論となる具体的な名前・答えの提示（22〜32文字）",
+    "3文目：なぜそうなのかの驚きの理由・具体例1（25〜35文字）",
+    "4文目：さらに深い裏話や数値などの具体例2（25〜35文字）",
+    "5文目：印象に残るまとめ・一言オチ（20〜28文字）"
   ]
 }
 """
@@ -127,22 +212,24 @@ description = data["description"]
 search_keyword = data["search_keyword"]
 script_lines = data["script"]
 print(f"生成完了: {title} (検索ワード: {search_keyword})")
+for idx, s in enumerate(script_lines, 1):
+    print(f"  台本{idx}: {s}")
 
 # ==========================================
-# 3. 背景動画のダウンロード（Pexels API + 自動フォールバック）
+# 3. 背景動画の取得（Pexels または 自動アニメーション背景）
 # ==========================================
-print("背景動画をダウンロード中...")
 bg_video_path = "bg_video.mp4"
 has_bg_video = False
 
 if PEXELS_API_KEY:
+    print("Pexelsから背景動画を検索中...")
     headers = {"Authorization": PEXELS_API_KEY}
     encoded_kw = urllib.parse.quote(search_keyword)
     PEXELS_BASE = clean_url("https://" + "api." + "pexels." + "com/videos/search")
     
     for query_url in [
         f"{PEXELS_BASE}?query={encoded_kw}&orientation=portrait&per_page=5",
-        f"{PEXELS_BASE}?query=nature&per_page=5",
+        f"{PEXELS_BASE}?query=nature&orientation=portrait&per_page=5",
     ]:
         r = requests.get(query_url, headers=headers)
         if r.status_code != 200:
@@ -158,8 +245,6 @@ if PEXELS_API_KEY:
             has_bg_video = True
             print("Pexelsから背景動画を取得しました。")
             break
-else:
-    print("PEXELS_API_KEYが未設定のため、デフォルト背景を使用します。")
 
 # ==========================================
 # 4. 音声生成（Edge-TTS）＆ 動画合成（Pillow + MoviePy）
@@ -171,7 +256,7 @@ audio_clips = []
 current_time = 0.0
 
 async def generate_tts(text, filename):
-    communicate = edge_tts.Communicate(text, VOICE, rate="+15%")
+    communicate = edge_tts.Communicate(text, VOICE, rate="+18%")
     await communicate.save(filename)
 
 for i, line in enumerate(script_lines):
@@ -179,7 +264,7 @@ for i, line in enumerate(script_lines):
     asyncio.run(generate_tts(line, audio_file))
     
     a_clip = AudioFileClip(audio_file)
-    duration = a_clip.duration + 0.2
+    duration = a_clip.duration + 0.15
     audio_clips.append(a_clip.set_start(current_time))
     
     sub_clip = make_subtitle_clip(line, duration, current_time)
@@ -201,11 +286,17 @@ if has_bg_video:
         bg_clip = bg_clip.crop(x_center=bg_clip.w / 2, width=1080)
     else:
         bg_clip = bg_clip.resize(width=1080)
+    
+    dark_overlay = ColorClip(size=(1080, 1920), color=(0, 0, 0), duration=total_duration).set_opacity(0.35)
+    base_layers = [bg_clip, dark_overlay]
 else:
-    bg_clip = ColorClip(size=(1080, 1920), color=(20, 28, 48), duration=total_duration)
+    print("グラデーション＋パーティクルアニメーション背景を生成中...")
+    base_layers = [make_animated_bg(total_duration)]
+
+header_clip = make_header_clip(title, total_duration)
 
 output_video = "output_short.mp4"
-final_video = CompositeVideoClip([bg_clip] + clips).set_audio(final_audio)
+final_video = CompositeVideoClip(base_layers + [header_clip] + clips).set_audio(final_audio)
 final_video.write_videofile(output_video, fps=30, codec="libx264", audio_codec="aac")
 
 # ==========================================
@@ -243,62 +334,3 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
 # ==========================================
 # 6. TikTok へアップロード（Inbox/下書き送信）
 # ==========================================
-if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
-    try:
-        print("TikTok アクセストークンを更新中...")
-        TIKTOK_TOKEN_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/oauth/token/")
-        token_res = requests.post(
-            TIKTOK_TOKEN_URL,
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-            data={
-                "client_key": TIKTOK_CLIENT_KEY,
-                "client_secret": TIKTOK_CLIENT_SECRET,
-                "grant_type": "refresh_token",
-                "refresh_token": TIKTOK_REFRESH_TOKEN,
-            },
-        ).json()
-
-        access_token = token_res.get("access_token")
-        if not access_token:
-            raise RuntimeError(f"TikTok トークン取得失敗: {token_res}")
-
-        video_size = os.path.getsize(output_video)
-        print(f"TikTok 動画アップロード初期化中... (サイズ: {video_size} bytes)")
-
-        TIKTOK_INIT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
-        init_res = requests.post(
-            TIKTOK_INIT_URL,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "source_info": {
-                    "source": "FILE_UPLOAD",
-                    "video_size": video_size,
-                    "chunk_size": video_size,
-                    "total_chunk_count": 1,
-                }
-            },
-        ).json()
-
-        upload_url = init_res.get("data", {}).get("upload_url")
-        publish_id = init_res.get("data", {}).get("publish_id")
-        if not upload_url:
-            raise RuntimeError(f"TikTok 初期化失敗: {init_res}")
-
-        print("TikTok へ動画データを送信中...")
-        with open(output_video, "rb") as vf:
-            video_bytes = vf.read()
-
-        put_res = requests.put(
-            upload_url,
-            headers={
-                "Content-Range": f"bytes 0-{video_size - 1}/{video_size}",
-                "Content-Type": "video/mp4",
-            },
-            data=video_bytes,
-        )
-        print(f"TikTok アップロード完了！ (Status: {put_res.status_code}, Publish ID: {publish_id})")
-    except Exception as e:
-        print(f"TikTok アップロードエラー: {e}")
