@@ -60,13 +60,9 @@ print("動画をレンダリング中...")
 audio_clip = AudioFileClip(audio_file)
 duration = audio_clip.duration
 
-# 縦型背景（1080x1920、視認性の高いダークネイビー）
 bg_clip = ColorClip(size=(1080, 1920), color=(15, 23, 42), duration=duration)
-
-# 日本語対応フォントを指定
 FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
 
-# タイトル表示（上部・目を引くイエロー）
 title_clip = TextClip(
     title,
     fontsize=56,
@@ -76,7 +72,6 @@ title_clip = TextClip(
     method='caption'
 ).set_position(('center', 220)).set_duration(duration)
 
-# 本文テロップ表示（中央・白文字）
 body_clip = TextClip(
     script_text,
     fontsize=46,
