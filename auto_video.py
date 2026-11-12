@@ -2,6 +2,7 @@ import os
 import json
 import time
 import asyncio
+import urllib.parse
 import requests
 import edge_tts
 from google import genai
@@ -29,10 +30,9 @@ TIKTOK_CLIENT_SECRET = os.environ.get("TIKTOK_CLIENT_SECRET")
 TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = "gemini-3.8-flash"
 
 # ==========================================
-# 2. 雑学台本の生成（503混雑エラー自動リトライ付）
+# 2. 雑学台本の生成（混雑・制限回避リトライ付）
 # ==========================================
 print("収益化向け雑学動画台本を生成中...")
 prompt = """
@@ -42,7 +42,7 @@ YouTube ShortsとTikTok向けの、思わず最後まで見てしまう面白い
 {
   "title": "動画のキャッチーなタイトル（30文字以内・ハッシュタグなし）",
   "description": "動画の説明文と関連ハッシュタグ3〜5個（#雑学 #豆知識 など）",
-  "search_keyword": "背景動画検索用のシンプルな英単語1〜2語（例: space, ocean, brain, money, nature）",
+  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: space, ocean, brain, money, nature）",
   "script": [
     "1文目（視聴者を引き込むフック・疑問形など、15〜20文字程度）",
     "2文目（意外な事実・解説1、20〜25文字程度）",
@@ -53,7 +53,7 @@ YouTube ShortsとTikTok向けの、思わず最後まで見てしまう面白い
 """
 
 response = None
-for model in [MODEL_NAME, "gemini-3.5-flash-lite"]:
+for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash"]:
     for attempt in range(3):
         try:
             response = client.models.generate_content(
@@ -65,8 +65,8 @@ for model in [MODEL_NAME, "gemini-3.5-flash-lite"]:
             )
             break
         except Exception as e:
-            print(f"{model} エラー、15秒待機してリトライ ({attempt+1}/3): {e}")
-            time.sleep(15)
+            print(f"{model} エラー、10秒待機してリトライ ({attempt+1}/3): {e}")
+            time.sleep(10)
     if response:
         break
 
@@ -86,12 +86,14 @@ print(f"生成完了: {title} (検索ワード: {search_keyword})")
 print("背景動画をダウンロード中...")
 bg_video_path = "bg_video.mp4"
 headers = {"Authorization": PEXELS_API_KEY}
-pexels_url = f"[https://api.pexels.com/videos/search?query=](https://api.pexels.com/videos/search?query=){search_keyword}&orientation=portrait&size=medium&per_page=5"
+encoded_kw = urllib.parse.quote(search_keyword)
+pexels_url = "[https://api.pexels.com/videos/search?query=](https://api.pexels.com/videos/search?query=)" + encoded_kw + "&orientation=portrait&size=medium&per_page=5"
 res = requests.get(pexels_url, headers=headers).json()
 
 videos = res.get("videos", [])
 if not videos:
-    res = requests.get("[https://api.pexels.com/videos/search?query=nature&orientation=portrait&size=medium&per_page=5](https://api.pexels.com/videos/search?query=nature&orientation=portrait&size=medium&per_page=5)", headers=headers).json()
+    fallback_url = "[https://api.pexels.com/videos/search?query=nature&orientation=portrait&size=medium&per_page=5](https://api.pexels.com/videos/search?query=nature&orientation=portrait&size=medium&per_page=5)"
+    res = requests.get(fallback_url, headers=headers).json()
     videos = res.get("videos", [])
 
 video_files = videos[0]["video_files"]
