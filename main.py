@@ -19,6 +19,7 @@ client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
 # 推奨されている最新安定モデル
 MODEL_CANDIDATES = [
+    'gemini-3.8-flash-lite',
     'gemini-3.8-flash'
 ]
 
