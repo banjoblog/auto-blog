@@ -29,13 +29,17 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install google-genai edge-tts "moviepy<2.0" google-auth google-auth-oauthlib google-api-python-client pillow
+          pip install google-genai edge-tts "moviepy<2.0" google-auth google-auth-oauthlib google-api-python-client pillow requests
 
-      - name: Generate and Upload YouTube Shorts
+      - name: Generate and Upload YouTube Shorts & TikTok
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          TIKTOK_CLIENT_KEY: ${{ secrets.TIKTOK_CLIENT_KEY }}
+          TIKTOK_CLIENT_SECRET: ${{ secrets.TIKTOK_CLIENT_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
         run: |
           python auto_video.py
