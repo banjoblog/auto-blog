@@ -15,22 +15,23 @@ if not api_key:
 client = genai.Client(api_key=api_key)
 MODEL_NAME = "gemini-3.8-flash"
 
-# 1. GeminiでShorts用ショート台本を作成
-print("動画台本を生成中...")
+# 1. Geminiで収益化＆高視聴維持率を狙う雑学台本を作成
+print("収益化向け雑学動画台本を生成中...")
 prompt = """
-YouTube Shorts用の30秒ショート動画の台本を作成してください。
-テーマ：おすすめ最新AIツール紹介（例：ChatGPT, Claude, Geminiなどから1つ厳選）
+YouTube Shortsで爆発的に再生され、幅広い層（大人〜子ども）に受けやすい「衝撃の雑学・トリビア」の30秒台本を作成してください。
+思わず最後まで見てしまうようなフック（「実は…」「知ってた？」等）を最初に持ってきてください。
+
 以下のフォーマットのみを出力してください（余計な挨拶や解説は不要）：
 
-TITLE: [動画タイトル（30文字以内）]
-SCRIPT: [ナレーション用テキスト。句読点を適切に入れ、余計な記号やカギかっこを使わずに30〜40秒程度で読める日本語文章]
+TITLE: [思わずタップしたくなるタイトル（25文字以内、感嘆符など活用）]
+SCRIPT: [ナレーション用テキスト。最初の3秒で惹きつけ、30秒程度で読める日本語文章。句読点を適切に入れ、記号やカッコは使わないこと]
 """
 
 response = client.models.generate_content(model=MODEL_NAME, contents=prompt)
 text_output = response.text.strip().split("\n")
 
-title = "おすすめAIツール紹介"
-script_text = "最新のAIツールを活用して作業効率を大幅にアップさせましょう。"
+title = "知ると誰かに話したくなる雑学"
+script_text = "実は日常の中に隠された驚きの事実があります。知っていましたか？"
 
 for line in text_output:
     if line.startswith("TITLE:"):
@@ -43,7 +44,7 @@ print(f"台本: {script_text}")
 
 # 2. 音声合成 (edge-tts で日本語ナレーション生成)
 audio_file = "voice.mp3"
-VOICE = "ja-JP-NanamiNeural"  # 自然な女性音声
+VOICE = "ja-JP-NanamiNeural"
 
 async def generate_speech():
     communicate = edge_tts.Communicate(script_text, VOICE)
@@ -57,23 +58,23 @@ print("動画をレンダリング中...")
 audio_clip = AudioFileClip(audio_file)
 duration = audio_clip.duration
 
-# 縦型背景（1080x1920、ダークブルー背景）
-bg_clip = ColorClip(size=(1080, 1920), color=(18, 24, 38), duration=duration)
+# 縦型背景（1080x1920、視認性の高いダークネイビー）
+bg_clip = ColorClip(size=(1080, 1920), color=(15, 23, 42), duration=duration)
 
-# タイトル表示（上部）
+# タイトル表示（上部・目を引くイエロー）
 title_clip = TextClip(
     title,
-    fontsize=50,
-    color='gold',
+    fontsize=52,
+    color='#FACC15',
     font='DejaVu-Sans-Bold',
     size=(950, None),
     method='caption'
-).set_position(('center', 200)).set_duration(duration)
+).set_position(('center', 180)).set_duration(duration)
 
-# 本文テロップ表示（中央）
+# 本文テロップ表示（中央・白文字）
 body_clip = TextClip(
     script_text,
-    fontsize=42,
+    fontsize=44,
     color='white',
     font='DejaVu-Sans-Bold',
     size=(900, None),
