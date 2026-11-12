@@ -125,10 +125,10 @@ body = {
         "title": f"{title} #Shorts #雑学 #トリビア",
         "description": f"{script_text}\n\n#Shorts #雑学 #豆知識 #トリビア",
         "tags": ["Shorts", "雑学", "トリビア", "豆知識"],
-        "categoryId": "24"  # エンターテイメント
+        "categoryId": "24"
     },
     "status": {
-        "privacyStatus": "public",  # 公開設定（最初はテストしたい場合は "private" に変更可）
+        "privacyStatus": "public",
         "selfDeclaredMadeForKids": False
     }
 }
