@@ -1,16 +1,92 @@
 import os
 import sys
 import time
+from datetime import datetime
 from google import genai
 
-# 1回の実行で生成する上限数（タイムアウト防止）
-MAX_BATCH_SIZE = 5
+# 1回の実行で生成するAIツールページの上限数
+MAX_TOOL_BATCH = 5
 
-# 出力ディレクトリ
 OUTPUT_DIR = "dist"
+BLOG_DIR = os.path.join(OUTPUT_DIR, "blog")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+os.makedirs(BLOG_DIR, exist_ok=True)
 
-# 20件のAIツールデータベース（一例）
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    print("GEMINI_API_KEY が設定されていません。")
+    sys.exit(1)
+
+client = genai.Client(api_key=api_key)
+MODEL_NAME = "gemini-3.8-flash"
+
+# ==========================================
+# 1. 毎日の自動ブログ記事生成
+# ==========================================
+today_str = datetime.now().strftime("%Y-%m-%d")
+blog_filename = f"post-{today_str}.html"
+blog_filepath = os.path.join(BLOG_DIR, blog_filename)
+
+if not os.path.exists(blog_filepath):
+    print(f"本日のブログ記事を生成中 ({today_str})...")
+    blog_prompt = f"""
+    今日は {today_str} です。
+    最新のAIトレンド、業務効率化、または最新テクノロジーに関する読み応えのあるブログ記事を1本作成してください。
+    以下のルールに従ってください：
+    - 1行目に「TITLE: 記事のタイトル」の形式で魅力的なタイトルを出力する
+    - 2行目以降に、SEOを意識した見出し（h2, h3）と本文（p, ul, li）をHTML形式で記述する（htmlタグやbodyタグは不要）
+    - 日本語で分かりやすく、実用的で親しみやすいトーンで書く
+    """
+    try:
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=blog_prompt,
+        )
+        lines = response.text.strip().split("\n")
+        title = f"{today_str} のAI・テクノロジー最新情報"
+        body_lines = []
+        
+        for line in lines:
+            if line.startswith("TITLE:"):
+                title = line.replace("TITLE:", "").strip()
+            else:
+                body_lines.append(line)
+                
+        body_html = "\n".join(body_lines)
+        
+        full_blog_html = f"""<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{title}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+    <main class="container">
+        <nav><a href="../index.html">← トップページに戻る</a></nav>
+        <article>
+            <header>
+                <small>{today_str}</small>
+                <h1>{title}</h1>
+            </header>
+            <div>{body_html}</div>
+        </article>
+    </main>
+</body>
+</html>"""
+        with open(blog_filepath, "w", encoding="utf-8") as f:
+            f.write(full_blog_html)
+        print(f"ブログ記事を作成しました: {title}")
+        time.sleep(5)
+    except Exception as e:
+        print(f"ブログ生成エラー: {e}")
+else:
+    print(f"本日のブログ記事（{blog_filename}）はすでに作成済みです。")
+
+# ==========================================
+# 2. AIツールデータベース（pSEO）の生成
+# ==========================================
 TOOLS_DB = [
     {"slug": "chatgpt", "name": "ChatGPT", "category": "Text Generator"},
     {"slug": "claude", "name": "Claude", "category": "Text Generator"},
@@ -22,7 +98,7 @@ TOOLS_DB = [
     {"slug": "elevenlabs", "name": "ElevenLabs", "category": "Voice Generator"},
     {"slug": "suno", "name": "Suno AI", "category": "Music Generator"},
     {"slug": "udio", "name": "Udio", "category": "Music Generator"},
-    {"slug": "perplexitiy", "name": "Perplexity", "category": "Search Engine"},
+    {"slug": "perplexity", "name": "Perplexity", "category": "Search Engine"},
     {"slug": "v0-dev", "name": "v0.dev", "category": "Code Generator"},
     {"slug": "cursor", "name": "Cursor", "category": "Code Editor"},
     {"slug": "github-copilot", "name": "GitHub Copilot", "category": "Code Generator"},
@@ -34,96 +110,25 @@ TOOLS_DB = [
     {"slug": "heygen", "name": "HeyGen", "category": "Avatar Generator"},
 ]
 
-api_key = os.environ.get("GEMINI_API_KEY")
-if not api_key:
-    print("GEMINI_API_KEY が設定されていません。")
-    sys.exit(1)
-
-client = genai.Client(api_key=api_key)
-
-generated_count = 0
-
+generated_tools = 0
 for item in TOOLS_DB:
     file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
-    
-    # すでに作成済みのページはスキップ（キャッシュ機能）
     if os.path.exists(file_path):
-        print(f"スキップ（生成済み）: {item['name']}")
         continue
-    
-    # 1回の実行で5件に達したら安全に終了
-    if generated_count >= MAX_BATCH_SIZE:
-        print(f"\n1回の最大生成上限（{MAX_BATCH_SIZE}件）に達したため、本日の新規生成を終了します。")
+    if generated_tools >= MAX_TOOL_BATCH:
         break
         
-    print(f"生成中 ({generated_count + 1}/{MAX_BATCH_SIZE}): {item['name']}...")
-    
+    print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...")
     prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の詳細な紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で作成してください。"
     
     try:
         response = client.models.generate_content(
-            model="gemini-3.8-flash",
+            model=MODEL_NAME,
             contents=prompt,
         )
-        content_html = response.text
-        
-        # HTMLファイルの保存
         full_html = f"""<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{item['name']} の使い方・特徴まとめ</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-</head>
-<body>
-    <main class="container">
-        <a href="index.html">← トップに戻る</a>
-        <h1>{item['name']}</h1>
-        <div>{content_html}</div>
-    </main>
-</body>
-</html>"""
-
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(full_html)
-            
-        generated_count += 1
-        time.sleep(5)  # レートリミット回避の待機
-        
-    except Exception as e:
-        print(f"APIエラーが発生しました（制限到達の可能性）: {e}")
-        print("ここまでに生成されたページを保存して正常終了します。")
-        break
-
-# トップページ (index.html) の一覧更新
-index_items_html = ""
-for item in TOOLS_DB:
-    file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
-    status = "✅ 公開中" if os.path.exists(file_path) else "⏳ 順次生成中"
-    link = f"<a href='{item['slug']}.html'>{item['name']}</a>" if os.path.exists(file_path) else item['name']
-    index_items_html += f"<li>{link} - {item['category']} ({status})</li>\n"
-
-index_html = f"""<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Tool Database</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-</head>
-<body>
-    <main class="container">
-        <h1>AI Tool Database (pSEO)</h1>
-        <p>自動生成された最新AIツール一覧</p>
-        <ul>
-            {index_items_html}
-        </ul>
-    </main>
-</body>
-</html>"""
-
-with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
-    f.write(index_html)
-
-print(f"ビルド完了: 新規作成 {generated_count} 件")
+    <title>{item['
