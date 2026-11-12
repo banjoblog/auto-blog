@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import time
 import asyncio
@@ -12,6 +13,13 @@ from moviepy.audio.AudioClip import CompositeAudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+
+def clean_url(u):
+    # 万が一マークダウンリンクが混入しても純粋なURLだけを抽出する安全装置
+    m = re.search(r'\((https?://[^\)]+)\)', u)
+    if m:
+        return m.group(1)
+    return u.replace("[", "").replace("]", "")
 
 # ==========================================
 # 1. 環境変数・APIキーの読み込み
@@ -87,7 +95,7 @@ print("背景動画をダウンロード中...")
 bg_video_path = "bg_video.mp4"
 headers = {"Authorization": PEXELS_API_KEY}
 encoded_kw = urllib.parse.quote(search_keyword)
-PEXELS_BASE = "https://" + "[api.pexels.com/videos/search](https://api.pexels.com/videos/search)"
+PEXELS_BASE = clean_url("https://" + "api." + "pexels." + "com/videos/search")
 pexels_url = f"{PEXELS_BASE}?query={encoded_kw}&orientation=portrait&size=medium&per_page=5"
 res = requests.get(pexels_url, headers=headers).json()
 
@@ -171,10 +179,11 @@ final_video.write_videofile(output_video, fps=30, codec="libx264", audio_codec="
 if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
     try:
         print("YouTube Shorts へアップロード中...")
+        TOKEN_URI = clean_url("https://" + "oauth2." + "googleapis." + "com/token")
         creds = Credentials(
             token=None,
             refresh_token=YT_REFRESH_TOKEN,
-            token_uri="https://" + "[oauth2.googleapis.com/token](https://oauth2.googleapis.com/token)",
+            token_uri=TOKEN_URI,
             client_id=YT_CLIENT_ID,
             client_secret=YT_CLIENT_SECRET,
         )
@@ -202,7 +211,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
 if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
     try:
         print("TikTok アクセストークンを更新中...")
-        TIKTOK_TOKEN_URL = "https://" + "[open.tiktokapis.com/v2/oauth/token/](https://open.tiktokapis.com/v2/oauth/token/)"
+        TIKTOK_TOKEN_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/oauth/token/")
         token_res = requests.post(
             TIKTOK_TOKEN_URL,
             headers={"Content-Type": "application/x-www-form-urlencoded"},
@@ -221,7 +230,7 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
         video_size = os.path.getsize(output_video)
         print(f"TikTok 動画アップロード初期化中... (サイズ: {video_size} bytes)")
 
-        TIKTOK_INIT_URL = "https://" + "[open.tiktokapis.com/v2/post/publish/inbox/video/init/](https://open.tiktokapis.com/v2/post/publish/inbox/video/init/)"
+        TIKTOK_INIT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
         init_res = requests.post(
             TIKTOK_INIT_URL,
             headers={
