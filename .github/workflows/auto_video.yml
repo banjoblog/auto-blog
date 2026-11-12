@@ -4,11 +4,12 @@ on:
   schedule:
     # 毎日 日本時間 18:00（UTC 09:00）に自動実行
     - cron: '0 9 * * *'
-  workflow_dispatch: # 手動テスト実行ボタンを有効化
+  workflow_dispatch:
 
 jobs:
   build-and-upload:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -19,21 +20,18 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install system dependencies (FFmpeg and Japanese fonts)
+      - name: Install FFmpeg, ImageMagick, and Japanese fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-noto-cjk
+          sudo apt-get install -y ffmpeg imagemagick fonts-noto-cjk
+          sudo sed -i 's/rights="none" pattern="@\*"/rights="read|write" pattern="@*"/' /etc/ImageMagick-6/policy.xml || true
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install google-genai edge-tts moviepy google-auth google-auth-oauthlib google-api-python-client pillow
-          fi
+          pip install google-genai edge-tts "moviepy<2.0" google-auth google-auth-oauthlib google-api-python-client pillow
 
-      - name: Run video generation and YouTube upload script
+      - name: Generate and Upload YouTube Shorts
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
