@@ -7,6 +7,7 @@ import edge_tts
 from google import genai
 from google.genai import types
 from moviepy.editor import VideoFileClip, AudioFileClip, TextClip, CompositeVideoClip
+from moviepy.audio.AudioClip import CompositeAudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
@@ -28,7 +29,7 @@ TIKTOK_CLIENT_SECRET = os.environ.get("TIKTOK_CLIENT_SECRET")
 TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.8-flash"
 
 # ==========================================
 # 2. 雑学台本の生成（503混雑エラー自動リトライ付）
@@ -52,7 +53,7 @@ YouTube ShortsとTikTok向けの、思わず最後まで見てしまう面白い
 """
 
 response = None
-for model in [MODEL_NAME, "gemini-2.5-flash-lite", "gemini-2.0-flash"]:
+for model in [MODEL_NAME, "gemini-3.5-flash-lite"]:
     for attempt in range(3):
         try:
             response = client.models.generate_content(
@@ -64,13 +65,13 @@ for model in [MODEL_NAME, "gemini-2.5-flash-lite", "gemini-2.0-flash"]:
             )
             break
         except Exception as e:
-            print(f"{model} 混雑中、15秒待機してリトライ ({attempt+1}/3): {e}")
+            print(f"{model} エラー、15秒待機してリトライ ({attempt+1}/3): {e}")
             time.sleep(15)
     if response:
         break
 
 if not response:
-    raise RuntimeError("すべてのGeminiモデルが混雑しているため台本生成に失敗しました。")
+    raise RuntimeError("すべてのGeminiモデルでの台本生成に失敗しました。")
 
 data = json.loads(response.text)
 title = data["title"]
@@ -143,8 +144,6 @@ for i, line in enumerate(script_lines):
     current_time += duration
 
 total_duration = current_time
-
-from moviepy.audio.AudioClip import CompositeAudioClip
 final_audio = CompositeAudioClip(audio_clips)
 
 bg_clip = VideoFileClip(bg_video_path).without_audio()
