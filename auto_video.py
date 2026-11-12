@@ -1,21 +1,23 @@
 import os
 import sys
-import random
 import asyncio
 import edge_tts
 from google import genai
 from moviepy.editor import TextClip, CompositeVideoClip, AudioFileClip, ColorClip
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
 
-# Gemini API設定
+# 1. Gemini API設定
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     print("GEMINI_API_KEY が設定されていません。")
     sys.exit(1)
 
 client = genai.Client(api_key=api_key)
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-2.5-flash"
 
-# 1. Geminiで収益化＆高視聴維持率を狙う雑学台本を作成
 print("収益化向け雑学動画台本を生成中...")
 prompt = """
 YouTube Shortsで爆発的に再生され、幅広い層（大人〜子ども）に受けやすい「衝撃の雑学・トリビア」の30秒台本を作成してください。
@@ -61,29 +63,30 @@ duration = audio_clip.duration
 # 縦型背景（1080x1920、視認性の高いダークネイビー）
 bg_clip = ColorClip(size=(1080, 1920), color=(15, 23, 42), duration=duration)
 
+# 日本語対応フォントを指定
+FONT_PATH = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"
+
 # タイトル表示（上部・目を引くイエロー）
 title_clip = TextClip(
     title,
-    fontsize=52,
+    fontsize=56,
     color='#FACC15',
-    font='DejaVu-Sans-Bold',
+    font=FONT_PATH,
     size=(950, None),
     method='caption'
-).set_position(('center', 180)).set_duration(duration)
+).set_position(('center', 220)).set_duration(duration)
 
 # 本文テロップ表示（中央・白文字）
 body_clip = TextClip(
     script_text,
-    fontsize=44,
+    fontsize=46,
     color='white',
-    font='DejaVu-Sans-Bold',
+    font=FONT_PATH,
     size=(900, None),
     method='caption'
 ).set_position(('center', 'center')).set_duration(duration)
 
-# 映像・音声を合成
-final_clip = CompositeVideoClip([bg_clip, title_clip, body_clip])
-final_clip = final_clip.set_audio(audio_clip)
+final_clip = CompositeVideoClip([bg_clip, title_clip, body_clip]).set_audio(audio_clip)
 
 output_video = "output_shorts.mp4"
 final_clip.write_videofile(
@@ -93,5 +96,45 @@ final_clip.write_videofile(
     audio_codec='aac',
     logger=None
 )
-
 print(f"動画作成完了: {output_video}")
+
+# 4. YouTube Data API v3 で自動アップロード
+print("YouTubeへアップロード中...")
+yt_client_id = os.environ.get("YOUTUBE_CLIENT_ID")
+yt_client_secret = os.environ.get("YOUTUBE_CLIENT_SECRET")
+yt_refresh_token = os.environ.get("YOUTUBE_REFRESH_TOKEN")
+
+if not all([yt_client_id, yt_client_secret, yt_refresh_token]):
+    print("YouTubeの認証情報（Secrets）が不足しています。")
+    sys.exit(1)
+
+creds = Credentials(
+    token=None,
+    refresh_token=yt_refresh_token,
+    token_uri="https://oauth2.googleapis.com/token",
+    client_id=yt_client_id,
+    client_secret=yt_client_secret,
+    scopes=["https://www.googleapis.com/auth/youtube.upload"]
+)
+creds.refresh(Request())
+
+youtube = build("youtube", "v3", credentials=creds)
+
+body = {
+    "snippet": {
+        "title": f"{title} #Shorts #雑学 #トリビア",
+        "description": f"{script_text}\n\n#Shorts #雑学 #豆知識 #トリビア",
+        "tags": ["Shorts", "雑学", "トリビア", "豆知識"],
+        "categoryId": "24"  # エンターテイメント
+    },
+    "status": {
+        "privacyStatus": "public",  # 公開設定（最初はテストしたい場合は "private" に変更可）
+        "selfDeclaredMadeForKids": False
+    }
+}
+
+media = MediaFileUpload(output_video, chunksize=-1, resumable=True, mimetype="video/mp4")
+request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+response_upload = request.execute()
+
+print(f"アップロード完了！動画ID: {response_upload.get('id')}")
