@@ -16,7 +16,7 @@ if not api_key:
     sys.exit(1)
 
 client = genai.Client(api_key=api_key)
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.8-flash"
 
 print("収益化向け雑学動画台本を生成中...")
 prompt = """
