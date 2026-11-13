@@ -354,7 +354,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
         print(f"YouTube アップロードエラー: {e}")
 
 # ==========================================
-# 6. TikTok へアップロード（Inbox/下書き送信）
+# 6. TikTok へアップロード（Direct Post 優先 ＋ ステータス確認）
 # ==========================================
 if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
     try:
@@ -378,22 +378,50 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
         video_size = os.path.getsize(output_video)
         print(f"TikTok 動画アップロード初期化中... (サイズ: {video_size} bytes)")
 
-        TIKTOK_INIT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
+        # まずはプロフィール直接投稿（Direct Post）を試行（未審査アプリは SELF_ONLY で投稿可能）
+        TIKTOK_DIRECT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/video/init/")
         init_res = requests.post(
-            TIKTOK_INIT_URL,
+            TIKTOK_DIRECT_URL,
             headers={
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json",
             },
             json={
+                "post_info": {
+                    "title": f"{title} {description}"[:150],
+                    "privacy_level": "SELF_ONLY", # 本番審査通過後は "PUBLIC_TO_EVERYONE" に変更
+                    "disable_duet": False,
+                    "disable_comment": False,
+                    "disable_stitch": False,
+                },
                 "source_info": {
                     "source": "FILE_UPLOAD",
                     "video_size": video_size,
                     "chunk_size": video_size,
                     "total_chunk_count": 1,
-                }
+                },
             },
         ).json()
+
+        # Direct Post が未有効の場合は従来の Inbox（受信トレイ）送信にフォールバック
+        if not init_res.get("data", {}).get("upload_url"):
+            print(f"Direct Post スキップ ({init_res.get('error', {}).get('message', '')}) -> Inbox送信へ切替")
+            TIKTOK_INBOX_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
+            init_res = requests.post(
+                TIKTOK_INBOX_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "source_info": {
+                        "source": "FILE_UPLOAD",
+                        "video_size": video_size,
+                        "chunk_size": video_size,
+                        "total_chunk_count": 1,
+                    }
+                },
+            ).json()
 
         upload_url = init_res.get("data", {}).get("upload_url")
         publish_id = init_res.get("data", {}).get("publish_id")
@@ -412,6 +440,20 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
             },
             data=video_bytes,
         )
-        print(f"TikTok アップロード完了！ (Status: {put_res.status_code}, Publish ID: {publish_id})")
+        print(f"TikTok データ送信完了 (Status: {put_res.status_code}, Publish ID: {publish_id})")
+
+        # 5秒待ってTikTokサーバー側の処理ステータス（成功/失敗理由）を確認
+        time.sleep(5)
+        STATUS_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/status/fetch/")
+        status_res = requests.post(
+            STATUS_URL,
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json",
+            },
+            json={"publish_id": publish_id},
+        ).json()
+        print(f"TikTok 処理ステータス確認結果: {status_res}")
+
     except Exception as e:
         print(f"TikTok アップロードエラー: {e}")
