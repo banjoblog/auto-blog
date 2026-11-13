@@ -22,7 +22,7 @@ client = genai.Client(
     api_key=api_key,
     http_options=types.HttpOptions(timeout=60000),  # 60秒でタイムアウト
 )
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-3.8-flash"
 
 # ==========================================
 # 1. 毎日の自動ブログ記事生成
