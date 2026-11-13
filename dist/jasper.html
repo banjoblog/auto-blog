@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jasper AI の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.06rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 12px 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+  }
+  /* PRセクション */
+  .pr-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .pr-section-title {
+    font-size: 1.2rem;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .pr-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .pr-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .pr-card h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .pr-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .pr-banner {
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .pr-wide-banner {
+    margin-top: 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-wide-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Copywriting</span> &gt; <span>Jasper AI</span></div>
+        <article class="article-card">
+            <div class="pr-notice">※当ページはプロモーション（アフィリエイト広告）を含みます。</div>
+            <header class="article-header">
+                <span class="badge">Copywriting</span>
+                <h1>Jasper AI の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">マーケティング・広告文に特化したビジネス向けAI</div>
+            </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Jasper AI 公式サイトをチェックする</strong>
+            <span>マーケティング・広告文に特化したビジネス向けAI</span>
+        </div>
+        <a href="https://www.jasper.ai/" target="_blank" rel="noopener" class="cta-btn">Jasper AI 公式サイトへ →</a>
+    </div>
+    
+
+            <div class="article-body">
+                <!-- BODY_START -->
+                <h2>Jasper AIとは？（概要と注目される理由）</h2>
+<p>Jasper AIは、マーケティングや広告活動に特化して開発されたAIライティングプラットフォームです。単なる文章生成AIとは一線を画し、ビジネスシーンでの「売れる文章」を作成することに最適化されています。GPT-4をはじめとする高度な言語モデルをベースにしつつ、企業独自のトーン＆マナー（ブランドボイス）を学習できる点が最大の特徴です。</p>
+<p>多くの企業がJasper AIに注目する理由は、その精度の高さと業務効率化への貢献度にあります。ブログ記事からSNS広告、メールマガジン、さらにはSEO対策済みのコンテンツ作成までを一貫してサポートし、クリエイターが抱える「ゼロから文章を考える負担」を劇的に軽減します。マーケティングの成果を最大化したいプロフェッショナルにとって、不可欠なツールと言えるでしょう。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+  <li><strong>ブランドボイス機能：</strong>自社のWebサイトURLや過去のドキュメントを読み込ませることで、企業の「らしさ」を反映した文章を生成可能です。</li>
+  <li><strong>豊富なテンプレート：</strong>AIDAの法則やPASフレームワークなど、マーケティングの型に基づいた50種類以上のテンプレートが用意されています。</li>
+  <li><strong>SEO最適化機能：</strong>Surfer SEOとのシームレスな連携により、検索順位上位を狙えるキーワード構成案を自動で反映できます。</li>
+  <li><strong>チャット＆コマンド形式：</strong>自然言語で細かな修正指示やスタイルの変更をリアルタイムで行えます。</li>
+  <li><strong>多言語対応：</strong>日本語を含む30カ国以上の言語に対応しており、グローバル展開するビジネスでもシームレスに運用可能です。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+  <tr>
+    <th>プラン名</th>
+    <th>特徴</th>
+    <th>想定ユーザー</th>
+  </tr>
+  <tr>
+    <td>Creator</td>
+    <td>個人や小規模チーム向け。ブランドボイス1件。</td>
+    <td>フリーランス・少人数</td>
+  </tr>
+  <tr>
+    <td>Pro</td>
+    <td>チームでの共同作業、高度な分析機能。</td>
+    <td>マーケティングチーム</td>
+  </tr>
+  <tr>
+    <td>Business</td>
+    <td>APIアクセス、専用サポート、カスタム要件。</td>
+    <td>大企業向け</td>
+  </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大のメリットは、高い再現性と品質です。一般的なAIツールと比較して「マーケティング的な煽り」や「読者の心を掴む構成」に強いため、修正の手間が大幅に省けます。また、チームで利用する際のブランド管理が徹底されており、誰が作成しても同じトーン＆マナーを維持できる点は非常に強力です。</p>
+<h3>デメリット</h3>
+<p>一方で、月額費用が比較的高額である点が挙げられます。個人利用にはややコスト負担が大きいでしょう。また、最新のニュース情報を検索して引用する機能はGoogle Geminiなどと比較するとやや限定的であり、情報収集よりも「文章作成・校正」に比重が置かれたツールであることを理解しておく必要があります。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Jasper AIは、特にSNSの広告文やブログの導入文作成で威力を発揮します。以下は、新製品のプロモーション文章を作成するためのプロンプト例です。</p>
+<blockquote>
+  # プロンプト入力例
+  「以下の製品の特徴を元に、Facebook広告用のキャッチコピーを3パターン作成してください。トーンはプロフェッショナルかつ親しみやすく。
+  【製品名】高性能ワイヤレスイヤホン
+  【ターゲット】20代〜30代の通勤・通学中の方
+  【主要機能】ノイズキャンセリング、24時間バッテリー、防水設計」
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q: 日本語の文章作成は自然ですか？</strong><br>
+A: はい、非常に自然です。以前は翻訳調になることもありましたが、最新のモデルでは日本語特有の言い回しや文脈を深く理解しており、そのまま実務に使えるレベルの文章を出力します。</p>
+
+<p><strong>Q: 無料で試すことはできますか？</strong><br>
+A: Jasper AIでは期間限定の無料トライアルを提供している場合があります。まずは公式サイトからアカウントを作成し、実際の操作感や自社のターゲットに合う文章が生成できるかを確認することをお勧めします。</p>
+                <!-- BODY_END -->
+            </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Jasper AI 公式サイトをチェックする</strong>
+            <span>マーケティング・広告文に特化したビジネス向けAI</span>
+        </div>
+        <a href="https://www.jasper.ai/" target="_blank" rel="noopener" class="cta-btn">Jasper AI 公式サイトへ →</a>
+    </div>
+    
+
+            
+    <section class="pr-section">
+        <h3 class="pr-section-title">📢 おすすめサービス・関連リソース（PR）</h3>
+        <div class="pr-grid">
+            
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🚀 AIで作ったWebサイト・ブログを公開するなら「エックスサーバー」</h4>
+                <p>国内シェアNo.1の高速レンタルサーバー。AIで生成した記事やアプリを安定・高速に公開できます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
+<img border="0" width="350" height="240" alt="" src="https://www21.a8.net/svt/bgt?aid=200707134459&wid=001&eno=01&mid=s00000001642001066000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🎧 AI・ビジネス最新トレンドを「耳」からインプット（Audible）</h4>
+                <p>作業中や移動時間に最新のAI解説書・ビジネス書を聴き放題で効率学習。無料体験から気軽に始められます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=261107111593&wid=003&eno=01&mid=s00000027126001006000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>📦 Amazon でAI関連書籍・PC周辺機器・ガジェットをチェック</h4>
+                <p>プロンプトエンジニアリング入門書やクリエイター向けデバイスをAmazonで検索。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://www.amazon.co.jp?&linkCode=ll2&tag=ntklog0c-22&linkId=c7895fa240d32728460bada24cc0eeb6&ref_=as_li_ss_tl" target="_blank" rel="nofollow sponsored noopener" class="cta-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Amazon.co.jp で詳細を見る →</a>
+            </div>
+        </div>
+        
+        </div>
+        <div class="pr-wide-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7K348I+CO4+15THJ5" rel="nofollow">
+<img border="0" width="468" height="60" alt="" src="https://www25.a8.net/svt/bgt?aid=200707134457&wid=001&eno=01&mid=s00000001642007024000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=3BHUM6+7K348I+CO4+15THJ5" alt="">
+        </div>
+    </section>
+    
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Copywriting</span>
+                    <span class='status-pill status-pending'>準備中</span>
+                </div>
+                <h3>Copy.ai</h3>
+                <p>セールスコピーやSNS投稿案を量産するライティングAI</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>
