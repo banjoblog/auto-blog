@@ -18,7 +18,7 @@ if not api_key:
     sys.exit(1)
 
 client = genai.Client(api_key=api_key)
-MODEL_NAME = "gemini-3.8-pro"
+MODEL_NAME = "gemini-3.8-flash"
 
 # ==========================================
 # 1. 毎日の自動ブログ記事生成
@@ -85,7 +85,7 @@ else:
 TOOLS_DB = [
     {"slug": "chatgpt", "name": "ChatGPT", "category": "Text Generator"},
     {"slug": "claude", "name": "Claude", "category": "Text Generator"},
-    {"slug": "gemini", "name": "Gemini", "category": "Text Generator"},
+    {"slug": "", "name": "", "category": "Text Generator"},
     {"slug": "midjourney", "name": "Midjourney", "category": "Image Generator"},
     {"slug": "stable-diffusion", "name": "Stable Diffusion", "category": "Image Generator"},
     {"slug": "runway", "name": "Runway", "category": "Video Generator"},
