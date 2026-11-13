@@ -24,8 +24,8 @@ client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
 # 高速・安定稼働する最新モデル
 MODEL_CANDIDATES = [
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite'
+    'gemini-3.5-flash-lite',
+    'gemini-3.8-flash'
 ]
 
 # 曜日別テーマ ＆ 提携アフィリエイト設定 (0:月曜日 ~ 6:日曜日)
