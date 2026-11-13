@@ -20,38 +20,38 @@ if not api_key:
 
 client = genai.Client(
     api_key=api_key,
-    http_options=types.HttpOptions(timeout=45000),  # 45秒で切り上げ
+    http_options=types.HttpOptions(timeout=60000),  # 1回60秒タイムアウト
 )
 
-# テキスト生成(generateContent)に対応した利用可能モデルのみ取得
+# 2.5系を除外し、利用可能な最新世代(gemini-3系など)のみ取得
 def get_available_models():
     models = ["gemini-3.8-flash"]
     try:
         for m in client.models.list():
             name = m.name.replace("models/", "")
-            methods = getattr(m, "supported_generation_methods", []) or []
             if (
-                "gemini" in name
+                "gemini-3" in name
                 and "embedding" not in name
                 and "imagen" not in name
                 and "veo" not in name
                 and "tts" not in name
-                and ("generateContent" in methods or not methods)
+                and "image" not in name
                 and name not in models
             ):
                 models.append(name)
     except Exception as e:
         print(f"モデル一覧取得スキップ: {e}", flush=True)
-    return models[:4]  # 最大4モデルまで試行
+    return models
 
 CANDIDATE_MODELS = get_available_models()
 print(f"使用候補モデル: {CANDIDATE_MODELS}", flush=True)
 
 def generate_with_retry(prompt):
+    wait_schedule = [10, 20, 30, 45, 60]  # 合計最大約2分45秒待機して混雑を抜ける
     for model_name in CANDIDATE_MODELS:
-        for attempt in range(1, 3):
+        for attempt, wait_sec in enumerate(wait_schedule, start=1):
             try:
-                print(f"[{model_name}] 生成リクエスト送信中 ({attempt}/2)...", flush=True)
+                print(f"[{model_name}] 生成リクエスト送信中 ({attempt}/{len(wait_schedule)})...", flush=True)
                 response = client.models.generate_content(
                     model=model_name,
                     contents=prompt,
@@ -60,8 +60,8 @@ def generate_with_retry(prompt):
             except Exception as e:
                 err_str = str(e)
                 if any(code in err_str for code in ["503", "504", "429", "UNAVAILABLE", "DEADLINE_EXCEEDED", "RESOURCE_EXHAUSTED"]):
-                    print(f"[{model_name}] 混雑/タイムアウトのため5秒後に再試行します...", flush=True)
-                    time.sleep(5)
+                    print(f"[{model_name}] サーバー混雑のため {wait_sec}秒待機して再試行します...", flush=True)
+                    time.sleep(wait_sec)
                 elif "404" in err_str or "NOT_FOUND" in err_str or "400" in err_str:
                     print(f"[{model_name}] 非対応のため次のモデルへ切り替えます...", flush=True)
                     break
@@ -120,7 +120,7 @@ if not os.path.exists(blog_filepath):
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
         print(f"ブログ記事を作成しました: {title}", flush=True)
-        time.sleep(2)
+        time.sleep(3)
     except Exception as e:
         print(f"ブログ生成エラー: {e}", flush=True)
 else:
@@ -188,7 +188,7 @@ for item in TOOLS_DB:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_html)
         generated_tools += 1
-        time.sleep(2)
+        time.sleep(3)
     except Exception as e:
         print(f"ツール生成エラー: {e}", flush=True)
         break
