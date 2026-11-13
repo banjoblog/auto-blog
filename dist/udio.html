@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Udio の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --cta-start: #2563eb;
+    --cta-end: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  /* アフィリエイト・CTAボックス */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 26px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.08rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Music Generator</span> &gt; <span>Udio</span></div>
+        <article class="article-card">
+            
+            <header class="article-header">
+                <span class="badge">Music Generator</span>
+                <h1>Udio の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">プロ品質のサウンド構成とリミックスが可能な音楽AI</div>
+            </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Udio を今すぐ使ってみる</strong>
+            <span>プロ品質のサウンド構成とリミックスが可能な音楽AI</span>
+        </div>
+        <a href="https://www.udio.com/" target="_blank" rel="noopener" class="cta-btn">Udio 公式サイトを見る →</a>
+    </div>
+    
+
+            <div class="article-body">
+                <!-- BODY_START -->
+                <h2>Udioとは？（概要と注目される理由）</h2>
+<p>Udioは、テキストプロンプトからプロ品質の音楽を生成できる、現在最も注目を集めている音楽生成AIの一つです。Suno AIと並び、音楽業界に革命をもたらす存在として知られています。Udioの最大の特徴は、その圧倒的な「音楽的整合性」と「音質の高さ」にあります。単にメロディを作るだけでなく、ボーカルの抑揚、楽器の分離感、曲の構成（イントロ、コーラス、アウトロなど）を驚くほど自然に生成し、まるでプロのスタジオでレコーディングされたかのようなクオリティを実現します。</p>
+<p>多くの音楽生成AIが数秒程度の断片しか作れない中で、Udioは数分間にわたる楽曲を構築できる点や、特定の音楽ジャンルやボーカルのスタイルを驚くほど正確に模倣できる点が、多くのクリエイターやリスナーから高く評価されています。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+  <li><strong>高音質な楽曲生成：</strong>CDクオリティに近いクリアなサウンドを実現。</li>
+  <li><strong>拡張（Extend）機能：</strong>生成された曲の続きを生成したり、イントロを追加したりして楽曲を長尺化できる。</li>
+  <li><strong>リミックスとインペイント：</strong>既存の曲をベースに、特定のパートだけを差し替えたり、スタイルを変更する柔軟な編集が可能。</li>
+  <li><strong>精密なプロンプト制御：</strong>ジャンル、楽器、雰囲気だけでなく、歌詞のスタイルや構成も細かく指示できる。</li>
+  <li><strong>コミュニティ機能：</strong>他のユーザーが作成した楽曲を聴き、その生成設定を参考にしたり、自身の曲を公開・共有したりできる。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>プラン名</th>
+    <th>月額料金(目安)</th>
+    <th>特徴</th>
+  </tr>
+  <tr>
+    <td>Free（無料）</td>
+    <td>$0</td>
+    <td>月間100クレジットまで。商用利用不可。</td>
+  </tr>
+  <tr>
+    <td>Standard（有料）</td>
+    <td>$10〜</td>
+    <td>月間600クレジット。商用利用可、生成速度優先。</td>
+  </tr>
+  <tr>
+    <td>Pro（有料）</td>
+    <td>$30〜</td>
+    <td>月間2,000クレジット。優先生成、さらなる同時生成数。</td>
+  </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大のメリットは、音楽的知識が全くない初心者でも、数行のプロンプトを入力するだけで独創的で聴き応えのある楽曲が作れる点です。特にボーカルの表現力は他のAIを圧倒しており、人間が歌っているような自然なニュアンスを生成できます。また、Webブラウザ上で完結するため、高性能なPCを必要としない点も大きな魅力です。</p>
+
+<h3>デメリット</h3>
+<p>一方で、意図した通りの構成に仕上げるには多少の「コツ」が必要な点が挙げられます。何度も生成を繰り返す必要があるため、クレジットの消費が激しくなりがちです。また、著作権に配慮した設計ではあるものの、生成された楽曲の権利関係については、利用規約を細かく確認しておく必要があります。現時点では日本語の歌詞生成において、ごく稀に不自然な発音や語彙が含まれることもあります。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Udioは、SNS動画のBGM作成、オリジナルソングのデモ制作、または新しい曲作りのインスピレーションを得るためのツールとして最適です。以下に、特定の雰囲気を引き出すプロンプト例を紹介します。</p>
+<blockquote>
+  <strong>プロンプト例：</strong><br>
+  [Style: Melodic synthwave, 80s nostalgic, cinematic, reverb-heavy, warm analog synths]<br>
+  [Lyrics: A journey through neon streets at midnight, rain falling on the pavement, feeling the pulse of the city.]<br>
+  [Structure: Intro, Verse 1, Chorus, Bridge, Outro]
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q：生成した音楽はYouTubeやSNSで収益化できますか？</strong><br>
+A：はい、有料プラン（Standard以上）を契約している場合、生成した楽曲の商用利用権が与えられます。ただし、著作権や利用規約の最新情報は公式サイトの規約ページを必ずご確認ください。</p>
+
+<p><strong>Q：日本語の歌詞にも対応していますか？</strong><br>
+A：対応しています。プロンプトの「Lyrics」セクションに直接日本語を入力することで、日本語のボーカル楽曲を生成可能です。ただし、複雑な日本語の歌詞は英語に比べると発音が不明瞭になる場合があるため、シンプルでリズムの良い言葉を選ぶと成功率が上がります。</p>
+                <!-- BODY_END -->
+            </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Udio を今すぐ使ってみる</strong>
+            <span>プロ品質のサウンド構成とリミックスが可能な音楽AI</span>
+        </div>
+        <a href="https://www.udio.com/" target="_blank" rel="noopener" class="cta-btn">Udio 公式サイトを見る →</a>
+    </div>
+    
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Music Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='suno.html'>Suno AI</a></h3>
+                <p>歌詞とジャンル指定だけでボーカル入り楽曲を即生成</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>

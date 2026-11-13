@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElevenLabs の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --cta-start: #2563eb;
+    --cta-end: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  /* アフィリエイト・CTAボックス */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 26px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.08rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Voice Generator</span> &gt; <span>ElevenLabs</span></div>
+        <article class="article-card">
+            
+            <header class="article-header">
+                <span class="badge">Voice Generator</span>
+                <h1>ElevenLabs の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">感情豊かな多言語音声合成・ボイスクローンAI</div>
+            </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>ElevenLabs を今すぐ使ってみる</strong>
+            <span>感情豊かな多言語音声合成・ボイスクローンAI</span>
+        </div>
+        <a href="https://elevenlabs.io/" target="_blank" rel="noopener" class="cta-btn">ElevenLabs を無料で試す →</a>
+    </div>
+    
+
+            <div class="article-body">
+                <!-- BODY_START -->
+                <h2>ElevenLabsとは？（概要と注目される理由）</h2>
+<p>ElevenLabs（イレブンラボ）は、現在世界で最も高い評価を得ているAI音声合成プラットフォームの一つです。従来の機械的な合成音声とは一線を画し、人間の話し方に極めて近い「感情豊かな表現」を可能にする点が最大の特徴です。特に、その自然なイントネーションや抑揚は、プロのナレーターが収録したかのようなクオリティを誇ります。多言語に対応しているため、日本語を含む世界中の言語で違和感のない音声生成が可能であり、コンテンツ制作やゲーム開発、教育ツールなど、幅広い分野で革命的なツールとして注目されています。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+  <li><strong>高精度なテキスト読み上げ（TTS）：</strong> 驚くほど自然で、文脈に合わせて感情を込めた読み上げが可能。</li>
+  <li><strong>ボイスクローン機能：</strong> 自分の声や特定の声のサンプルを数分読み込ませるだけで、そっくりな音声を生成可能。</li>
+  <li><strong>多言語サポート：</strong> 29以上の言語に対応しており、一つの声で多言語の動画コンテンツを作成できる。</li>
+  <li><strong>音声変換（Speech-to-Speech）：</strong> 自分の喋った内容を、別のキャラクターの声質やトーンにリアルタイムに近い感覚で変換できる。</li>
+  <li><strong>プロジェクト編集機能：</strong> 長尺の文章を段落ごとに管理し、細かなイントネーション調整や話者の切り替えが行える。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" cellpadding="10" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>プラン名</th>
+    <th>特徴</th>
+    <th>目安月額</th>
+  </tr>
+  <tr>
+    <td>Free</td>
+    <td>基本機能のお試し、商用利用不可</td>
+    <td>無料</td>
+  </tr>
+  <tr>
+    <td>Starter</td>
+    <td>趣味での利用、短編コンテンツ向け</td>
+    <td>約5ドル〜</td>
+  </tr>
+  <tr>
+    <td>Creator</td>
+    <td>YouTube投稿やプロ向け機能</td>
+    <td>約22ドル〜</td>
+  </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>圧倒的な「人間らしさ」が最大の強みです。他社ツールと比較しても、AI特有の無機質さが少なく、ため息や笑い声、微細な感情変化まで表現できる点は唯一無二です。また、操作画面が非常に直感的で、誰でも数分で高品質な音声を書き出せるUIの良さも魅力です。</p>
+
+<h3>デメリット</h3>
+<p>唯一の欠点は、無料枠の制限が厳しいことです。また、日本語のアクセントがたまに不自然になる場合があり、その際は「辞書機能」や「一時停止（ポーズ）の挿入」などで微調整を行う必要が出てくるため、長尺の台本では多少の慣れが必要です。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>YouTubeのナレーション、ゲームのキャラクターボイス、オーディオブック制作など、音声が必要なあらゆるシーンで活躍します。特に、動画制作において「顔出しなしで、プロ級のナレーションを即座に入れたい」という需要に最適です。以下は、感情を強調した読み上げを行いたい際のプロンプトのコツです。</p>
+
+<blockquote>
+  「今日はとても素晴らしい一日でした！（笑顔で、少しゆっくりと、期待に満ちた声で）」
+  ※ElevenLabsのSettingsで「Stability」を下げ、「Clarity + Similarity Enhancement」を上げると、より感情の起伏が強くなります。
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q：商用利用は可能ですか？</strong><br>
+A：はい、Starterプラン以上の有料プランに加入することで、商用目的の利用が可能になります。YouTube動画や広告、製品ナレーションなどにご活用いただけます。</p>
+
+<p><strong>Q：他人の声を勝手にクローンしてもいいですか？</strong><br>
+A：いいえ、著作権や肖像権の観点から、許可のない他人の声を無断でクローンすることは禁止されています。ElevenLabsには悪用を防ぐための音声検知および検証プロセスが設けられています。</p>
+                <!-- BODY_END -->
+            </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>ElevenLabs を今すぐ使ってみる</strong>
+            <span>感情豊かな多言語音声合成・ボイスクローンAI</span>
+        </div>
+        <a href="https://elevenlabs.io/" target="_blank" rel="noopener" class="cta-btn">ElevenLabs を無料で試す →</a>
+    </div>
+    
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Text Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='chatgpt.html'>ChatGPT</a></h3>
+                <p>対話・文章作成・プログラミングをこなす万能AI</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Text Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='claude.html'>Claude</a></h3>
+                <p>長文読解と自然な日本語表現・コーディングに強み</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Image Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='midjourney.html'>Midjourney</a></h3>
+                <p>圧倒的なアート品質を誇る画像生成AIの定番</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>

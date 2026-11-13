@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sora の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --cta-start: #2563eb;
+    --cta-end: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  /* アフィリエイト・CTAボックス */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 26px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.08rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Video Generator</span> &gt; <span>Sora</span></div>
+        <article class="article-card">
+            
+            <header class="article-header">
+                <span class="badge">Video Generator</span>
+                <h1>Sora の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">物理法則を理解した長尺・高精細な動画生成モデル</div>
+            </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Sora を今すぐ使ってみる</strong>
+            <span>物理法則を理解した長尺・高精細な動画生成モデル</span>
+        </div>
+        <a href="https://sora.com/" target="_blank" rel="noopener" class="cta-btn">Sora 公式サイトをチェック →</a>
+    </div>
+    
+
+            <div class="article-body">
+                <!-- BODY_START -->
+                <h2>Soraとは？（概要と注目される理由）</h2>
+<p>Soraは、OpenAIが開発した最先端の動画生成AIモデルです。従来の動画生成AIが数秒程度の短いクリップ生成に留まっていたのに対し、Soraは最大1分間に及ぶ長尺の動画を、極めて高い精細度で生成することが可能です。最大の特徴は、単なる映像の繋ぎ合わせではなく、世界がどのように物理的に動くかをモデル自体が学習している点にあります。「物理法則を理解している」と評される通り、カメラの動きや人物の自然な仕草、背景の細かな変化までを高い整合性で再現できるため、実写と見紛うほどのクオリティを実現しています。この技術は、広告、映画制作、コンテンツ作成といったクリエイティブ業界に破壊的なイノベーションをもたらす存在として、世界中から熱い視線を集めています。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+    <li><strong>長尺動画の生成:</strong> 一度のプロンプト入力で、最大60秒の連続した動画を生成可能。</li>
+    <li><strong>高い物理的整合性:</strong> 物体の動きやライティングの変化、複雑な背景においても物理法則に基づいた自然な挙動を維持。</li>
+    <li><strong>マルチアスペクト対応:</strong> 横型動画（1920x1080）から縦型（1080x1920）まで、用途に応じた解像度と比率の最適化が可能。</li>
+    <li><strong>プロンプトの忠実な再現:</strong> 複雑なシーンの描写や、キャラクターの感情までを詳細なテキスト指示から忠実に映像化。</li>
+    <li><strong>画像からの動画化:</strong> 固定された静止画をアップロードし、そこから動きのある動画へと拡張・生成する機能。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+    <tr>
+        <th>プラン</th>
+        <th>概要</th>
+        <th>主な特徴</th>
+    </tr>
+    <tr>
+        <td>無料プラン</td>
+        <td>デモ版・トライアル</td>
+        <td>生成回数制限あり、透かしあり、商用利用不可</td>
+    </tr>
+    <tr>
+        <td>有料プラン（予定）</td>
+        <td>サブスクリプション</td>
+        <td>生成制限の緩和、商用利用の解禁、優先処理</td>
+    </tr>
+    <tr>
+        <td>エンタープライズ</td>
+        <td>法人・API利用</td>
+        <td>個別見積もり、セキュリティ重視、大量生成対応</td>
+    </tr>
+</table>
+
+<h3>メリット</h3>
+<p>最大にして唯一無二のメリットは、その圧倒的なクオリティです。これまでのAI動画特有の「歪み」や「崩れ」が大幅に抑制されており、プロの映像作家が作成したようなカットを短時間で出力できます。また、ビデオエディターが頭の中で想像している「カメラワーク」をテキストで直接指定できる点も大きな利点です。</p>
+
+<h3>デメリット</h3>
+<p>一方で、非常に高い計算資源を必要とするため、生成時間が長くなる傾向があります。また、現時点では一般公開が段階的であり、利用のハードルが高い点もネックです。さらに、現実と区別がつかないほどのクオリティであるため、フェイク動画によるリスクや著作権などの法的な課題についても議論が続いています。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Soraは主に、ストーリーボードの制作、短編広告の作成、教育コンテンツのビジュアル化などで威力を発揮します。特に、実写撮影が困難なファンタジー世界や、莫大なコストがかかる空撮シーンの制作において、大幅な時間とコストの削減が期待できます。</p>
+<blockquote>
+    プロンプト例：Cinematic shot of a futuristic Tokyo street at night, with neon lights reflecting on the wet pavement. A camera slowly pans across the scene as people walk by with umbrellas, hyper-realistic, 4k resolution, smooth motion.
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q：Soraは誰でもすぐに使えますか？</strong></p>
+<p>A：現時点では、安全性を考慮し、限られたテスターやクリエイターに向けて段階的に公開されています。一般公開に向けた準備が進められていますが、利用にはOpenAIのプラットフォーム経由での登録や申請が必要となる場合があります。</p>
+
+<p><strong>Q：生成された動画は商用利用できますか？</strong></p>
+<p>A：現在はプレビュー段階であり、利用規約に従う必要があります。一般提供開始後の商用利用については、プランに応じてポリシーが設定される見込みですが、著作権の帰属や生成物の権利については、利用時の最新の利用規約を確認することを強く推奨します。</p>
+                <!-- BODY_END -->
+            </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Sora を今すぐ使ってみる</strong>
+            <span>物理法則を理解した長尺・高精細な動画生成モデル</span>
+        </div>
+        <a href="https://sora.com/" target="_blank" rel="noopener" class="cta-btn">Sora 公式サイトをチェック →</a>
+    </div>
+    
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Video Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='runway.html'>Runway</a></h3>
+                <p>テキストや画像から映画品質の動画を生成・編集</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>

@@ -15,6 +15,8 @@
     --primary: #2563eb;
     --primary-soft: #eff6ff;
     --accent: #7c3aed;
+    --cta-start: #2563eb;
+    --cta-end: #7c3aed;
     --success-bg: #dcfce7;
     --success-text: #166534;
     --pending-bg: #f1f5f9;
@@ -98,6 +100,16 @@
     color: var(--muted);
     margin-bottom: 18px;
   }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
   .badge {
     display: inline-block;
     background: var(--primary-soft);
@@ -115,10 +127,50 @@
   }
   .article-meta {
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
+    margin-bottom: 24px;
+  }
+  /* アフィリエイト・CTAボックス */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 26px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.08rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
   }
   .article-body h2 {
     margin-top: 38px;
@@ -282,12 +334,25 @@
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Image Generator</span> &gt; <span>Midjourney</span></div>
         <article class="article-card">
+            
             <header class="article-header">
                 <span class="badge">Image Generator</span>
                 <h1>Midjourney の特徴・使い方・料金まとめ</h1>
                 <div class="article-meta">圧倒的なアート品質を誇る画像生成AIの定番</div>
             </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Midjourney を今すぐ使ってみる</strong>
+            <span>圧倒的なアート品質を誇る画像生成AIの定番</span>
+        </div>
+        <a href="https://www.midjourney.com/" target="_blank" rel="noopener" class="cta-btn">Midjourney 公式サイトを見る →</a>
+    </div>
+    
+
             <div class="article-body">
+                <!-- BODY_START -->
                 <h2>Midjourneyとは？（概要と注目される理由）</h2>
 <p>Midjourney（ミッドジャーニー）は、テキストを入力するだけで驚くほど高品質で芸術的な画像を生成できる、世界中で最も人気のある画像生成AIの一つです。Discord上のチャットインターフェースを通じて操作するのが最大の特徴で、まるでプロのアーティストが描いたような写実的な写真から、幻想的なイラスト、緻密なグラフィックデザインまでを数秒で作り出せます。</p>
 <p>注目される理由は、その「圧倒的な画力」にあります。他の画像生成ツールと比較して、特にライティングの美しさや質感の表現、構図のバランスにおいて突出しており、広告や出版、ゲーム制作などの現場でもプロのクリエイターがインスピレーションを得るために活用しています。言語化しにくい抽象的なイメージさえも、魔法のように視覚化してくれる点が多くのユーザーを惹きつけてやみません。</p>
@@ -342,7 +407,18 @@
 A：はい、有料プランを契約しているユーザーであれば、生成された画像を商用利用することが可能です。ただし、無料トライアル期間中に生成された画像については規約が異なる場合があるため、公式サイトの最新規約をご確認ください。</p>
 <p><strong>Q：日本語のプロンプトで画像生成できますか？</strong><br>
 A：基本的には英語での入力が推奨されています。日本語を入力しても一部認識することもありますが、精度が大きく低下するため、Google翻訳やDeepL等で英語に変換してからプロンプトを入力するのが成功のコツです。</p>
+                <!-- BODY_END -->
             </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Midjourney を今すぐ使ってみる</strong>
+            <span>圧倒的なアート品質を誇る画像生成AIの定番</span>
+        </div>
+        <a href="https://www.midjourney.com/" target="_blank" rel="noopener" class="cta-btn">Midjourney 公式サイトを見る →</a>
+    </div>
+    
         </article>
 
         

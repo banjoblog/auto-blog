@@ -15,6 +15,8 @@
     --primary: #2563eb;
     --primary-soft: #eff6ff;
     --accent: #7c3aed;
+    --cta-start: #2563eb;
+    --cta-end: #7c3aed;
     --success-bg: #dcfce7;
     --success-text: #166534;
     --pending-bg: #f1f5f9;
@@ -98,6 +100,16 @@
     color: var(--muted);
     margin-bottom: 18px;
   }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
   .badge {
     display: inline-block;
     background: var(--primary-soft);
@@ -115,10 +127,50 @@
   }
   .article-meta {
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
+    margin-bottom: 24px;
+  }
+  /* アフィリエイト・CTAボックス */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 26px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.08rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
   }
   .article-body h2 {
     margin-top: 38px;
@@ -282,12 +334,25 @@
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Text Generator</span> &gt; <span>Claude</span></div>
         <article class="article-card">
+            
             <header class="article-header">
                 <span class="badge">Text Generator</span>
                 <h1>Claude の特徴・使い方・料金まとめ</h1>
                 <div class="article-meta">長文読解と自然な日本語表現・コーディングに強み</div>
             </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Claude を今すぐ使ってみる</strong>
+            <span>長文読解と自然な日本語表現・コーディングに強み</span>
+        </div>
+        <a href="https://claude.ai/" target="_blank" rel="noopener" class="cta-btn">Claude 公式サイトで試してみる →</a>
+    </div>
+    
+
             <div class="article-body">
+                <!-- BODY_START -->
                 <h2>Claudeとは？（概要と注目される理由）</h2>
 <p>Claude（クロード）は、Anthropic社が開発した次世代のAIチャットボットです。ChatGPTの強力なライバルとして急速にシェアを伸ばしており、特に「人間のような自然な日本語の文章生成」と「圧倒的な長文読解能力」において、世界中のユーザーから高い評価を得ています。憲法や倫理基準を重視した「Constitutional AI（憲法AI）」という独自の安全設計思想を取り入れており、回答の精度だけでなく、信頼性の高さも大きな特徴です。ビジネスからクリエイティブな執筆まで、幅広いシーンで効率化をサポートする次世代のパートナーといえます。</p>
 
@@ -340,7 +405,18 @@
 A: ChatGPTは検索機能や画像生成など多機能ですが、Claudeは長文の読み込み性能や、自然な文章を書く能力に特化しています。用途に合わせて使い分けるのが一般的です。</p>
 <p><strong>Q: 自分のデータは学習に使われますか？</strong><br>
 A: 無料プランやProプランでは設定によって学習をオフにできます。また、TeamプランやEnterpriseプランでは、入力データがモデルのトレーニングに使用されることはありません。</p>
+                <!-- BODY_END -->
             </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Claude を今すぐ使ってみる</strong>
+            <span>長文読解と自然な日本語表現・コーディングに強み</span>
+        </div>
+        <a href="https://claude.ai/" target="_blank" rel="noopener" class="cta-btn">Claude 公式サイトで試してみる →</a>
+    </div>
+    
         </article>
 
         
