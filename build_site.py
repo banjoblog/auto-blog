@@ -979,3 +979,9 @@ with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
     f.write(index_html)
 
 print("すべてのビルド処理が正常に完了しました。", flush=True)
+# ==========================================
+# 4. Google Search Console 所有権確認ファイルの自動生成
+# ==========================================
+gsc_filename = "googlee870bb95f36fa43e.html"
+with open(os.path.join(OUTPUT_DIR, gsc_filename), "w", encoding="utf-8") as f:
+    f.write(f"google-site-verification: {gsc_filename}")
