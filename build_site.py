@@ -20,19 +20,27 @@ if not api_key:
 
 client = genai.Client(
     api_key=api_key,
-    http_options=types.HttpOptions(timeout=180000),  # 180秒タイムアウト
+    http_options=types.HttpOptions(timeout=180000),
 )
 
-# 優先順にモデルを試行（混雑時は自動で軽量モデルにフォールバック）
-CANDIDATE_MODELS = [
-    "gemini-3.8-flash",
-    "gemini-3.8-flash-lite",
-    "gemini-2.5-flash-lite",
-]
+# APIキーで利用可能なテキスト生成モデルを自動取得（gemini-3.8-flash を最優先）
+def get_available_models():
+    models = ["gemini-3.8-flash"]
+    try:
+        for m in client.models.list():
+            name = m.name.replace("models/", "")
+            if "gemini" in name and "flash" in name and name not in models:
+                models.append(name)
+    except Exception as e:
+        print(f"モデル一覧取得スキップ: {e}")
+    return models
+
+CANDIDATE_MODELS = get_available_models()
+print(f"使用候補モデル: {CANDIDATE_MODELS}")
 
 def generate_with_retry(prompt):
     for model_name in CANDIDATE_MODELS:
-        for attempt in range(1, 3):
+        for attempt in range(1, 6):
             try:
                 response = client.models.generate_content(
                     model=model_name,
@@ -41,15 +49,15 @@ def generate_with_retry(prompt):
                 return response.text
             except Exception as e:
                 err_str = str(e)
-                if any(code in err_str for code in ["503", "504", "UNAVAILABLE", "DEADLINE_EXCEEDED"]):
-                    print(f"[{model_name}] 混雑/タイムアウトのため10秒後に再試行します ({attempt}/2)...")
-                    time.sleep(10)
+                if any(code in err_str for code in ["503", "504", "429", "UNAVAILABLE", "DEADLINE_EXCEEDED", "RESOURCE_EXHAUSTED"]):
+                    wait_sec = attempt * 15
+                    print(f"[{model_name}] 混雑/タイムアウトのため {wait_sec}秒後に再試行します ({attempt}/5)...")
+                    time.sleep(wait_sec)
                 elif "404" in err_str or "NOT_FOUND" in err_str:
                     print(f"[{model_name}] 利用不可のため次のモデルへ切り替えます...")
                     break
                 else:
                     raise e
-        print(f"[{model_name}] 応答がないため次のモデルへフォールバックします...")
     raise RuntimeError("すべての候補モデルで生成に失敗しました。")
 
 # ==========================================
@@ -61,7 +69,7 @@ blog_filepath = os.path.join(BLOG_DIR, blog_filename)
 
 if not os.path.exists(blog_filepath):
     print(f"本日のブログ記事を生成中 ({today_str})...")
-    blog_prompt = f"今日は {today_str} です。最新のAIトレンドや活用法に関するSEO最適化されたブログ記事を日本語で800〜1200文字程度で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, h3, pタグを使用したHTML本文のみを出力してください（マークダウンの```は不要）。"
+    blog_prompt = f"今日は {today_str} です。最新のAI活用法に関する短いブログ記事を日本語で400〜600文字程度で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, pタグのみを使ったHTML本文を出力してください（```は不要）。"
     try:
         text = generate_with_retry(blog_prompt)
         text = text.replace("```html", "").replace("```", "").strip()
@@ -103,7 +111,7 @@ if not os.path.exists(blog_filepath):
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
         print(f"ブログ記事を作成しました: {title}")
-        time.sleep(2)
+        time.sleep(3)
     except Exception as e:
         print(f"ブログ生成エラー: {e}")
 else:
@@ -162,7 +170,7 @@ for item in TOOLS_DB:
         break
 
     print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...")
-    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で800〜1200文字程度で作成してください（マークダウンの```は不要）。"
+    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の特徴と使い方を日本語で400〜600文字程度でまとめ、h2, pタグのみを使ったHTML本文を出力してください（```は不要）。"
 
     try:
         text = generate_with_retry(prompt)
@@ -171,7 +179,7 @@ for item in TOOLS_DB:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_html)
         generated_tools += 1
-        time.sleep(2)
+        time.sleep(3)
     except Exception as e:
         print(f"ツール生成エラー: {e}")
         break
