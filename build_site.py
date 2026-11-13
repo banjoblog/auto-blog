@@ -5,11 +5,11 @@ from datetime import datetime
 from google import genai
 from google.genai import types
 
-# 1回の実行で生成するAIツールページの上限数
+# 1回の実行で新規生成するAIツールページの上限数
 MAX_TOOL_BATCH = 5
 
-# すでに生成済みの薄いページをリッチ版に作り直すか（一通り更新したら False に変更推奨）
-REGENERATE_EXISTING = True
+# Trueにすると、すでに生成済みの全ページの「CTAボタン・リンク・CSS」をAPI消費なしで一括最新化します
+REFRESH_EXISTING_LAYOUT = True
 
 OUTPUT_DIR = "dist"
 BLOG_DIR = os.path.join(OUTPUT_DIR, "blog")
@@ -72,7 +72,7 @@ def generate_with_retry(prompt):
     raise RuntimeError("すべての候補モデルで生成に失敗しました。")
 
 # ==========================================
-# 共通スタイルシート（モダン・テックメディア風UI）
+# 共通スタイルシート（CTAボタン・PRボックス対応）
 # ==========================================
 COMMON_CSS = """
 <style>
@@ -85,6 +85,8 @@ COMMON_CSS = """
     --primary: #2563eb;
     --primary-soft: #eff6ff;
     --accent: #7c3aed;
+    --cta-start: #2563eb;
+    --cta-end: #7c3aed;
     --success-bg: #dcfce7;
     --success-text: #166534;
     --pending-bg: #f1f5f9;
@@ -168,6 +170,16 @@ COMMON_CSS = """
     color: var(--muted);
     margin-bottom: 18px;
   }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
   .badge {
     display: inline-block;
     background: var(--primary-soft);
@@ -185,10 +197,50 @@ COMMON_CSS = """
   }
   .article-meta {
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 28px;
+    margin-bottom: 24px;
+  }
+  /* アフィリエイト・CTAボックス */
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin: 26px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.08rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.98rem;
+    padding: 13px 26px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
   }
   .article-body h2 {
     margin-top: 38px;
@@ -342,43 +394,215 @@ COMMON_CSS = """
 """
 
 # ==========================================
+# AIツールデータベース（ここにアフィリエイトURLを設定）
+# ==========================================
+# ※ aff_url にASPや公式パートナーのリンクを入れると、自動でPR表記＋CTAボタンが表示されます
+TOOLS_DB = [
+    {
+        "slug": "chatgpt",
+        "name": "ChatGPT",
+        "category": "Text Generator",
+        "tagline": "対話・文章作成・プログラミングをこなす万能AI",
+        "official_url": "https://chatgpt.com/",
+        "aff_url": "",  # 例: "https://px.a8.net/svt/ejp?a8mat=XXXX"
+        "cta_text": "ChatGPT 公式サイトで無料で始める →",
+    },
+    {
+        "slug": "claude",
+        "name": "Claude",
+        "category": "Text Generator",
+        "tagline": "長文読解と自然な日本語表現・コーディングに強み",
+        "official_url": "https://claude.ai/",
+        "aff_url": "",
+        "cta_text": "Claude 公式サイトで試してみる →",
+    },
+    {
+        "slug": "midjourney",
+        "name": "Midjourney",
+        "category": "Image Generator",
+        "tagline": "圧倒的なアート品質を誇る画像生成AIの定番",
+        "official_url": "https://www.midjourney.com/",
+        "aff_url": "",
+        "cta_text": "Midjourney 公式サイトを見る →",
+    },
+    {
+        "slug": "stable-diffusion",
+        "name": "Stable Diffusion",
+        "category": "Image Generator",
+        "tagline": "ローカル環境や拡張機能で自在に操れるオープンソース画像AI",
+        "official_url": "https://stability.ai/",
+        "aff_url": "",
+        "cta_text": "Stability AI 公式サイトを見る →",
+    },
+    {
+        "slug": "runway",
+        "name": "Runway",
+        "category": "Video Generator",
+        "tagline": "テキストや画像から映画品質の動画を生成・編集",
+        "official_url": "https://runwayml.com/",
+        "aff_url": "",
+        "cta_text": "Runway で動画生成を始める →",
+    },
+    {
+        "slug": "sora",
+        "name": "Sora",
+        "category": "Video Generator",
+        "tagline": "物理法則を理解した長尺・高精細な動画生成モデル",
+        "official_url": "https://sora.com/",
+        "aff_url": "",
+        "cta_text": "Sora 公式サイトをチェック →",
+    },
+    {
+        "slug": "elevenlabs",
+        "name": "ElevenLabs",
+        "category": "Voice Generator",
+        "tagline": "感情豊かな多言語音声合成・ボイスクローンAI",
+        "official_url": "https://elevenlabs.io/",
+        "aff_url": "",
+        "cta_text": "ElevenLabs を無料で試す →",
+    },
+    {
+        "slug": "suno",
+        "name": "Suno AI",
+        "category": "Music Generator",
+        "tagline": "歌詞とジャンル指定だけでボーカル入り楽曲を即生成",
+        "official_url": "https://suno.com/",
+        "aff_url": "",
+        "cta_text": "Suno AI で無料作曲を始める →",
+    },
+    {
+        "slug": "udio",
+        "name": "Udio",
+        "category": "Music Generator",
+        "tagline": "プロ品質のサウンド構成とリミックスが可能な音楽AI",
+        "official_url": "https://www.udio.com/",
+        "aff_url": "",
+        "cta_text": "Udio 公式サイトを見る →",
+    },
+    {
+        "slug": "perplexity",
+        "name": "Perplexity",
+        "category": "Search Engine",
+        "tagline": "出典リンク付きで最新情報を即座に要約するAI検索",
+        "official_url": "https://www.perplexity.ai/",
+        "aff_url": "",
+        "cta_text": "Perplexity でAI検索を体験する →",
+    },
+    {
+        "slug": "v0-dev",
+        "name": "v0.dev",
+        "category": "Code Generator",
+        "tagline": "プロンプトからReact/TailwindのUIコードを即生成",
+        "official_url": "https://v0.dev/",
+        "aff_url": "",
+        "cta_text": "v0.dev でUIを自動生成する →",
+    },
+    {
+        "slug": "cursor",
+        "name": "Cursor",
+        "category": "Code Editor",
+        "tagline": "プロジェクト全体を理解して自律的に実装するAIエディタ",
+        "official_url": "https://www.cursor.com/",
+        "aff_url": "",
+        "cta_text": "Cursor を無料ダウンロード →",
+    },
+    {
+        "slug": "github-copilot",
+        "name": "GitHub Copilot",
+        "category": "Code Generator",
+        "tagline": "開発ワークフローに統合された定番AIペアプログラマー",
+        "official_url": "https://github.com/features/copilot",
+        "aff_url": "",
+        "cta_text": "GitHub Copilot を試してみる →",
+    },
+    {
+        "slug": "notion-ai",
+        "name": "Notion AI",
+        "category": "Productivity",
+        "tagline": "ドキュメント作成・議事録要約・タスク整理を自動化",
+        "official_url": "https://www.notion.so/product/ai",
+        "aff_url": "",
+        "cta_text": "Notion AI を無料で使ってみる →",
+    },
+    {
+        "slug": "canva-ai",
+        "name": "Canva AI",
+        "category": "Design",
+        "tagline": "SNS画像・プレゼン資料のデザインをAIで瞬時に生成",
+        "official_url": "https://www.canva.com/",
+        "aff_url": "",
+        "cta_text": "Canva AI でデザインを始める →",
+    },
+    {
+        "slug": "jasper",
+        "name": "Jasper AI",
+        "category": "Copywriting",
+        "tagline": "マーケティング・広告文に特化したビジネス向けAI",
+        "official_url": "https://www.jasper.ai/",
+        "aff_url": "",
+        "cta_text": "Jasper AI の無料トライアルへ →",
+    },
+    {
+        "slug": "copy-ai",
+        "name": "Copy.ai",
+        "category": "Copywriting",
+        "tagline": "セールスコピーやSNS投稿案を量産するライティングAI",
+        "official_url": "https://www.copy.ai/",
+        "aff_url": "",
+        "cta_text": "Copy.ai を無料で試す →",
+    },
+    {
+        "slug": "descript",
+        "name": "Descript",
+        "category": "Video Editor",
+        "tagline": "文字起こしテキストを編集するだけで動画カットが完了",
+        "official_url": "https://www.descript.com/",
+        "aff_url": "",
+        "cta_text": "Descript で動画編集を効率化する →",
+    },
+    {
+        "slug": "heygen",
+        "name": "HeyGen",
+        "category": "Avatar Generator",
+        "tagline": "リアルなAIアバターが自然な口パクで話す動画を作成",
+        "official_url": "https://www.heygen.com/",
+        "aff_url": "",
+        "cta_text": "HeyGen でAIアバター動画を作る →",
+    },
+]
+
+def build_cta_box(item):
+    aff = item.get("aff_url", "").strip()
+    target_url = aff if aff else item.get("official_url", "#")
+    rel_attr = 'rel="nofollow sponsored noopener"' if aff else 'rel="noopener"'
+    pr_label = "【PR】" if aff else ""
+    btn_text = item.get("cta_text") or f"{item['name']} 公式サイトへ →"
+    return f"""
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>{pr_label}{item['name']} を今すぐ使ってみる</strong>
+            <span>{item['tagline']}</span>
+        </div>
+        <a href="{target_url}" target="_blank" {rel_attr} class="cta-btn">{btn_text}</a>
+    </div>
+    """
+
+# ==========================================
 # 1. 毎日の自動ブログ記事生成
 # ==========================================
 today_str = datetime.now().strftime("%Y-%m-%d")
 blog_filename = f"post-{today_str}.html"
 blog_filepath = os.path.join(BLOG_DIR, blog_filename)
 
-# リッチ版未適用なら再生成判定
-need_blog_gen = not os.path.exists(blog_filepath)
-if not need_blog_gen and REGENERATE_EXISTING:
-    with open(blog_filepath, "r", encoding="utf-8") as f:
-        if "article-card" not in f.read():
-            need_blog_gen = True
+# ブログ末尾に差し込むおすすめツールPR枠（aff_urlが設定されているものを優先表示）
+aff_tools = [t for t in TOOLS_DB if t.get("aff_url", "").strip()]
+featured_tools = aff_tools[:2] if aff_tools else TOOLS_DB[:2]
+blog_cta_html = ""
+for ft in featured_tools:
+    blog_cta_html += build_cta_box(ft)
+blog_pr_notice = '<div class="pr-notice">※本記事にはプロモーション（アフィリエイトリンク）が含まれています。</div>' if aff_tools else ""
 
-if need_blog_gen:
-    print(f"本日のブログ記事を生成中 ({today_str})...", flush=True)
-    blog_prompt = f"""今日は {today_str} です。最新のAIトレンドや実務での活用法に関する読み応えのある解説ブログ記事を日本語で1,400〜1,800文字程度で作成してください。
-以下のルールを厳守してください：
-- 1行目に「TITLE: 魅力的な記事タイトル」を出力する
-- 2行目以降にHTML本文のみを出力する（```html などのマークダウン記法は一切使わない）
-- 見出し（h2, h3）、段落（p）、箇条書き（ul, li）、比較やまとめの表（table, tr, th, td）、重要ポイントの引用枠（blockquote）をバランスよく使い、読みやすく構成する
-- 導入 → 最新トレンドの背景 → 具体的な活用ステップ3選 → 比較表または注意点 → まとめ、の流れにする"""
-    try:
-        text = generate_with_retry(blog_prompt)
-        text = text.replace("```html", "").replace("```", "").strip()
-        lines = text.split("\n")
-        title = f"{today_str} のAI・テクノロジー最新情報"
-        body_lines = []
-
-        for line in lines:
-            if line.startswith("TITLE:"):
-                title = line.replace("TITLE:", "").strip()
-            else:
-                body_lines.append(line)
-
-        body_html = "\n".join(body_lines)
-
-        blog_template = """<!DOCTYPE html>
+blog_template = """<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -397,14 +621,20 @@ if need_blog_gen:
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="../index.html">ホーム</a> &gt; <span>トレンド記事</span></div>
         <article class="article-card">
+            {pr_notice}
             <header class="article-header">
                 <span class="badge">AI TREND REPORT</span>
                 <h1>{title}</h1>
                 <div class="article-meta">公開日: {date} ・ 読了目安: 約3分</div>
             </header>
             <div class="article-body">
+                <!-- BODY_START -->
                 {body}
+                <!-- BODY_END -->
             </div>
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 36px 0 24px;">
+            <h3 style="margin-bottom: 12px;">💡 記事とあわせて使いたい注目AIツール</h3>
+            {blog_cta}
         </article>
     </main>
 
@@ -414,7 +644,35 @@ if need_blog_gen:
 </body>
 </html>"""
 
-        full_blog_html = blog_template.format(title=title, date=today_str, body=body_html, css=COMMON_CSS)
+if not os.path.exists(blog_filepath):
+    print(f"本日のブログ記事を生成中 ({today_str})...", flush=True)
+    blog_prompt = f"""今日は {today_str} です。最新のAIトレンドや実務での活用法に関する読み応えのある解説ブログ記事を日本語で1,400〜1,800文字程度で作成してください。
+以下のルールを厳守してください：
+- 1行目に「TITLE: 魅力的な記事タイトル」を出力する
+- 2行目以降にHTML本文のみを出力する（```html などのマークダウン記法は一切使わない）
+- 見出し（h2, h3）、段落（p）、箇条書き（ul, li）、比較やまとめの表（table, tr, th, td）、重要ポイントの引用枠（blockquote）をバランスよく使い、読みやすく構成する"""
+    try:
+        text = generate_with_retry(blog_prompt)
+        text = text.replace("```html", "").replace("```", "").strip()
+        lines = text.split("\n")
+        title = f"{today_str} のAI・テクノロジー最新情報"
+        body_lines = []
+
+        for line in lines:
+            if line.startswith("TITLE:"):
+                title = line.replace("TITLE:", "").strip()
+            else:
+                body_lines.append(line)
+
+        body_html = "\n".join(body_lines)
+        full_blog_html = blog_template.format(
+            title=title,
+            date=today_str,
+            body=body_html,
+            css=COMMON_CSS,
+            pr_notice=blog_pr_notice,
+            blog_cta=blog_cta_html,
+        )
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
         print(f"ブログ記事を作成しました: {title}", flush=True)
@@ -422,33 +680,11 @@ if need_blog_gen:
     except Exception as e:
         print(f"ブログ生成エラー: {e}", flush=True)
 else:
-    print(f"本日のブログ記事（{blog_filename}）はすでに最新デザインで作成済みです。", flush=True)
+    print(f"本日のブログ記事（{blog_filename}）はすでに作成済みです。", flush=True)
 
 # ==========================================
-# 2. AIツールデータベース（pSEO）の生成
+# 2. AIツールデータベース（pSEO）の生成＆CTA更新
 # ==========================================
-TOOLS_DB = [
-    {"slug": "chatgpt", "name": "ChatGPT", "category": "Text Generator", "tagline": "対話・文章作成・プログラミングをこなす万能AI"},
-    {"slug": "claude", "name": "Claude", "category": "Text Generator", "tagline": "長文読解と自然な日本語表現・コーディングに強み"},
-    {"slug": "midjourney", "name": "Midjourney", "category": "Image Generator", "tagline": "圧倒的なアート品質を誇る画像生成AIの定番"},
-    {"slug": "stable-diffusion", "name": "Stable Diffusion", "category": "Image Generator", "tagline": "ローカル環境や拡張機能で自在に操れるオープンソース画像AI"},
-    {"slug": "runway", "name": "Runway", "category": "Video Generator", "tagline": "テキストや画像から映画品質の動画を生成・編集"},
-    {"slug": "sora", "name": "Sora", "category": "Video Generator", "tagline": "物理法則を理解した長尺・高精細な動画生成モデル"},
-    {"slug": "elevenlabs", "name": "ElevenLabs", "category": "Voice Generator", "tagline": "感情豊かな多言語音声合成・ボイスクローンAI"},
-    {"slug": "suno", "name": "Suno AI", "category": "Music Generator", "tagline": "歌詞とジャンル指定だけでボーカル入り楽曲を即生成"},
-    {"slug": "udio", "name": "Udio", "category": "Music Generator", "tagline": "プロ品質のサウンド構成とリミックスが可能な音楽AI"},
-    {"slug": "perplexity", "name": "Perplexity", "category": "Search Engine", "tagline": "出典リンク付きで最新情報を即座に要約するAI検索"},
-    {"slug": "v0-dev", "name": "v0.dev", "category": "Code Generator", "tagline": "プロンプトからReact/TailwindのUIコードを即生成"},
-    {"slug": "cursor", "name": "Cursor", "category": "Code Editor", "tagline": "プロジェクト全体を理解して自律的に実装するAIエディタ"},
-    {"slug": "github-copilot", "name": "GitHub Copilot", "category": "Code Generator", "tagline": "開発ワークフローに統合された定番AIペアプログラマー"},
-    {"slug": "notion-ai", "name": "Notion AI", "category": "Productivity", "tagline": "ドキュメント作成・議事録要約・タスク整理を自動化"},
-    {"slug": "canva-ai", "name": "Canva AI", "category": "Design", "tagline": "SNS画像・プレゼン資料のデザインをAIで瞬時に生成"},
-    {"slug": "jasper", "name": "Jasper AI", "category": "Copywriting", "tagline": "マーケティング・広告文に特化したビジネス向けAI"},
-    {"slug": "copy-ai", "name": "Copy.ai", "category": "Copywriting", "tagline": "セールスコピーやSNS投稿案を量産するライティングAI"},
-    {"slug": "descript", "name": "Descript", "category": "Video Editor", "tagline": "文字起こしテキストを編集するだけで動画カットが完了"},
-    {"slug": "heygen", "name": "HeyGen", "category": "Avatar Generator", "tagline": "リアルなAIアバターが自然な口パクで話す動画を作成"},
-]
-
 tool_template = """<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -468,14 +704,22 @@ tool_template = """<!DOCTYPE html>
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>{category}</span> &gt; <span>{name}</span></div>
         <article class="article-card">
+            {pr_notice}
             <header class="article-header">
                 <span class="badge">{category}</span>
                 <h1>{name} の特徴・使い方・料金まとめ</h1>
                 <div class="article-meta">{tagline}</div>
             </header>
+
+            {cta_box}
+
             <div class="article-body">
+                <!-- BODY_START -->
                 {body}
+                <!-- BODY_END -->
             </div>
+
+            {cta_box}
         </article>
 
         {related_section}
@@ -520,22 +764,49 @@ def build_related_html(current_item):
     </section>
     """
 
+def extract_body(html_text):
+    if "<!-- BODY_START -->" in html_text and "<!-- BODY_END -->" in html_text:
+        s = html_text.find("<!-- BODY_START -->") + len("<!-- BODY_START -->")
+        e = html_text.find("<!-- BODY_END -->")
+        return html_text[s:e].strip()
+    if '<div class="article-body">' in html_text:
+        s = html_text.find('<div class="article-body">') + len('<div class="article-body">')
+        e = html_text.find("</div>", s)
+        return html_text[s:e].strip()
+    return None
+
 generated_tools = 0
 for item in TOOLS_DB:
     if not item.get("slug"):
         continue
     file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
+    pr_notice = '<div class="pr-notice">※当ページはプロモーション（アフィリエイトリンク）を含みます。</div>' if item.get("aff_url", "").strip() else ""
+    cta_html = build_cta_box(item)
+    related_html = build_related_html(item)
 
-    need_gen = not os.path.exists(file_path)
-    if not need_gen and REGENERATE_EXISTING:
-        with open(file_path, "r", encoding="utf-8") as f:
-            if "article-card" not in f.read():
-                need_gen = True
-
-    if not need_gen:
+    # すでに記事が存在する場合：APIを使わずにCTAリンクやレイアウトだけ最新化
+    if os.path.exists(file_path):
+        if REFRESH_EXISTING_LAYOUT:
+            with open(file_path, "r", encoding="utf-8") as f:
+                existing_html = f.read()
+            existing_body = extract_body(existing_html)
+            if existing_body:
+                refreshed_html = tool_template.format(
+                    name=item["name"],
+                    category=item["category"],
+                    tagline=item["tagline"],
+                    pr_notice=pr_notice,
+                    cta_box=cta_html,
+                    body=existing_body,
+                    related_section=related_html,
+                    css=COMMON_CSS,
+                )
+                with open(file_path, "w", encoding="utf-8") as f:
+                    f.write(refreshed_html)
         continue
+
     if generated_tools >= MAX_TOOL_BATCH:
-        break
+        continue
 
     print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...", flush=True)
     prompt = f"""AIツール『{item['name']}』（カテゴリ: {item['category']} / 概要: {item['tagline']}）の詳しいレビュー・使い方ガイド記事を日本語で1,400〜1,800文字程度で作成してください。
@@ -552,11 +823,12 @@ for item in TOOLS_DB:
     try:
         text = generate_with_retry(prompt)
         text = text.replace("```html", "").replace("```", "").strip()
-        related_html = build_related_html(item)
         full_html = tool_template.format(
             name=item["name"],
             category=item["category"],
             tagline=item["tagline"],
+            pr_notice=pr_notice,
+            cta_box=cta_html,
             body=text,
             related_section=related_html,
             css=COMMON_CSS,
