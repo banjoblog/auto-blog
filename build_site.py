@@ -3,6 +3,7 @@ import sys
 import time
 from datetime import datetime
 from google import genai
+from google.genai import types
 
 # 1回の実行で生成するAIツールページの上限数
 MAX_TOOL_BATCH = 5
@@ -17,8 +18,11 @@ if not api_key:
     print("GEMINI_API_KEY が設定されていません。")
     sys.exit(1)
 
-client = genai.Client(api_key=api_key)
-MODEL_NAME = "gemini-3.8-flash"
+client = genai.Client(
+    api_key=api_key,
+    http_options=types.HttpOptions(timeout=60000),  # 60秒でタイムアウト
+)
+MODEL_NAME = "gemini-2.5-flash"
 
 # ==========================================
 # 1. 毎日の自動ブログ記事生成
@@ -38,15 +42,15 @@ if not os.path.exists(blog_filepath):
         lines = response.text.strip().split("\n")
         title = f"{today_str} のAI・テクノロジー最新情報"
         body_lines = []
-        
+
         for line in lines:
             if line.startswith("TITLE:"):
                 title = line.replace("TITLE:", "").strip()
             else:
                 body_lines.append(line)
-                
+
         body_html = "\n".join(body_lines)
-        
+
         blog_template = """<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -68,12 +72,12 @@ if not os.path.exists(blog_filepath):
     </main>
 </body>
 </html>"""
-        
+
         full_blog_html = blog_template.format(title=title, date=today_str, body=body_html)
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
         print(f"ブログ記事を作成しました: {title}")
-        time.sleep(5)
+        time.sleep(2)
     except Exception as e:
         print(f"ブログ生成エラー: {e}")
 else:
@@ -85,7 +89,6 @@ else:
 TOOLS_DB = [
     {"slug": "chatgpt", "name": "ChatGPT", "category": "Text Generator"},
     {"slug": "claude", "name": "Claude", "category": "Text Generator"},
-    {"slug": "", "name": "", "category": "Text Generator"},
     {"slug": "midjourney", "name": "Midjourney", "category": "Image Generator"},
     {"slug": "stable-diffusion", "name": "Stable Diffusion", "category": "Image Generator"},
     {"slug": "runway", "name": "Runway", "category": "Video Generator"},
@@ -124,15 +127,17 @@ tool_template = """<!DOCTYPE html>
 
 generated_tools = 0
 for item in TOOLS_DB:
+    if not item.get("slug"):
+        continue
     file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
     if os.path.exists(file_path):
         continue
     if generated_tools >= MAX_TOOL_BATCH:
         break
-        
+
     print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...")
     prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の詳細な紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で作成してください。"
-    
+
     try:
         response = client.models.generate_content(
             model=MODEL_NAME,
@@ -142,7 +147,7 @@ for item in TOOLS_DB:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_html)
         generated_tools += 1
-        time.sleep(5)
+        time.sleep(2)
     except Exception as e:
         print(f"ツール生成エラー: {e}")
         break
@@ -166,6 +171,8 @@ if not blog_list_html:
 
 index_items_html = ""
 for item in TOOLS_DB:
+    if not item.get("slug"):
+        continue
     file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
     status = "✅ 公開中" if os.path.exists(file_path) else "⏳ 順次生成中"
     link = f"<a href='{item['slug']}.html'>{item['name']}</a>" if os.path.exists(file_path) else item['name']
