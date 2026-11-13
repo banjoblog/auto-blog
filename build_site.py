@@ -15,33 +15,43 @@ os.makedirs(BLOG_DIR, exist_ok=True)
 
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
-    print("GEMINI_API_KEY が設定されていません。")
+    print("GEMINI_API_KEY が設定されていません。", flush=True)
     sys.exit(1)
 
 client = genai.Client(
     api_key=api_key,
-    http_options=types.HttpOptions(timeout=180000),
+    http_options=types.HttpOptions(timeout=45000),  # 45秒で切り上げ
 )
 
-# APIキーで利用可能なテキスト生成モデルを自動取得（gemini-3.8-flash を最優先）
+# テキスト生成(generateContent)に対応した利用可能モデルのみ取得
 def get_available_models():
     models = ["gemini-3.8-flash"]
     try:
         for m in client.models.list():
             name = m.name.replace("models/", "")
-            if "gemini" in name and "flash" in name and name not in models:
+            methods = getattr(m, "supported_generation_methods", []) or []
+            if (
+                "gemini" in name
+                and "embedding" not in name
+                and "imagen" not in name
+                and "veo" not in name
+                and "tts" not in name
+                and ("generateContent" in methods or not methods)
+                and name not in models
+            ):
                 models.append(name)
     except Exception as e:
-        print(f"モデル一覧取得スキップ: {e}")
-    return models
+        print(f"モデル一覧取得スキップ: {e}", flush=True)
+    return models[:4]  # 最大4モデルまで試行
 
 CANDIDATE_MODELS = get_available_models()
-print(f"使用候補モデル: {CANDIDATE_MODELS}")
+print(f"使用候補モデル: {CANDIDATE_MODELS}", flush=True)
 
 def generate_with_retry(prompt):
     for model_name in CANDIDATE_MODELS:
-        for attempt in range(1, 6):
+        for attempt in range(1, 3):
             try:
+                print(f"[{model_name}] 生成リクエスト送信中 ({attempt}/2)...", flush=True)
                 response = client.models.generate_content(
                     model=model_name,
                     contents=prompt,
@@ -50,11 +60,10 @@ def generate_with_retry(prompt):
             except Exception as e:
                 err_str = str(e)
                 if any(code in err_str for code in ["503", "504", "429", "UNAVAILABLE", "DEADLINE_EXCEEDED", "RESOURCE_EXHAUSTED"]):
-                    wait_sec = attempt * 15
-                    print(f"[{model_name}] 混雑/タイムアウトのため {wait_sec}秒後に再試行します ({attempt}/5)...")
-                    time.sleep(wait_sec)
-                elif "404" in err_str or "NOT_FOUND" in err_str:
-                    print(f"[{model_name}] 利用不可のため次のモデルへ切り替えます...")
+                    print(f"[{model_name}] 混雑/タイムアウトのため5秒後に再試行します...", flush=True)
+                    time.sleep(5)
+                elif "404" in err_str or "NOT_FOUND" in err_str or "400" in err_str:
+                    print(f"[{model_name}] 非対応のため次のモデルへ切り替えます...", flush=True)
                     break
                 else:
                     raise e
@@ -68,8 +77,8 @@ blog_filename = f"post-{today_str}.html"
 blog_filepath = os.path.join(BLOG_DIR, blog_filename)
 
 if not os.path.exists(blog_filepath):
-    print(f"本日のブログ記事を生成中 ({today_str})...")
-    blog_prompt = f"今日は {today_str} です。最新のAI活用法に関する短いブログ記事を日本語で400〜600文字程度で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, pタグのみを使ったHTML本文を出力してください（```は不要）。"
+    print(f"本日のブログ記事を生成中 ({today_str})...", flush=True)
+    blog_prompt = f"今日は {today_str} です。最新のAI活用法に関する短いブログ記事を日本語で400文字程度で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, pタグのみを使ったHTML本文を出力してください（```は不要）。"
     try:
         text = generate_with_retry(blog_prompt)
         text = text.replace("```html", "").replace("```", "").strip()
@@ -110,12 +119,12 @@ if not os.path.exists(blog_filepath):
         full_blog_html = blog_template.format(title=title, date=today_str, body=body_html)
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
-        print(f"ブログ記事を作成しました: {title}")
-        time.sleep(3)
+        print(f"ブログ記事を作成しました: {title}", flush=True)
+        time.sleep(2)
     except Exception as e:
-        print(f"ブログ生成エラー: {e}")
+        print(f"ブログ生成エラー: {e}", flush=True)
 else:
-    print(f"本日のブログ記事（{blog_filename}）はすでに作成済みです。")
+    print(f"本日のブログ記事（{blog_filename}）はすでに作成済みです。", flush=True)
 
 # ==========================================
 # 2. AIツールデータベース（pSEO）の生成
@@ -169,8 +178,8 @@ for item in TOOLS_DB:
     if generated_tools >= MAX_TOOL_BATCH:
         break
 
-    print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...")
-    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の特徴と使い方を日本語で400〜600文字程度でまとめ、h2, pタグのみを使ったHTML本文を出力してください（```は不要）。"
+    print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...", flush=True)
+    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の特徴と使い方を日本語で400文字程度でまとめ、h2, pタグのみを使ったHTML本文を出力してください（```は不要）。"
 
     try:
         text = generate_with_retry(prompt)
@@ -179,9 +188,9 @@ for item in TOOLS_DB:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_html)
         generated_tools += 1
-        time.sleep(3)
+        time.sleep(2)
     except Exception as e:
-        print(f"ツール生成エラー: {e}")
+        print(f"ツール生成エラー: {e}", flush=True)
         break
 
 # ==========================================
@@ -246,4 +255,4 @@ index_html = index_template.format(blogs=blog_list_html, tools=index_items_html)
 with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
     f.write(index_html)
 
-print("すべてのビルド処理が正常に完了しました。")
+print("すべてのビルド処理が正常に完了しました。", flush=True)
