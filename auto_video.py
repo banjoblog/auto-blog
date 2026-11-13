@@ -181,21 +181,42 @@ TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ==========================================
-# 2. 中身の濃い雑学台本の生成
+# 2. 中身の濃い雑学台本の生成（ジャンルランダム抽選でネタ被り防止）
 # ==========================================
 print("高クオリティ雑学動画台本を生成中...")
-prompt = """
+
+genres = [
+    "日本の老舗企業や身近な商品の意外な誕生秘話・社名の由来",
+    "人体の驚くべき仕組みや脳の錯覚・睡眠の科学",
+    "戦国時代・幕末・明治の教科書に載っていない歴史の裏話",
+    "身近な法律・交通ルール・お金や硬貨の意外な雑学",
+    "スーパーやコンビニの食品・料理の知られざる秘密",
+    "深海生物や昆虫・動物の常識外れな生態（ヒクイドリは除外）",
+    "宇宙・気象・地球の異常現象に関する驚くべき数値データ",
+    "心理学・行動経済学の日常で使える意外な法則",
+    "日本語の語源・漢字の成り立ち・方言の意外な由来",
+    "世界の変わった文化・建築・世界遺産の裏トリビア",
+    "スポーツ・オリンピックのルール変更や伝説の記録の裏話",
+    "医療・薬・健康に関する意外と知られていない事実",
+]
+selected_genre = random.choice(genres)
+print(f"今回の抽選ジャンル: {selected_genre}")
+
+prompt = f"""
 YouTube ShortsとTikTok向けの、知的好奇心をくすぐる具体的な雑学・豆知識の台本を1つ作成してください。
 
+【今回の指定ジャンル】
+「{selected_genre}」のテーマから、あまり知られていないニッチで面白い具体的なトリビアを1つ選んでください。
+
 【絶対に守るルール】
-1. 抽象的な表現は禁止。必ず「具体的な生物名・地名・歴史上の人物名・企業名・数値」を台本の中に明記すること。（例：「世界で最も危険な鳥」なら必ず「ヒクイドリ」と名前を出し、時速50kmや12cmの爪などの具体例を入れる）
-2. 視聴者が「へぇ〜！」と納得するオチまで完結させること。
+1. 抽象的な表現は禁止。必ず「具体的な生物名・地名・歴史上の人物名・企業名・数値」を台本の中に明記すること。
+2. ありきたりな定番雑学（ヒクイドリ、サメ、バナナ、エッフェル塔など）は避け、視聴者が「へぇ〜！」と驚く具体的な事実とオチまで完結させること。
 3. 必ず以下のJSON形式のみで出力すること（マークダウン記法は不要）。
 
-{
+{{
   "title": "画面上部に常時表示する短い見出し（18文字以内・ハッシュタグなし）",
   "description": "動画の説明文と関連ハッシュタグ4〜5個（#雑学 #豆知識 など）",
-  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: bird, ocean, space, money, forest, city）",
+  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: food, history, city, brain, money, space）",
   "script": [
     "1文目：視聴者を引き込む問いかけやフック（20〜28文字）",
     "2文目：結論となる具体的な名前・答えの提示（22〜32文字）",
@@ -203,7 +224,7 @@ YouTube ShortsとTikTok向けの、知的好奇心をくすぐる具体的な雑
     "4文目：さらに深い裏話や数値などの具体例2（25〜35文字）",
     "5文目：印象に残るまとめ・一言オチ（20〜28文字）"
   ]
-}
+}}
 """
 
 response = None
@@ -214,7 +235,8 @@ for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash"]:
                 model=model,
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+                    response_mime_type="application/json",
+                    temperature=1.2,
                 ),
             )
             break
@@ -249,8 +271,8 @@ if PEXELS_API_KEY:
     PEXELS_BASE = clean_url("https://" + "api." + "pexels." + "com/videos/search")
     
     for query_url in [
-        f"{PEXELS_BASE}?query={encoded_kw}&orientation=portrait&per_page=5",
-        f"{PEXELS_BASE}?query=nature&orientation=portrait&per_page=5",
+        f"{PEXELS_BASE}?query={encoded_kw}&orientation=portrait&per_page=10",
+        f"{PEXELS_BASE}?query=nature&orientation=portrait&per_page=10",
     ]:
         r = requests.get(query_url, headers=headers)
         if r.status_code != 200:
@@ -258,7 +280,8 @@ if PEXELS_API_KEY:
             break
         videos = r.json().get("videos", [])
         if videos:
-            video_files = videos[0]["video_files"]
+            selected_video = random.choice(videos)
+            video_files = selected_video["video_files"]
             hd_files = [f for f in video_files if f.get("width", 0) >= 720 and f.get("file_type") == "video/mp4"]
             download_url = hd_files[0]["link"] if hd_files else video_files[0]["link"]
             with open(bg_video_path, "wb") as f:
@@ -354,7 +377,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
         print(f"YouTube アップロードエラー: {e}")
 
 # ==========================================
-# 6. TikTok へアップロード（Direct Post 優先 ＋ ステータス確認）
+# 6. TikTok へアップロード（Direct Post 優先 ＋ 完了までステータス追跡）
 # ==========================================
 if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
     try:
@@ -378,7 +401,7 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
         video_size = os.path.getsize(output_video)
         print(f"TikTok 動画アップロード初期化中... (サイズ: {video_size} bytes)")
 
-        # まずはプロフィール直接投稿（Direct Post）を試行（未審査アプリは SELF_ONLY で投稿可能）
+        # まずはプロフィール直接投稿（Direct Post）を試行（video.publishスコープ有効時に動作）
         TIKTOK_DIRECT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/video/init/")
         init_res = requests.post(
             TIKTOK_DIRECT_URL,
@@ -403,7 +426,7 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
             },
         ).json()
 
-        # Direct Post が未有効の場合は従来の Inbox（受信トレイ）送信にフォールバック
+        # Direct Post 権限がない場合は Inbox（受信トレイ）送信にフォールバック
         if not init_res.get("data", {}).get("upload_url"):
             print(f"Direct Post スキップ ({init_res.get('error', {}).get('message', '')}) -> Inbox送信へ切替")
             TIKTOK_INBOX_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
@@ -442,18 +465,22 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
         )
         print(f"TikTok データ送信完了 (Status: {put_res.status_code}, Publish ID: {publish_id})")
 
-        # 5秒待ってTikTokサーバー側の処理ステータス（成功/失敗理由）を確認
-        time.sleep(5)
+        # 処理完了（SEND_TO_USER_INBOX / PUBLISH_COMPLETE / FAILED）まで最大30秒追跡
         STATUS_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/status/fetch/")
-        status_res = requests.post(
-            STATUS_URL,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json",
-            },
-            json={"publish_id": publish_id},
-        ).json()
-        print(f"TikTok 処理ステータス確認結果: {status_res}")
+        for check_i in range(6):
+            time.sleep(5)
+            status_res = requests.post(
+                STATUS_URL,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Content-Type": "application/json",
+                },
+                json={"publish_id": publish_id},
+            ).json()
+            st = status_res.get("data", {}).get("status")
+            print(f"TikTok 処理ステータス ({check_i+1}/6): {status_res}")
+            if st in ["SEND_TO_USER_INBOX", "PUBLISH_COMPLETE", "FAILED"]:
+                break
 
     except Exception as e:
         print(f"TikTok アップロードエラー: {e}")
