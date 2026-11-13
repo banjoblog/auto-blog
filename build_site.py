@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import random
 from datetime import datetime
 from google import genai
 from google.genai import types
@@ -8,7 +9,7 @@ from google.genai import types
 # 1回の実行で新規生成するAIツールページの上限数
 MAX_TOOL_BATCH = 5
 
-# Trueにすると、すでに生成済みの全ページの「CTAボタン・リンク・CSS」をAPI消費なしで一括最新化します
+# Trueにすると、すでに生成済みの全ページの「アフィリエイト枠・CTA・CSS」をAPI消費なしで一括更新します
 REFRESH_EXISTING_LAYOUT = True
 
 OUTPUT_DIR = "dist"
@@ -72,7 +73,102 @@ def generate_with_retry(prompt):
     raise RuntimeError("すべての候補モデルで生成に失敗しました。")
 
 # ==========================================
-# 共通スタイルシート（CTAボタン・PRボックス対応）
+# アフィリエイト広告定義（A8タグは改変せずそのまま保持）
+# ==========================================
+AFFILIATE_ITEMS = {
+    "audible": {
+        "title": "🎧 AI・ビジネス最新トレンドを「耳」からインプット（Audible）",
+        "desc": "作業中や移動時間に最新のAI解説書・ビジネス書を聴き放題で効率学習。無料体験から気軽に始められます。",
+        "html": """<a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=261107111593&wid=003&eno=01&mid=s00000027126001006000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" alt="">""",
+    },
+    "xserver": {
+        "title": "🚀 AIで作ったWebサイト・ブログを公開するなら「エックスサーバー」",
+        "desc": "国内シェアNo.1の高速レンタルサーバー。AIで生成した記事やアプリを安定・高速に公開できます。",
+        "html": """<a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
+<img border="0" width="350" height="240" alt="" src="https://www21.a8.net/svt/bgt?aid=200707134459&wid=001&eno=01&mid=s00000001642001066000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" alt="">""",
+    },
+    "xserver_domain": {
+        "title": "🌐 独自ドメインの取得・管理なら「エックスサーバードメイン」",
+        "desc": "AIメディアや個人開発サービスの独自ドメインを低コストで取得・一元管理。",
+        "html": """<a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7K348I+CO4+15THJ5" rel="nofollow">
+<img border="0" width="468" height="60" alt="" src="https://www25.a8.net/svt/bgt?aid=200707134457&wid=001&eno=01&mid=s00000001642007024000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=3BHUM6+7K348I+CO4+15THJ5" alt="">""",
+    },
+    "rakuten_ichiba": {
+        "title": "🛒 AI活用を加速するPC・ガジェット・関連書籍を「楽天市場」で探す",
+        "desc": "ローカルAI用のGPU搭載PCやマイク、最新AI解説本までポイント還元でお得にチェック。",
+        "html": """<a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+61Z81&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa20043004637_3BBXGT_8G8KG2_2HOM_61Z81%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow">
+<img src="http://hbb.afl.rakuten.co.jp/hsb/0eb4bbdb.d3e5aa19.0eb4bbaa.95151395/" border="0"></a>
+<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=3BBXGT+8G8KG2+2HOM+61Z81" alt="">""",
+    },
+    "rakuten_travel": {
+        "title": "✈️ AIで作成した旅行プランを「楽天トラベル」で予約",
+        "desc": "ChatGPTやPerplexityで組んだ旅程に合わせて、国内・海外のホテルやツアーをスマートに予約。",
+        "html": """<a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F" rel="nofollow">
+<img src="http://hbb.afl.rakuten.co.jp/hsb/0ea7f9a4.79280dcb.0ea7f99d.1ac92fca/153145/" border="0"></a>
+<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5" alt="">""",
+    },
+    "dmm_fx": {
+        "title": "📈 データ分析・マーケットチェックに興味がある方へ（DMM FX）",
+        "desc": "AI時代のリスク管理と資産運用に。高機能チャートツールを備えた国内人気口座。",
+        "html": """<a href="https://px.a8.net/svt/ejp?a8mat=3BBXGT+8HFFNM+1WP2+6G4HD" rel="nofollow">
+<img border="0" width="250" height="250" alt="" src="https://www28.a8.net/svt/bgt?aid=200430893513&wid=003&eno=01&mid=s00000008903001083000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=3BBXGT+8HFFNM+1WP2+6G4HD" alt="">""",
+    },
+    "amazon": {
+        "title": "📦 Amazon でAI関連書籍・PC周辺機器・ガジェットをチェック",
+        "desc": "プロンプトエンジニアリング入門書やクリエイター向けデバイスをAmazonで検索。",
+        "html": """<a href="https://www.amazon.co.jp?&linkCode=ll2&tag=ntklog0c-22&linkId=c7895fa240d32728460bada24cc0eeb6&ref_=as_li_ss_tl" target="_blank" rel="nofollow sponsored noopener" class="cta-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Amazon.co.jp で詳細を見る →</a>""",
+    },
+}
+
+def build_pr_section(category="general"):
+    """カテゴリに応じて最適なアフィリエイト枠（2〜3件）を自動組み立て"""
+    if category in ["Code Generator", "Code Editor", "Text Generator", "Copywriting", "Productivity"]:
+        keys = ["xserver", "audible", "amazon"]
+    elif category in ["Image Generator", "Video Generator", "Voice Generator", "Music Generator", "Design", "Video Editor", "Avatar Generator"]:
+        keys = ["audible", "rakuten_ichiba", "amazon"]
+    elif category == "Search Engine":
+        keys = ["audible", "rakuten_travel", "amazon"]
+    else:
+        # ブログ記事・トップページ用
+        keys = ["audible", "xserver", "amazon"]
+
+    cards_html = ""
+    for k in keys:
+        item = AFFILIATE_ITEMS[k]
+        cards_html += f"""
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>{item['title']}</h4>
+                <p>{item['desc']}</p>
+            </div>
+            <div class="pr-banner">
+                {item['html']}
+            </div>
+        </div>
+        """
+
+    # 記事下部にドメイン横長バナーも添える
+    domain_banner = AFFILIATE_ITEMS["xserver_domain"]["html"]
+    return f"""
+    <section class="pr-section">
+        <h3 class="pr-section-title">📢 おすすめサービス・関連リソース（PR）</h3>
+        <div class="pr-grid">
+            {cards_html}
+        </div>
+        <div class="pr-wide-banner">
+            {domain_banner}
+        </div>
+    </section>
+    """
+
+# ==========================================
+# 共通スタイルシート（PRバナー・CTA対応）
 # ==========================================
 COMMON_CSS = """
 <style>
@@ -85,8 +181,6 @@ COMMON_CSS = """
     --primary: #2563eb;
     --primary-soft: #eff6ff;
     --accent: #7c3aed;
-    --cta-start: #2563eb;
-    --cta-end: #7c3aed;
     --success-bg: #dcfce7;
     --success-text: #166534;
     --pending-bg: #f1f5f9;
@@ -202,13 +296,12 @@ COMMON_CSS = """
     border-bottom: 1px solid var(--border);
     margin-bottom: 24px;
   }
-  /* アフィリエイト・CTAボックス */
   .cta-box {
     background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
     border: 1px solid #c7d2fe;
     border-radius: 14px;
-    padding: 22px 24px;
-    margin: 26px 0;
+    padding: 20px 24px;
+    margin: 24px 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -217,7 +310,7 @@ COMMON_CSS = """
   }
   .cta-box-text strong {
     display: block;
-    font-size: 1.08rem;
+    font-size: 1.06rem;
     color: #1e1b4b;
     margin-bottom: 4px;
   }
@@ -227,20 +320,85 @@ COMMON_CSS = """
   }
   .cta-btn {
     display: inline-block;
-    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     color: #ffffff !important;
     font-weight: 700;
-    font-size: 0.98rem;
-    padding: 13px 26px;
+    font-size: 0.95rem;
+    padding: 12px 24px;
     border-radius: 10px;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease;
     text-decoration: none !important;
     white-space: nowrap;
   }
   .cta-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  }
+  /* PRセクション */
+  .pr-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .pr-section-title {
+    font-size: 1.2rem;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .pr-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .pr-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .pr-card h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .pr-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .pr-banner {
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .pr-wide-banner {
+    margin-top: 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-wide-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
   }
   .article-body h2 {
     margin-top: 38px;
@@ -394,213 +552,58 @@ COMMON_CSS = """
 """
 
 # ==========================================
-# AIツールデータベース（ここにアフィリエイトURLを設定）
+# AIツールデータベース
 # ==========================================
-# ※ aff_url にASPや公式パートナーのリンクを入れると、自動でPR表記＋CTAボタンが表示されます
 TOOLS_DB = [
-    {
-        "slug": "chatgpt",
-        "name": "ChatGPT",
-        "category": "Text Generator",
-        "tagline": "対話・文章作成・プログラミングをこなす万能AI",
-        "official_url": "https://chatgpt.com/",
-        "aff_url": "",  # 例: "https://px.a8.net/svt/ejp?a8mat=XXXX"
-        "cta_text": "ChatGPT 公式サイトで無料で始める →",
-    },
-    {
-        "slug": "claude",
-        "name": "Claude",
-        "category": "Text Generator",
-        "tagline": "長文読解と自然な日本語表現・コーディングに強み",
-        "official_url": "https://claude.ai/",
-        "aff_url": "",
-        "cta_text": "Claude 公式サイトで試してみる →",
-    },
-    {
-        "slug": "midjourney",
-        "name": "Midjourney",
-        "category": "Image Generator",
-        "tagline": "圧倒的なアート品質を誇る画像生成AIの定番",
-        "official_url": "https://www.midjourney.com/",
-        "aff_url": "",
-        "cta_text": "Midjourney 公式サイトを見る →",
-    },
-    {
-        "slug": "stable-diffusion",
-        "name": "Stable Diffusion",
-        "category": "Image Generator",
-        "tagline": "ローカル環境や拡張機能で自在に操れるオープンソース画像AI",
-        "official_url": "https://stability.ai/",
-        "aff_url": "",
-        "cta_text": "Stability AI 公式サイトを見る →",
-    },
-    {
-        "slug": "runway",
-        "name": "Runway",
-        "category": "Video Generator",
-        "tagline": "テキストや画像から映画品質の動画を生成・編集",
-        "official_url": "https://runwayml.com/",
-        "aff_url": "",
-        "cta_text": "Runway で動画生成を始める →",
-    },
-    {
-        "slug": "sora",
-        "name": "Sora",
-        "category": "Video Generator",
-        "tagline": "物理法則を理解した長尺・高精細な動画生成モデル",
-        "official_url": "https://sora.com/",
-        "aff_url": "",
-        "cta_text": "Sora 公式サイトをチェック →",
-    },
-    {
-        "slug": "elevenlabs",
-        "name": "ElevenLabs",
-        "category": "Voice Generator",
-        "tagline": "感情豊かな多言語音声合成・ボイスクローンAI",
-        "official_url": "https://elevenlabs.io/",
-        "aff_url": "",
-        "cta_text": "ElevenLabs を無料で試す →",
-    },
-    {
-        "slug": "suno",
-        "name": "Suno AI",
-        "category": "Music Generator",
-        "tagline": "歌詞とジャンル指定だけでボーカル入り楽曲を即生成",
-        "official_url": "https://suno.com/",
-        "aff_url": "",
-        "cta_text": "Suno AI で無料作曲を始める →",
-    },
-    {
-        "slug": "udio",
-        "name": "Udio",
-        "category": "Music Generator",
-        "tagline": "プロ品質のサウンド構成とリミックスが可能な音楽AI",
-        "official_url": "https://www.udio.com/",
-        "aff_url": "",
-        "cta_text": "Udio 公式サイトを見る →",
-    },
-    {
-        "slug": "perplexity",
-        "name": "Perplexity",
-        "category": "Search Engine",
-        "tagline": "出典リンク付きで最新情報を即座に要約するAI検索",
-        "official_url": "https://www.perplexity.ai/",
-        "aff_url": "",
-        "cta_text": "Perplexity でAI検索を体験する →",
-    },
-    {
-        "slug": "v0-dev",
-        "name": "v0.dev",
-        "category": "Code Generator",
-        "tagline": "プロンプトからReact/TailwindのUIコードを即生成",
-        "official_url": "https://v0.dev/",
-        "aff_url": "",
-        "cta_text": "v0.dev でUIを自動生成する →",
-    },
-    {
-        "slug": "cursor",
-        "name": "Cursor",
-        "category": "Code Editor",
-        "tagline": "プロジェクト全体を理解して自律的に実装するAIエディタ",
-        "official_url": "https://www.cursor.com/",
-        "aff_url": "",
-        "cta_text": "Cursor を無料ダウンロード →",
-    },
-    {
-        "slug": "github-copilot",
-        "name": "GitHub Copilot",
-        "category": "Code Generator",
-        "tagline": "開発ワークフローに統合された定番AIペアプログラマー",
-        "official_url": "https://github.com/features/copilot",
-        "aff_url": "",
-        "cta_text": "GitHub Copilot を試してみる →",
-    },
-    {
-        "slug": "notion-ai",
-        "name": "Notion AI",
-        "category": "Productivity",
-        "tagline": "ドキュメント作成・議事録要約・タスク整理を自動化",
-        "official_url": "https://www.notion.so/product/ai",
-        "aff_url": "",
-        "cta_text": "Notion AI を無料で使ってみる →",
-    },
-    {
-        "slug": "canva-ai",
-        "name": "Canva AI",
-        "category": "Design",
-        "tagline": "SNS画像・プレゼン資料のデザインをAIで瞬時に生成",
-        "official_url": "https://www.canva.com/",
-        "aff_url": "",
-        "cta_text": "Canva AI でデザインを始める →",
-    },
-    {
-        "slug": "jasper",
-        "name": "Jasper AI",
-        "category": "Copywriting",
-        "tagline": "マーケティング・広告文に特化したビジネス向けAI",
-        "official_url": "https://www.jasper.ai/",
-        "aff_url": "",
-        "cta_text": "Jasper AI の無料トライアルへ →",
-    },
-    {
-        "slug": "copy-ai",
-        "name": "Copy.ai",
-        "category": "Copywriting",
-        "tagline": "セールスコピーやSNS投稿案を量産するライティングAI",
-        "official_url": "https://www.copy.ai/",
-        "aff_url": "",
-        "cta_text": "Copy.ai を無料で試す →",
-    },
-    {
-        "slug": "descript",
-        "name": "Descript",
-        "category": "Video Editor",
-        "tagline": "文字起こしテキストを編集するだけで動画カットが完了",
-        "official_url": "https://www.descript.com/",
-        "aff_url": "",
-        "cta_text": "Descript で動画編集を効率化する →",
-    },
-    {
-        "slug": "heygen",
-        "name": "HeyGen",
-        "category": "Avatar Generator",
-        "tagline": "リアルなAIアバターが自然な口パクで話す動画を作成",
-        "official_url": "https://www.heygen.com/",
-        "aff_url": "",
-        "cta_text": "HeyGen でAIアバター動画を作る →",
-    },
+    {"slug": "chatgpt", "name": "ChatGPT", "category": "Text Generator", "tagline": "対話・文章作成・プログラミングをこなす万能AI", "official_url": "https://chatgpt.com/"},
+    {"slug": "claude", "name": "Claude", "category": "Text Generator", "tagline": "長文読解と自然な日本語表現・コーディングに強み", "official_url": "https://claude.ai/"},
+    {"slug": "midjourney", "name": "Midjourney", "category": "Image Generator", "tagline": "圧倒的なアート品質を誇る画像生成AIの定番", "official_url": "https://www.midjourney.com/"},
+    {"slug": "stable-diffusion", "name": "Stable Diffusion", "category": "Image Generator", "tagline": "ローカル環境や拡張機能で自在に操れるオープンソース画像AI", "official_url": "https://stability.ai/"},
+    {"slug": "runway", "name": "Runway", "category": "Video Generator", "tagline": "テキストや画像から映画品質の動画を生成・編集", "official_url": "https://runwayml.com/"},
+    {"slug": "sora", "name": "Sora", "category": "Video Generator", "tagline": "物理法則を理解した長尺・高精細な動画生成モデル", "official_url": "https://sora.com/"},
+    {"slug": "elevenlabs", "name": "ElevenLabs", "category": "Voice Generator", "tagline": "感情豊かな多言語音声合成・ボイスクローンAI", "official_url": "https://elevenlabs.io/"},
+    {"slug": "suno", "name": "Suno AI", "category": "Music Generator", "tagline": "歌詞とジャンル指定だけでボーカル入り楽曲を即生成", "official_url": "https://suno.com/"},
+    {"slug": "udio", "name": "Udio", "category": "Music Generator", "tagline": "プロ品質のサウンド構成とリミックスが可能な音楽AI", "official_url": "https://www.udio.com/"},
+    {"slug": "perplexity", "name": "Perplexity", "category": "Search Engine", "tagline": "出典リンク付きで最新情報を即座に要約するAI検索", "official_url": "https://www.perplexity.ai/"},
+    {"slug": "v0-dev", "name": "v0.dev", "category": "Code Generator", "tagline": "プロンプトからReact/TailwindのUIコードを即生成", "official_url": "https://v0.dev/"},
+    {"slug": "cursor", "name": "Cursor", "category": "Code Editor", "tagline": "プロジェクト全体を理解して自律的に実装するAIエディタ", "official_url": "https://www.cursor.com/"},
+    {"slug": "github-copilot", "name": "GitHub Copilot", "category": "Code Generator", "tagline": "開発ワークフローに統合された定番AIペアプログラマー", "official_url": "https://github.com/features/copilot"},
+    {"slug": "notion-ai", "name": "Notion AI", "category": "Productivity", "tagline": "ドキュメント作成・議事録要約・タスク整理を自動化", "official_url": "https://www.notion.so/product/ai"},
+    {"slug": "canva-ai", "name": "Canva AI", "category": "Design", "tagline": "SNS画像・プレゼン資料のデザインをAIで瞬時に生成", "official_url": "https://www.canva.com/"},
+    {"slug": "jasper", "name": "Jasper AI", "category": "Copywriting", "tagline": "マーケティング・広告文に特化したビジネス向けAI", "official_url": "https://www.jasper.ai/"},
+    {"slug": "copy-ai", "name": "Copy.ai", "category": "Copywriting", "tagline": "セールスコピーやSNS投稿案を量産するライティングAI", "official_url": "https://www.copy.ai/"},
+    {"slug": "descript", "name": "Descript", "category": "Video Editor", "tagline": "文字起こしテキストを編集するだけで動画カットが完了", "official_url": "https://www.descript.com/"},
+    {"slug": "heygen", "name": "HeyGen", "category": "Avatar Generator", "tagline": "リアルなAIアバターが自然な口パクで話す動画を作成", "official_url": "https://www.heygen.com/"},
 ]
 
-def build_cta_box(item):
-    aff = item.get("aff_url", "").strip()
-    target_url = aff if aff else item.get("official_url", "#")
-    rel_attr = 'rel="nofollow sponsored noopener"' if aff else 'rel="noopener"'
-    pr_label = "【PR】" if aff else ""
-    btn_text = item.get("cta_text") or f"{item['name']} 公式サイトへ →"
+def build_official_cta(item):
     return f"""
     <div class="cta-box">
         <div class="cta-box-text">
-            <strong>{pr_label}{item['name']} を今すぐ使ってみる</strong>
+            <strong>{item['name']} 公式サイトをチェックする</strong>
             <span>{item['tagline']}</span>
         </div>
-        <a href="{target_url}" target="_blank" {rel_attr} class="cta-btn">{btn_text}</a>
+        <a href="{item['official_url']}" target="_blank" rel="noopener" class="cta-btn">{item['name']} 公式サイトへ →</a>
     </div>
     """
 
+def extract_body(html_text):
+    if "<!-- BODY_START -->" in html_text and "<!-- BODY_END -->" in html_text:
+        s = html_text.find("<!-- BODY_START -->") + len("<!-- BODY_START -->")
+        e = html_text.find("<!-- BODY_END -->")
+        return html_text[s:e].strip()
+    if '<div class="article-body">' in html_text:
+        s = html_text.find('<div class="article-body">') + len('<div class="article-body">')
+        e = html_text.find("</div>", s)
+        return html_text[s:e].strip()
+    return None
+
 # ==========================================
-# 1. 毎日の自動ブログ記事生成
+# 1. 毎日の自動ブログ記事生成＆PR枠更新
 # ==========================================
 today_str = datetime.now().strftime("%Y-%m-%d")
 blog_filename = f"post-{today_str}.html"
 blog_filepath = os.path.join(BLOG_DIR, blog_filename)
-
-# ブログ末尾に差し込むおすすめツールPR枠（aff_urlが設定されているものを優先表示）
-aff_tools = [t for t in TOOLS_DB if t.get("aff_url", "").strip()]
-featured_tools = aff_tools[:2] if aff_tools else TOOLS_DB[:2]
-blog_cta_html = ""
-for ft in featured_tools:
-    blog_cta_html += build_cta_box(ft)
-blog_pr_notice = '<div class="pr-notice">※本記事にはプロモーション（アフィリエイトリンク）が含まれています。</div>' if aff_tools else ""
 
 blog_template = """<!DOCTYPE html>
 <html lang="ja">
@@ -621,7 +624,7 @@ blog_template = """<!DOCTYPE html>
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="../index.html">ホーム</a> &gt; <span>トレンド記事</span></div>
         <article class="article-card">
-            {pr_notice}
+            <div class="pr-notice">※当サイトはプロモーション（アフィリエイト広告）を含みます。</div>
             <header class="article-header">
                 <span class="badge">AI TREND REPORT</span>
                 <h1>{title}</h1>
@@ -632,9 +635,7 @@ blog_template = """<!DOCTYPE html>
                 {body}
                 <!-- BODY_END -->
             </div>
-            <hr style="border: none; border-top: 1px solid var(--border); margin: 36px 0 24px;">
-            <h3 style="margin-bottom: 12px;">💡 記事とあわせて使いたい注目AIツール</h3>
-            {blog_cta}
+            {pr_section}
         </article>
     </main>
 
@@ -670,8 +671,7 @@ if not os.path.exists(blog_filepath):
             date=today_str,
             body=body_html,
             css=COMMON_CSS,
-            pr_notice=blog_pr_notice,
-            blog_cta=blog_cta_html,
+            pr_section=build_pr_section("blog"),
         )
         with open(blog_filepath, "w", encoding="utf-8") as f:
             f.write(full_blog_html)
@@ -681,9 +681,30 @@ if not os.path.exists(blog_filepath):
         print(f"ブログ生成エラー: {e}", flush=True)
 else:
     print(f"本日のブログ記事（{blog_filename}）はすでに作成済みです。", flush=True)
+    if REFRESH_EXISTING_LAYOUT:
+        for bf in os.listdir(BLOG_DIR):
+            if not bf.endswith(".html"):
+                continue
+            b_path = os.path.join(BLOG_DIR, bf)
+            with open(b_path, "r", encoding="utf-8") as f:
+                old_html = f.read()
+            body_extracted = extract_body(old_html)
+            if body_extracted:
+                s_t = old_html.find("<title>") + 7
+                e_t = old_html.find("</title>")
+                old_title = old_html[s_t:e_t].replace(" | AI Tech Hub", "") if s_t > 6 else bf
+                d_label = bf.replace("post-", "").replace(".html", "")
+                with open(b_path, "w", encoding="utf-8") as f:
+                    f.write(blog_template.format(
+                        title=old_title,
+                        date=d_label,
+                        body=body_extracted,
+                        css=COMMON_CSS,
+                        pr_section=build_pr_section("blog"),
+                    ))
 
 # ==========================================
-# 2. AIツールデータベース（pSEO）の生成＆CTA更新
+# 2. AIツールデータベース（pSEO）の生成＆PR枠更新
 # ==========================================
 tool_template = """<!DOCTYPE html>
 <html lang="ja">
@@ -704,7 +725,7 @@ tool_template = """<!DOCTYPE html>
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>{category}</span> &gt; <span>{name}</span></div>
         <article class="article-card">
-            {pr_notice}
+            <div class="pr-notice">※当ページはプロモーション（アフィリエイト広告）を含みます。</div>
             <header class="article-header">
                 <span class="badge">{category}</span>
                 <h1>{name} の特徴・使い方・料金まとめ</h1>
@@ -720,6 +741,8 @@ tool_template = """<!DOCTYPE html>
             </div>
 
             {cta_box}
+
+            {pr_section}
         </article>
 
         {related_section}
@@ -764,27 +787,15 @@ def build_related_html(current_item):
     </section>
     """
 
-def extract_body(html_text):
-    if "<!-- BODY_START -->" in html_text and "<!-- BODY_END -->" in html_text:
-        s = html_text.find("<!-- BODY_START -->") + len("<!-- BODY_START -->")
-        e = html_text.find("<!-- BODY_END -->")
-        return html_text[s:e].strip()
-    if '<div class="article-body">' in html_text:
-        s = html_text.find('<div class="article-body">') + len('<div class="article-body">')
-        e = html_text.find("</div>", s)
-        return html_text[s:e].strip()
-    return None
-
 generated_tools = 0
 for item in TOOLS_DB:
     if not item.get("slug"):
         continue
     file_path = os.path.join(OUTPUT_DIR, f"{item['slug']}.html")
-    pr_notice = '<div class="pr-notice">※当ページはプロモーション（アフィリエイトリンク）を含みます。</div>' if item.get("aff_url", "").strip() else ""
-    cta_html = build_cta_box(item)
+    cta_html = build_official_cta(item)
+    pr_html = build_pr_section(item["category"])
     related_html = build_related_html(item)
 
-    # すでに記事が存在する場合：APIを使わずにCTAリンクやレイアウトだけ最新化
     if os.path.exists(file_path):
         if REFRESH_EXISTING_LAYOUT:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -795,9 +806,9 @@ for item in TOOLS_DB:
                     name=item["name"],
                     category=item["category"],
                     tagline=item["tagline"],
-                    pr_notice=pr_notice,
                     cta_box=cta_html,
                     body=existing_body,
+                    pr_section=pr_html,
                     related_section=related_html,
                     css=COMMON_CSS,
                 )
@@ -827,9 +838,9 @@ for item in TOOLS_DB:
             name=item["name"],
             category=item["category"],
             tagline=item["tagline"],
-            pr_notice=pr_notice,
             cta_box=cta_html,
             body=text,
+            pr_section=pr_html,
             related_section=related_html,
             css=COMMON_CSS,
         )
@@ -884,6 +895,23 @@ for item in TOOLS_DB:
     </div>
     """
 
+# トップページ下部にもおすすめサービスPR枠を配置（Audible / エックスサーバー / DMM FX）
+top_pr_cards = ""
+for k in ["audible", "xserver", "dmm_fx"]:
+    p_item = AFFILIATE_ITEMS[k]
+    top_pr_cards += f"""
+    <div class="pr-card">
+        <div class="pr-card-body">
+            <span class="pr-tag">PR</span>
+            <h4>{p_item['title']}</h4>
+            <p>{p_item['desc']}</p>
+        </div>
+        <div class="pr-banner">
+            {p_item['html']}
+        </div>
+    </div>
+    """
+
 index_template = """<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -921,6 +949,16 @@ index_template = """<!DOCTYPE html>
                 {tools}
             </div>
         </section>
+
+        <section class="pr-section">
+            <h2 class="section-title">📢 ピックアップ・おすすめサービス（PR）</h2>
+            <div class="pr-grid">
+                {top_pr}
+            </div>
+            <div class="pr-wide-banner">
+                {domain_banner}
+            </div>
+        </section>
     </main>
 
     <footer class="footer">
@@ -929,7 +967,13 @@ index_template = """<!DOCTYPE html>
 </body>
 </html>"""
 
-index_html = index_template.format(blogs=blog_list_html, tools=index_items_html, css=COMMON_CSS)
+index_html = index_template.format(
+    blogs=blog_list_html,
+    tools=index_items_html,
+    top_pr=top_pr_cards,
+    domain_banner=AFFILIATE_ITEMS["xserver_domain"]["html"],
+    css=COMMON_CSS,
+)
 
 with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
     f.write(index_html)
