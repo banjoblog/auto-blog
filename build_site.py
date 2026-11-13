@@ -20,25 +20,37 @@ if not api_key:
 
 client = genai.Client(
     api_key=api_key,
-    http_options=types.HttpOptions(timeout=60000),
+    http_options=types.HttpOptions(timeout=180000),  # 180秒タイムアウト
 )
-MODEL_NAME = "gemini-3.8-flash"
 
-def generate_with_retry(prompt, retries=3, wait=15):
-    for attempt in range(1, retries + 1):
-        try:
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=prompt,
-            )
-            return response.text
-        except Exception as e:
-            if "503" in str(e) or "UNAVAILABLE" in str(e):
-                print(f"サーバー混雑 (503) のため {wait}秒後にリトライします ({attempt}/{retries})...")
-                time.sleep(wait)
-            else:
-                raise e
-    raise RuntimeError("リトライ上限に達しました（503 UNAVAILABLE）")
+# 優先順にモデルを試行（混雑時は自動で軽量モデルにフォールバック）
+CANDIDATE_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-lite",
+    "gemini-2.5-flash-lite",
+]
+
+def generate_with_retry(prompt):
+    for model_name in CANDIDATE_MODELS:
+        for attempt in range(1, 3):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                return response.text
+            except Exception as e:
+                err_str = str(e)
+                if any(code in err_str for code in ["503", "504", "UNAVAILABLE", "DEADLINE_EXCEEDED"]):
+                    print(f"[{model_name}] 混雑/タイムアウトのため10秒後に再試行します ({attempt}/2)...")
+                    time.sleep(10)
+                elif "404" in err_str or "NOT_FOUND" in err_str:
+                    print(f"[{model_name}] 利用不可のため次のモデルへ切り替えます...")
+                    break
+                else:
+                    raise e
+        print(f"[{model_name}] 応答がないため次のモデルへフォールバックします...")
+    raise RuntimeError("すべての候補モデルで生成に失敗しました。")
 
 # ==========================================
 # 1. 毎日の自動ブログ記事生成
@@ -49,10 +61,11 @@ blog_filepath = os.path.join(BLOG_DIR, blog_filename)
 
 if not os.path.exists(blog_filepath):
     print(f"本日のブログ記事を生成中 ({today_str})...")
-    blog_prompt = f"今日は {today_str} です。最新のAIトレンドや活用法に関するSEO最適化されたブログ記事を日本語で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, h3, pタグを使用した本文を出力してください。"
+    blog_prompt = f"今日は {today_str} です。最新のAIトレンドや活用法に関するSEO最適化されたブログ記事を日本語で800〜1200文字程度で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, h3, pタグを使用したHTML本文のみを出力してください（マークダウンの```は不要）。"
     try:
         text = generate_with_retry(blog_prompt)
-        lines = text.strip().split("\n")
+        text = text.replace("```html", "").replace("```", "").strip()
+        lines = text.split("\n")
         title = f"{today_str} のAI・テクノロジー最新情報"
         body_lines = []
 
@@ -70,7 +83,7 @@ if not os.path.exists(blog_filepath):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{title}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css](https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css)">
 </head>
 <body>
     <main class="container">
@@ -127,7 +140,7 @@ tool_template = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{name} の使い方・特徴まとめ</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css](https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css)">
 </head>
 <body>
     <main class="container">
@@ -149,10 +162,11 @@ for item in TOOLS_DB:
         break
 
     print(f"ツールページ生成中 ({generated_tools + 1}/{MAX_TOOL_BATCH}): {item['name']}...")
-    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の詳細な紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で作成してください。"
+    prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で800〜1200文字程度で作成してください（マークダウンの```は不要）。"
 
     try:
         text = generate_with_retry(prompt)
+        text = text.replace("```html", "").replace("```", "").strip()
         full_html = tool_template.format(name=item['name'], body=text)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_html)
