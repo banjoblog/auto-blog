@@ -15,8 +15,6 @@
     --primary: #2563eb;
     --primary-soft: #eff6ff;
     --accent: #7c3aed;
-    --cta-start: #2563eb;
-    --cta-end: #7c3aed;
     --success-bg: #dcfce7;
     --success-text: #166534;
     --pending-bg: #f1f5f9;
@@ -132,13 +130,12 @@
     border-bottom: 1px solid var(--border);
     margin-bottom: 24px;
   }
-  /* アフィリエイト・CTAボックス */
   .cta-box {
     background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
     border: 1px solid #c7d2fe;
     border-radius: 14px;
-    padding: 22px 24px;
-    margin: 26px 0;
+    padding: 20px 24px;
+    margin: 24px 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -147,7 +144,7 @@
   }
   .cta-box-text strong {
     display: block;
-    font-size: 1.08rem;
+    font-size: 1.06rem;
     color: #1e1b4b;
     margin-bottom: 4px;
   }
@@ -157,20 +154,85 @@
   }
   .cta-btn {
     display: inline-block;
-    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     color: #ffffff !important;
     font-weight: 700;
-    font-size: 0.98rem;
-    padding: 13px 26px;
+    font-size: 0.95rem;
+    padding: 12px 24px;
     border-radius: 10px;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease;
     text-decoration: none !important;
     white-space: nowrap;
   }
   .cta-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  }
+  /* PRセクション */
+  .pr-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .pr-section-title {
+    font-size: 1.2rem;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .pr-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .pr-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .pr-card h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .pr-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .pr-banner {
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .pr-wide-banner {
+    margin-top: 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-wide-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
   }
   .article-body h2 {
     margin-top: 38px;
@@ -474,9 +536,9 @@
         <div>
             <div class="card-top">
                 <span class="cat-tag">Code Generator</span>
-                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
             </div>
-            <h3>v0.dev</h3>
+            <h3><a href='v0-dev.html'>v0.dev</a></h3>
             <p>プロンプトからReact/TailwindのUIコードを即生成</p>
         </div>
     </div>
@@ -485,9 +547,9 @@
         <div>
             <div class="card-top">
                 <span class="cat-tag">Code Editor</span>
-                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
             </div>
-            <h3>Cursor</h3>
+            <h3><a href='cursor.html'>Cursor</a></h3>
             <p>プロジェクト全体を理解して自律的に実装するAIエディタ</p>
         </div>
     </div>
@@ -496,9 +558,9 @@
         <div>
             <div class="card-top">
                 <span class="cat-tag">Code Generator</span>
-                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
             </div>
-            <h3>GitHub Copilot</h3>
+            <h3><a href='github-copilot.html'>GitHub Copilot</a></h3>
             <p>開発ワークフローに統合された定番AIペアプログラマー</p>
         </div>
     </div>
@@ -507,9 +569,9 @@
         <div>
             <div class="card-top">
                 <span class="cat-tag">Productivity</span>
-                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
             </div>
-            <h3>Notion AI</h3>
+            <h3><a href='notion-ai.html'>Notion AI</a></h3>
             <p>ドキュメント作成・議事録要約・タスク整理を自動化</p>
         </div>
     </div>
@@ -518,9 +580,9 @@
         <div>
             <div class="card-top">
                 <span class="cat-tag">Design</span>
-                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
             </div>
-            <h3>Canva AI</h3>
+            <h3><a href='canva-ai.html'>Canva AI</a></h3>
             <p>SNS画像・プレゼン資料のデザインをAIで瞬時に生成</p>
         </div>
     </div>
@@ -569,6 +631,57 @@
         </div>
     </div>
     
+            </div>
+        </section>
+
+        <section class="pr-section">
+            <h2 class="section-title">📢 ピックアップ・おすすめサービス（PR）</h2>
+            <div class="pr-grid">
+                
+    <div class="pr-card">
+        <div class="pr-card-body">
+            <span class="pr-tag">PR</span>
+            <h4>🎧 AI・ビジネス最新トレンドを「耳」からインプット（Audible）</h4>
+            <p>作業中や移動時間に最新のAI解説書・ビジネス書を聴き放題で効率学習。無料体験から気軽に始められます。</p>
+        </div>
+        <div class="pr-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=261107111593&wid=003&eno=01&mid=s00000027126001006000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" alt="">
+        </div>
+    </div>
+    
+    <div class="pr-card">
+        <div class="pr-card-body">
+            <span class="pr-tag">PR</span>
+            <h4>🚀 AIで作ったWebサイト・ブログを公開するなら「エックスサーバー」</h4>
+            <p>国内シェアNo.1の高速レンタルサーバー。AIで生成した記事やアプリを安定・高速に公開できます。</p>
+        </div>
+        <div class="pr-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
+<img border="0" width="350" height="240" alt="" src="https://www21.a8.net/svt/bgt?aid=200707134459&wid=001&eno=01&mid=s00000001642001066000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" alt="">
+        </div>
+    </div>
+    
+    <div class="pr-card">
+        <div class="pr-card-body">
+            <span class="pr-tag">PR</span>
+            <h4>📈 データ分析・マーケットチェックに興味がある方へ（DMM FX）</h4>
+            <p>AI時代のリスク管理と資産運用に。高機能チャートツールを備えた国内人気口座。</p>
+        </div>
+        <div class="pr-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=3BBXGT+8HFFNM+1WP2+6G4HD" rel="nofollow">
+<img border="0" width="250" height="250" alt="" src="https://www28.a8.net/svt/bgt?aid=200430893513&wid=003&eno=01&mid=s00000008903001083000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=3BBXGT+8HFFNM+1WP2+6G4HD" alt="">
+        </div>
+    </div>
+    
+            </div>
+            <div class="pr-wide-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7K348I+CO4+15THJ5" rel="nofollow">
+<img border="0" width="468" height="60" alt="" src="https://www25.a8.net/svt/bgt?aid=200707134457&wid=001&eno=01&mid=s00000001642007024000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=3BHUM6+7K348I+CO4+15THJ5" alt="">
             </div>
         </section>
     </main>

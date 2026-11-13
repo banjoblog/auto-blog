@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>v0.dev の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.06rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 12px 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+  }
+  /* PRセクション */
+  .pr-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .pr-section-title {
+    font-size: 1.2rem;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .pr-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .pr-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .pr-card h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .pr-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .pr-banner {
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .pr-wide-banner {
+    margin-top: 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-wide-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Code Generator</span> &gt; <span>v0.dev</span></div>
+        <article class="article-card">
+            <div class="pr-notice">※当ページはプロモーション（アフィリエイト広告）を含みます。</div>
+            <header class="article-header">
+                <span class="badge">Code Generator</span>
+                <h1>v0.dev の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">プロンプトからReact/TailwindのUIコードを即生成</div>
+            </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>v0.dev 公式サイトをチェックする</strong>
+            <span>プロンプトからReact/TailwindのUIコードを即生成</span>
+        </div>
+        <a href="https://v0.dev/" target="_blank" rel="noopener" class="cta-btn">v0.dev 公式サイトへ →</a>
+    </div>
+    
+
+            <div class="article-body">
+                <!-- BODY_START -->
+                <h2>v0.devとは？（概要と注目される理由）</h2>
+<p>v0.devは、生成AIの力を使ってプロンプトからReactベースのUIコンポーネントを瞬時に生成できる、開発者向けの革新的なツールです。Vercel社が提供するこのプラットフォームは、自然言語を入力するだけで、Tailwind CSSを用いた洗練されたデザインコードを出力します。従来の「デザインからコーディング」という時間を要するプロセスを劇的に短縮できるため、フロントエンド開発のあり方を変える存在として世界中のエンジニアから注目を集めています。単なるコード生成にとどまらず、UIのブラッシュアップや微調整まで対話型で行えるため、プロトタイプ作成のスピードが飛躍的に向上します。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+    <li><strong>自然言語からのコード生成:</strong> テキストを入力するだけで、ReactコンポーネントとTailwind CSSのスタイルが自動生成されます。</li>
+    <li><strong>対話型エディタ:</strong> 生成されたコードに対し、「ボタンを青くして」「スマホ対応にして」といった修正指示をチャット形式で追加できます。</li>
+    <li><strong>高度なカスタマイズ性:</strong> Shadcn UIやRadix UIなどのモダンなライブラリと親和性が高く、生成コードをそのままプロジェクトに統合可能です。</li>
+    <li><strong>リアルタイムプレビュー:</strong> コードを生成した直後にブラウザ上で実際の見た目と挙動を確認できます。</li>
+    <li><strong>コピー＆ペースト機能:</strong> 生成されたコードはクリック一つでクリップボードへコピーでき、即座に既存のNext.js等の環境へ移植できます。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+    <tr>
+        <th>プラン</th>
+        <th>月額料金（目安）</th>
+        <th>主な特徴</th>
+    </tr>
+    <tr>
+        <td>Free</td>
+        <td>0円</td>
+        <td>毎月一定数の生成クレジット付与、コミュニティ公開</td>
+    </tr>
+    <tr>
+        <td>Premium</td>
+        <td>$20/月〜</td>
+        <td>生成回数の大幅増加、プライベートモード利用可</td>
+    </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大のメリットは開発速度の圧倒的な向上です。デザインの初期段階で迷うことなく、指示出しだけでレイアウトを確定できるため、ビジネスロジックの構築に集中できます。また、Tailwind CSSのクラス指定を自動で行ってくれるため、CSSの記述に不慣れなエンジニアにとっても心強いツールです。</p>
+
+<h3>デメリット</h3>
+<p>デメリットとしては、生成されるコードの複雑性に限界がある点が挙げられます。小規模なコンポーネント生成には最適ですが、大規模で複雑な状態管理が必要なアプリには手直しが必須です。また、生成されたコードのセキュリティやアクセシビリティを完全に担保するわけではないため、最終的なコードレビューは必ず人間が行う必要があります。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>v0.devは、ランディングページのヘッダー作成や、管理画面のデータテーブル構築、ダッシュボードのレイアウト設計において非常に有効です。以下は、洗練されたモダンなサインアップフォームを生成するためのプロンプト例です。</p>
+<blockquote>
+    "モダンでミニマルなデザインのサインアップフォームを作成してください。メールアドレス、パスワード、パスワード確認の入力欄が必要です。ボタンは角丸で、ブランドカラーは落ち着いたダークブルーを使用し、中央配置で見やすいレスポンシブデザインにしてください。"
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<h3>Q1: 生成されたコードは商用利用できますか？</h3>
+<p>A1: はい、商用利用可能です。生成されたReactコードやスタイルについてはユーザーに帰属しますが、規約を確認の上、適切にプロジェクトに組み込んでください。</p>
+
+<h3>Q2: v0.devで作成したUIを自分のプロジェクトで動かすには？</h3>
+<p>A2: 生成されたコードに含まれる「Copy」ボタンを使用してコードをコピーし、ご自身のNext.jsやReactプロジェクトのファイルに貼り付けてください。必要に応じてライブラリのインストールを行うだけで動作します。</p>
+                <!-- BODY_END -->
+            </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>v0.dev 公式サイトをチェックする</strong>
+            <span>プロンプトからReact/TailwindのUIコードを即生成</span>
+        </div>
+        <a href="https://v0.dev/" target="_blank" rel="noopener" class="cta-btn">v0.dev 公式サイトへ →</a>
+    </div>
+    
+
+            
+    <section class="pr-section">
+        <h3 class="pr-section-title">📢 おすすめサービス・関連リソース（PR）</h3>
+        <div class="pr-grid">
+            
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🚀 AIで作ったWebサイト・ブログを公開するなら「エックスサーバー」</h4>
+                <p>国内シェアNo.1の高速レンタルサーバー。AIで生成した記事やアプリを安定・高速に公開できます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
+<img border="0" width="350" height="240" alt="" src="https://www21.a8.net/svt/bgt?aid=200707134459&wid=001&eno=01&mid=s00000001642001066000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🎧 AI・ビジネス最新トレンドを「耳」からインプット（Audible）</h4>
+                <p>作業中や移動時間に最新のAI解説書・ビジネス書を聴き放題で効率学習。無料体験から気軽に始められます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=261107111593&wid=003&eno=01&mid=s00000027126001006000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>📦 Amazon でAI関連書籍・PC周辺機器・ガジェットをチェック</h4>
+                <p>プロンプトエンジニアリング入門書やクリエイター向けデバイスをAmazonで検索。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://www.amazon.co.jp?&linkCode=ll2&tag=ntklog0c-22&linkId=c7895fa240d32728460bada24cc0eeb6&ref_=as_li_ss_tl" target="_blank" rel="nofollow sponsored noopener" class="cta-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Amazon.co.jp で詳細を見る →</a>
+            </div>
+        </div>
+        
+        </div>
+        <div class="pr-wide-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7K348I+CO4+15THJ5" rel="nofollow">
+<img border="0" width="468" height="60" alt="" src="https://www25.a8.net/svt/bgt?aid=200707134457&wid=001&eno=01&mid=s00000001642007024000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=3BHUM6+7K348I+CO4+15THJ5" alt="">
+        </div>
+    </section>
+    
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Code Generator</span>
+                    <span class='status-pill status-pending'>準備中</span>
+                </div>
+                <h3>GitHub Copilot</h3>
+                <p>開発ワークフローに統合された定番AIペアプログラマー</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>

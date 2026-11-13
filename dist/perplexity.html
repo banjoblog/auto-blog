@@ -15,8 +15,6 @@
     --primary: #2563eb;
     --primary-soft: #eff6ff;
     --accent: #7c3aed;
-    --cta-start: #2563eb;
-    --cta-end: #7c3aed;
     --success-bg: #dcfce7;
     --success-text: #166534;
     --pending-bg: #f1f5f9;
@@ -132,13 +130,12 @@
     border-bottom: 1px solid var(--border);
     margin-bottom: 24px;
   }
-  /* アフィリエイト・CTAボックス */
   .cta-box {
     background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
     border: 1px solid #c7d2fe;
     border-radius: 14px;
-    padding: 22px 24px;
-    margin: 26px 0;
+    padding: 20px 24px;
+    margin: 24px 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -147,7 +144,7 @@
   }
   .cta-box-text strong {
     display: block;
-    font-size: 1.08rem;
+    font-size: 1.06rem;
     color: #1e1b4b;
     margin-bottom: 4px;
   }
@@ -157,20 +154,85 @@
   }
   .cta-btn {
     display: inline-block;
-    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    background: linear-gradient(135deg, var(--primary), var(--accent));
     color: #ffffff !important;
     font-weight: 700;
-    font-size: 0.98rem;
-    padding: 13px 26px;
+    font-size: 0.95rem;
+    padding: 12px 24px;
     border-radius: 10px;
-    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease;
     text-decoration: none !important;
     white-space: nowrap;
   }
   .cta-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  }
+  /* PRセクション */
+  .pr-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .pr-section-title {
+    font-size: 1.2rem;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .pr-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .pr-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .pr-card h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .pr-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .pr-banner {
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .pr-wide-banner {
+    margin-top: 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-wide-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
   }
   .article-body h2 {
     margin-top: 38px;
@@ -334,7 +396,7 @@
     <main class="container" style="padding-top: 32px;">
         <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Search Engine</span> &gt; <span>Perplexity</span></div>
         <article class="article-card">
-            
+            <div class="pr-notice">※当ページはプロモーション（アフィリエイト広告）を含みます。</div>
             <header class="article-header">
                 <span class="badge">Search Engine</span>
                 <h1>Perplexity の特徴・使い方・料金まとめ</h1>
@@ -344,10 +406,10 @@
             
     <div class="cta-box">
         <div class="cta-box-text">
-            <strong>Perplexity を今すぐ使ってみる</strong>
+            <strong>Perplexity 公式サイトをチェックする</strong>
             <span>出典リンク付きで最新情報を即座に要約するAI検索</span>
         </div>
-        <a href="https://www.perplexity.ai/" target="_blank" rel="noopener" class="cta-btn">Perplexity でAI検索を体験する →</a>
+        <a href="https://www.perplexity.ai/" target="_blank" rel="noopener" class="cta-btn">Perplexity 公式サイトへ →</a>
     </div>
     
 
@@ -418,11 +480,62 @@ A：ChatGPTは対話や創造的な文章生成に強みがありますが、Per
             
     <div class="cta-box">
         <div class="cta-box-text">
-            <strong>Perplexity を今すぐ使ってみる</strong>
+            <strong>Perplexity 公式サイトをチェックする</strong>
             <span>出典リンク付きで最新情報を即座に要約するAI検索</span>
         </div>
-        <a href="https://www.perplexity.ai/" target="_blank" rel="noopener" class="cta-btn">Perplexity でAI検索を体験する →</a>
+        <a href="https://www.perplexity.ai/" target="_blank" rel="noopener" class="cta-btn">Perplexity 公式サイトへ →</a>
     </div>
+    
+
+            
+    <section class="pr-section">
+        <h3 class="pr-section-title">📢 おすすめサービス・関連リソース（PR）</h3>
+        <div class="pr-grid">
+            
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🎧 AI・ビジネス最新トレンドを「耳」からインプット（Audible）</h4>
+                <p>作業中や移動時間に最新のAI解説書・ビジネス書を聴き放題で効率学習。無料体験から気軽に始められます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=261107111593&wid=003&eno=01&mid=s00000027126001006000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>✈️ AIで作成した旅行プランを「楽天トラベル」で予約</h4>
+                <p>ChatGPTやPerplexityで組んだ旅程に合わせて、国内・海外のホテルやツアーをスマートに予約。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://rpx.a8.net/svt/ejp?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0eb4779e.5d30c5ba.0eb4779f.b871e4e3%2Fa20043004637_3BBXGT_8G8KG2_2HOM_6I9N5%3Fpc%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Ftravel.rakuten.co.jp%252F" rel="nofollow">
+<img src="http://hbb.afl.rakuten.co.jp/hsb/0ea7f9a4.79280dcb.0ea7f99d.1ac92fca/153145/" border="0"></a>
+<img border="0" width="1" height="1" src="https://www10.a8.net/0.gif?a8mat=3BBXGT+8G8KG2+2HOM+6I9N5" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>📦 Amazon でAI関連書籍・PC周辺機器・ガジェットをチェック</h4>
+                <p>プロンプトエンジニアリング入門書やクリエイター向けデバイスをAmazonで検索。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://www.amazon.co.jp?&linkCode=ll2&tag=ntklog0c-22&linkId=c7895fa240d32728460bada24cc0eeb6&ref_=as_li_ss_tl" target="_blank" rel="nofollow sponsored noopener" class="cta-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Amazon.co.jp で詳細を見る →</a>
+            </div>
+        </div>
+        
+        </div>
+        <div class="pr-wide-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7K348I+CO4+15THJ5" rel="nofollow">
+<img border="0" width="468" height="60" alt="" src="https://www25.a8.net/svt/bgt?aid=200707134457&wid=001&eno=01&mid=s00000001642007024000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=3BHUM6+7K348I+CO4+15THJ5" alt="">
+        </div>
+    </section>
     
         </article>
 
