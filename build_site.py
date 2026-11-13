@@ -25,7 +25,7 @@ client = genai.Client(
 
 # 2.5系を除外し、利用可能な最新世代(gemini-3系など)のみ取得
 def get_available_models():
-    models = ["gemini-3.8-flash"]
+    models = ["gemini-3.1-flash-lite", "gemini-3.8-flash"]
     try:
         for m in client.models.list():
             name = m.name.replace("models/", "")
