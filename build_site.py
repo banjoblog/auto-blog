@@ -977,7 +977,28 @@ index_html = index_template.format(
 
 with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
     f.write(index_html)
+# ==========================================
+# 5. Google検索用 sitemap.xml の自動生成
+# ==========================================
+base_url = "https://banjoblog.github.io/auto-blog"
+urls = [f"{base_url}/"]
 
+for bf in sorted(os.listdir(BLOG_DIR)):
+    if bf.endswith(".html"):
+        urls.append(f"{base_url}/blog/{bf}")
+
+for item in TOOLS_DB:
+    if item.get("slug") and os.path.exists(os.path.join(OUTPUT_DIR, f"{item['slug']}.html")):
+        urls.append(f"{base_url}/{item['slug']}.html")
+
+sitemap_items = "\n".join([f"  <url><loc>{u}</loc><lastmod>{today_str}</lastmod></url>" for u in urls])
+sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{sitemap_items}
+</urlset>"""
+
+with open(os.path.join(OUTPUT_DIR, "sitemap.xml"), "w", encoding="utf-8") as f:
+    f.write(sitemap_xml)
 print("すべてのビルド処理が正常に完了しました。", flush=True)
 # ==========================================
 # 4. Google Search Console 所有権確認ファイルの自動生成
