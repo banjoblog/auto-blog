@@ -1,4 +1,5 @@
 import os
+import sys
 import random
 import re
 import time
@@ -6,8 +7,12 @@ import json
 import urllib.parse
 from datetime import datetime
 from google import genai
+from google.genai import types
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
+
+# ログをリアルタイム表示するための設定
+sys.stdout.reconfigure(line_buffering=True)
 
 # 環境変数の取得
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -17,10 +22,10 @@ SENDER_EMAIL = os.environ.get("SENDER_EMAIL")
 
 client_genai = genai.Client(api_key=GEMINI_API_KEY)
 
-# 推奨されている最新安定モデル
+# 高速・安定稼働する最新モデル
 MODEL_CANDIDATES = [
-    'gemini-3.8-flash-lite',
-    'gemini-3.8-flash'
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite'
 ]
 
 # 曜日別テーマ ＆ 提携アフィリエイト設定 (0:月曜日 ~ 6:日曜日)
@@ -220,7 +225,6 @@ def generate_toc_and_inject(html_body, text_link_box, lang="ja"):
     h2_pattern = re.compile(r'<h2>(.*?)</h2>', re.IGNORECASE)
     matches = list(h2_pattern.finditer(html_body))
 
-    # 見出しが見つからない場合は安全にそのまま返す（IndexErrorの防止）
     if not matches:
         return html_body + (text_link_box if text_link_box else "")
 
@@ -297,16 +301,21 @@ def create_related_box(genre_name, lang="ja"):
 
 def call_gemini_api(prompt):
     for model_name in MODEL_CANDIDATES:
-        for attempt in range(5):
+        for attempt in range(3):
             try:
+                print(f"[{model_name}] 記事生成リクエスト送信中 (試行 {attempt + 1}/3)...")
                 response = client_genai.models.generate_content(
                     model=model_name,
                     contents=prompt,
+                    config=types.GenerateContentConfig(
+                        http_options=types.HttpOptions(timeout=60000)
+                    ),
                 )
                 if response and response.text:
+                    print(f"[{model_name}] 記事生成成功！")
                     return response.text
             except Exception as e:
-                wait_sec = (attempt + 1) * 6
+                wait_sec = (attempt + 1) * 5
                 print(f"[{model_name}] API一時的エラー ({e}) -> {wait_sec}秒待機してリトライ...")
                 time.sleep(wait_sec)
     raise Exception("APIからの応答取得に失敗しました。")
@@ -543,7 +552,7 @@ def generate_en_article(theme_info, current_year, weekday):
 
 def send_to_blogger(title, content):
     if not all([BLOGGER_EMAIL, SENDGRID_API_KEY, SENDER_EMAIL]):
-        print("エラー: SendGridまたはBloggerの環境変数が設定されていません。")
+        print(f"エラー: SendGridまたはBloggerの環境変数が設定されていません。(BLOGGER_EMAIL={bool(BLOGGER_EMAIL)}, SENDGRID_API_KEY={bool(SENDGRID_API_KEY)}, SENDER_EMAIL={bool(SENDER_EMAIL)})")
         return
 
     message = Mail(
@@ -576,7 +585,7 @@ def main():
         en_title, en_content = generate_en_article(theme_info, current_year, weekday)
         send_to_blogger(en_title, en_content)
 
-        print("=== 全処理（バグ修正完了）が正常に完了しました ===")
+        print("=== 全処理が正常に完了しました ===")
     except Exception as e:
         print(f"【致命的エラー】パイプライン実行失敗: {e}")
         raise e
