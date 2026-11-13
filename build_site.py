@@ -6,7 +6,7 @@ from google import genai
 from google.genai import types
 
 # 1回の実行で生成するAIツールページの上限数
-MAX_TOOL_BATCH = 5
+MAX_TOOL_BATCH = 2
 
 OUTPUT_DIR = "dist"
 BLOG_DIR = os.path.join(OUTPUT_DIR, "blog")
@@ -20,9 +20,25 @@ if not api_key:
 
 client = genai.Client(
     api_key=api_key,
-    http_options=types.HttpOptions(timeout=60000),  # 60秒でタイムアウト
+    http_options=types.HttpOptions(timeout=60000),
 )
 MODEL_NAME = "gemini-3.8-flash"
+
+def generate_with_retry(prompt, retries=3, wait=15):
+    for attempt in range(1, retries + 1):
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt,
+            )
+            return response.text
+        except Exception as e:
+            if "503" in str(e) or "UNAVAILABLE" in str(e):
+                print(f"サーバー混雑 (503) のため {wait}秒後にリトライします ({attempt}/{retries})...")
+                time.sleep(wait)
+            else:
+                raise e
+    raise RuntimeError("リトライ上限に達しました（503 UNAVAILABLE）")
 
 # ==========================================
 # 1. 毎日の自動ブログ記事生成
@@ -35,11 +51,8 @@ if not os.path.exists(blog_filepath):
     print(f"本日のブログ記事を生成中 ({today_str})...")
     blog_prompt = f"今日は {today_str} です。最新のAIトレンドや活用法に関するSEO最適化されたブログ記事を日本語で作成してください。1行目に「TITLE: 記事タイトル」を出力し、2行目以降にh2, h3, pタグを使用した本文を出力してください。"
     try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=blog_prompt,
-        )
-        lines = response.text.strip().split("\n")
+        text = generate_with_retry(blog_prompt)
+        lines = text.strip().split("\n")
         title = f"{today_str} のAI・テクノロジー最新情報"
         body_lines = []
 
@@ -139,11 +152,8 @@ for item in TOOLS_DB:
     prompt = f"AIツール『{item['name']}』（カテゴリ: {item['category']}）の詳細な紹介・レビュー記事をSEO最適化したHTML本文形式（h2, h3, pタグを使用）で日本語で作成してください。"
 
     try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
-        full_html = tool_template.format(name=item['name'], body=response.text)
+        text = generate_with_retry(prompt)
+        full_html = tool_template.format(name=item['name'], body=text)
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(full_html)
         generated_tools += 1
