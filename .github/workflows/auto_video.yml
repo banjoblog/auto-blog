@@ -2,8 +2,8 @@ name: Auto Generate and Upload YouTube Shorts
 
 on:
   schedule:
-    # 毎日 日本時間 18:00（UTC 09:00）に自動実行
-    - cron: '0 9 * * *'
+    - cron: '0 0 * * *' # 毎日 日本時間 9:00（UTC 0:00）
+    - cron: '0 9 * * *' # 毎日 日本時間 18:00（UTC 9:00）
   workflow_dispatch:
 
 jobs:
