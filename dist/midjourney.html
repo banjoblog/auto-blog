@@ -3,18 +3,369 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Midjourney の使い方・特徴まとめ</title>
-    <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css](https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css)">
+    <title>Midjourney の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
 </head>
 <body>
-    <main class="container">
-        <nav><a href="index.html">← トップページに戻る</a></nav>
-        <h1>Midjourney</h1>
-        <div><h2>Midjourneyとは</h2>
-<p>Midjourneyは、Discord上で動作する高度な画像生成AIツールです。テキストで指示（プロンプト）を入力するだけで、芸術的で高品質なイラストや写真を瞬時に生成できる点が最大の特徴です。写実的な風景から抽象的なアートまで幅広い表現が可能で、広告素材の制作やアイデアの視覚化など、世界中のクリエイターから注目を集めています。</p>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
 
-<h2>使い方の基本</h2>
-<p>利用を開始するには、Discordのアカウントを作成し、Midjourney公式サイトからサーバーに参加します。生成を行うには「/imagine」コマンドを入力し、後ろに英語で描きたいイメージを記述します。生成された画像に対して、拡大やバリエーション作成などの調整を行うことも可能です。最初は無料枠が提供されますが、本格的な利用には月額のサブスクリプション登録が必要です。直感的な操作と圧倒的なクオリティが魅力のツールです。</p></div>
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Image Generator</span> &gt; <span>Midjourney</span></div>
+        <article class="article-card">
+            <header class="article-header">
+                <span class="badge">Image Generator</span>
+                <h1>Midjourney の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">圧倒的なアート品質を誇る画像生成AIの定番</div>
+            </header>
+            <div class="article-body">
+                <h2>Midjourneyとは？（概要と注目される理由）</h2>
+<p>Midjourney（ミッドジャーニー）は、テキストを入力するだけで驚くほど高品質で芸術的な画像を生成できる、世界中で最も人気のある画像生成AIの一つです。Discord上のチャットインターフェースを通じて操作するのが最大の特徴で、まるでプロのアーティストが描いたような写実的な写真から、幻想的なイラスト、緻密なグラフィックデザインまでを数秒で作り出せます。</p>
+<p>注目される理由は、その「圧倒的な画力」にあります。他の画像生成ツールと比較して、特にライティングの美しさや質感の表現、構図のバランスにおいて突出しており、広告や出版、ゲーム制作などの現場でもプロのクリエイターがインスピレーションを得るために活用しています。言語化しにくい抽象的なイメージさえも、魔法のように視覚化してくれる点が多くのユーザーを惹きつけてやみません。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+  <li><strong>高精細なアート品質：</strong>写真のようなリアルな質感から、絵画調、3Dレンダリングまで幅広いスタイルを高品質に生成可能。</li>
+  <li><strong>Discordベースの操作性：</strong>コミュニケーションツールであるDiscord上で対話するように画像を生成できるため、手軽に利用できる。</li>
+  <li><strong>多様なアスペクト比：</strong>「--ar 16:9」のようなパラメータを末尾に追加するだけで、用途に合わせた画像サイズを自由に変更可能。</li>
+  <li><strong>編集・拡張機能：</strong>生成された画像の一部を再描画する「Inpainting」や、外側に書き足す「Outpainting」などの高度な編集が可能。</li>
+  <li><strong>コミュニティとの連携：</strong>他ユーザーの生成した画像やプロンプトを閲覧できるギャラリー機能があり、スキルアップの参考にしやすい。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" cellpadding="10" cellspacing="0" style="width:100%; border-collapse:collapse;">
+  <tr>
+    <th style="background-color:#f2f2f2;">プラン名</th>
+    <th style="background-color:#f2f2f2;">月額目安（年払い時）</th>
+    <th style="background-color:#f2f2f2;">主な特徴</th>
+  </tr>
+  <tr>
+    <td>Basic Plan</td>
+    <td>約10ドル/月</td>
+    <td>個人向け。月間の画像生成回数に制限あり。</td>
+  </tr>
+  <tr>
+    <td>Standard Plan</td>
+    <td>約30ドル/月</td>
+    <td>無制限の高速生成とリラックスモードが利用可能。</td>
+  </tr>
+  <tr>
+    <td>Pro Plan</td>
+    <td>約60ドル/月</td>
+    <td>ステルスモード（非公開生成）などの全機能に対応。</td>
+  </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大にして最強のメリットは、やはり生成される画像の「美しさ」です。適当な単語を並べるだけでも、プロ並みの構図と色彩で画像を出力してくれます。また、アップデートが非常に頻繁に行われており、常に最新の画像生成技術を体験できる点も評価されています。</p>
+<h3>デメリット</h3>
+<p>一方で、操作がDiscordというプラットフォームに限定されているため、チャットが流れてしまい管理がしにくいという面があります。また、現在は無料体験プランが停止されていることが多く、利用には最初から有料登録が必要な点、そしてインターフェースがすべて英語である点も初心者にとってはハードルとなるでしょう。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Midjourneyは、Webデザインの素材制作やプレゼン用のイメージ画像、キャラクターデザインのラフ案作成に最適です。例えば、近未来的な都市風景を生成したい場合、以下のようなプロンプトを入力します。</p>
+<blockquote>
+  /imagine prompt: A futuristic cyberpunk city street in Tokyo at night, neon lights reflecting on wet pavement, cinematic lighting, ultra-realistic, 8k resolution, shot on 35mm lens --ar 16:9
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q：商用利用は可能ですか？</strong><br>
+A：はい、有料プランを契約しているユーザーであれば、生成された画像を商用利用することが可能です。ただし、無料トライアル期間中に生成された画像については規約が異なる場合があるため、公式サイトの最新規約をご確認ください。</p>
+<p><strong>Q：日本語のプロンプトで画像生成できますか？</strong><br>
+A：基本的には英語での入力が推奨されています。日本語を入力しても一部認識することもありますが、精度が大きく低下するため、Google翻訳やDeepL等で英語に変換してからプロンプトを入力するのが成功のコツです。</p>
+            </div>
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Image Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='stable-diffusion.html'>Stable Diffusion</a></h3>
+                <p>ローカル環境や拡張機能で自在に操れるオープンソース画像AI</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
     </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
 </body>
 </html>

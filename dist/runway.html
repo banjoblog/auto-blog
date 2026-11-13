@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Runway の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Video Generator</span> &gt; <span>Runway</span></div>
+        <article class="article-card">
+            <header class="article-header">
+                <span class="badge">Video Generator</span>
+                <h1>Runway の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">テキストや画像から映画品質の動画を生成・編集</div>
+            </header>
+            <div class="article-body">
+                <h2>Runwayとは？（概要と注目される理由）</h2>
+<p>Runway（ランウェイ）は、クリエイティブな映像制作をAIの力で革新する、次世代の動画生成・編集プラットフォームです。プロフェッショナルな映画制作現場でも活用されるほどの高い品質と、直感的な操作性を両立させており、世界中の映像クリエイターから絶大な注目を集めています。「Gen-2」や「Gen-3 Alpha」といった最先端の動画生成モデルを搭載しており、テキストによる指示（プロンプト）から映画のような高品質な動画を生成できるだけでなく、手持ちの画像や動画をベースにした高度な編集も可能です。これまで専門的なスキルや膨大な時間が必要だった映像エフェクトや加工が、AIの力によって数分で完結する点は、まさにクリエイティブ業界のゲームチェンジャーと言えるでしょう。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+<li><strong>Text to Video:</strong> テキストを入力するだけで、指示通りのシーンや風景、キャラクターの動きを動画化。</li>
+<li><strong>Image to Video:</strong> 静止画をアップロードし、その画像に動きを加えることで、驚くほど自然な動画を作成可能。</li>
+<li><strong>Motion Brush:</strong> 動画内の特定の箇所だけを塗りつぶし、その部分だけに動きを与える高度な局所制御機能。</li>
+<li><strong>Inpainting & Outpainting:</strong> 不要なオブジェクトの削除や、動画のフレーム外をAIが補完して拡張する機能。</li>
+<li><strong>マルチモーダル対応:</strong> テキスト、画像、映像の組み合わせにより、緻密な演出が可能な編集スイートを提供。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1">
+<tr>
+<th>プラン名</th>
+<th>価格（月額）</th>
+<th>特徴</th>
+</tr>
+<tr>
+<td>Free</td>
+<td>無料</td>
+<td>生成クレジット付与（初回のみ）、透かし入り</td>
+</tr>
+<tr>
+<td>Standard</td>
+<td>約$15</td>
+<td>月間クレジット増量、透かしなし、優先処理</td>
+</tr>
+<tr>
+<td>Pro</td>
+<td>約$35</td>
+<td>大規模なクレジット、高度な編集機能の全解放</td>
+</tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大の特徴は、圧倒的な「品質の高さ」です。実写に近い質感を出すことができ、映画制作のようなクリエイティブな表現が可能です。また、ブラウザ上で動作するため、高性能なPCがなくてもサーバー側で処理が行われるため、手軽にAI動画制作を始められる点も魅力です。</p>
+<h3>デメリット</h3>
+<p>一方で、日本語のプロンプト入力にはまだ課題があり、英語での指示出しが必須となります。また、無料で使えるクレジットには上限があるため、本格的に作品を作り込むには有料プランへの加入が不可欠です。生成には数分程度の待ち時間が発生することもあり、リアルタイム性を求める編集には工夫が必要です。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Runwayは、広告制作のストーリーボード作成、SNS向けのシネマティックな短尺動画、ミュージックビデオの背景映像生成など、幅広いシーンで活用できます。特に「Image to Video」を活用して、自身の写真やイラストに命を吹き込む使い方が人気です。</p>
+<blockquote>
+プロンプト例：Cinematic drone shot of a futuristic city with neon lights reflecting on the wet streets, highly detailed, 4k, realistic, moody atmosphere.
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q: 生成した動画の商用利用は可能ですか？</strong></p>
+<p>A: はい、有料プランであれば商用利用が可能です。ただし、無料プランで生成した素材については制限が設けられている可能性があるため、公式サイトの利用規約を最新の状態でご確認ください。</p>
+<p><strong>Q: 自分のPCにソフトをインストールする必要がありますか？</strong></p>
+<p>A: いいえ、インストールは不要です。Runwayは完全なクラウドベースのWebアプリケーションですので、Google ChromeなどのWebブラウザからログインするだけで、すぐに全ての機能を利用できます。</p>
+            </div>
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Video Generator</span>
+                    <span class='status-pill status-pending'>準備中</span>
+                </div>
+                <h3>Sora</h3>
+                <p>物理法則を理解した長尺・高精細な動画生成モデル</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>

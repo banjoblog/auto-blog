@@ -3,18 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Claude の使い方・特徴まとめ</title>
-    <link rel="stylesheet" href="[https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css](https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css)">
+    <title>Claude の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
 </head>
 <body>
-    <main class="container">
-        <nav><a href="index.html">← トップページに戻る</a></nav>
-        <h1>Claude</h1>
-        <div><h2>Claudeの特徴</h2>
-<p>Anthropic社が開発したClaudeは、自然で人間らしい対話が可能な次世代のAIチャットボットです。最大の特徴は、膨大な情報を一度に処理できる高い「コンテキストウィンドウ」性能にあります。長文の資料や書籍を一括で読み込ませて要約・分析させる作業に非常に強く、正確性が高く論理的な回答を得られます。また、安全性と倫理性を重視した設計がなされており、プログラミングコードの生成や洗練された日本語の文章作成においても高い精度を誇ります。</p>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
 
-<h2>Claudeの使い方</h2>
-<p>利用開始には公式サイト（claude.ai）へアクセスし、メールアドレスやGoogleアカウントでログインします。画面下の入力欄に質問や指示（プロンプト）を書き込むだけで対話が始まります。例えば「議事録の要約」「メールの校正」「Pythonコードの作成」など、具体的な指示を出すほど精度の高い回答が得られます。ドラッグ＆ドロップでファイルをアップロードすれば、その内容に基づいた対話も可能です。</p></div>
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Text Generator</span> &gt; <span>Claude</span></div>
+        <article class="article-card">
+            <header class="article-header">
+                <span class="badge">Text Generator</span>
+                <h1>Claude の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">長文読解と自然な日本語表現・コーディングに強み</div>
+            </header>
+            <div class="article-body">
+                <h2>Claudeとは？（概要と注目される理由）</h2>
+<p>Claude（クロード）は、Anthropic社が開発した次世代のAIチャットボットです。ChatGPTの強力なライバルとして急速にシェアを伸ばしており、特に「人間のような自然な日本語の文章生成」と「圧倒的な長文読解能力」において、世界中のユーザーから高い評価を得ています。憲法や倫理基準を重視した「Constitutional AI（憲法AI）」という独自の安全設計思想を取り入れており、回答の精度だけでなく、信頼性の高さも大きな特徴です。ビジネスからクリエイティブな執筆まで、幅広いシーンで効率化をサポートする次世代のパートナーといえます。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+  <li><strong>圧倒的なコンテキストウィンドウ：</strong>一度に数冊分の書籍や膨大なコードベースを読み込めるため、長文ドキュメントの要約や分析に最適です。</li>
+  <li><strong>自然で人間味のある日本語：</strong>AI特有の機械的な言い回しが少なく、文脈を汲み取った洗練された日本語表現を得意とします。</li>
+  <li><strong>高いプログラミング能力：</strong>最新のプログラミング言語に対応し、複雑なロジックの構築やコードのデバッグ、リファクタリングを強力に支援します。</li>
+  <li><strong>アーティファクト機能：</strong>作成したコードやドキュメントを別のプレビュー画面で即座に表示・編集できる機能により、作業効率が飛躍的に向上します。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+  <tr>
+    <th>プラン</th>
+    <th>料金</th>
+    <th>主な特徴</th>
+  </tr>
+  <tr>
+    <td>Free（無料）</td>
+    <td>0円</td>
+    <td>基本的なAIモデルの利用、回数制限あり</td>
+  </tr>
+  <tr>
+    <td>Pro（有料）</td>
+    <td>月額20ドル</td>
+    <td>5倍の利用回数、最新モデル「Claude 3.5 Sonnet」優先利用</td>
+  </tr>
+  <tr>
+    <td>Team（チーム）</td>
+    <td>1ユーザー月額30ドル</td>
+    <td>チームでの管理機能、より高い利用制限枠</td>
+  </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大の特徴は「論理性と文章の滑らかさ」のバランスが非常に優れている点です。特に「Claude 3.5 Sonnet」は、推論能力が非常に高く、複雑な指示に対しても正確に応答してくれます。また、ファイルをアップロードして内容を分析させる機能も非常に強力で、会議議事録や技術仕様書の要約といった事務作業を瞬時に完結させることができます。</p>
+<h3>デメリット</h3>
+<p>一方で、現時点ではインターネット検索機能（リアルタイムウェブアクセス）を標準搭載していないため、最新のニュースやイベントの検索には不向きです。また、無料プランの利用制限が厳しめに設定されているため、ヘビーユーザーが本格的に活用するには有料プランの契約がほぼ必須となる点は考慮が必要です。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Claudeは特に「長文資料の分析」や「文章の推敲」でその真価を発揮します。以下は、長いレポートを要約し、要点を取り出す際のプロンプト例です。</p>
+<blockquote>
+  以下の添付ファイルを読み込み、専門家として要約してください。特に、今後のアクションプランとして推奨される項目を3つに絞り、箇条書きで解説してください。
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q: ClaudeはChatGPTと何が違いますか？</strong><br>
+A: ChatGPTは検索機能や画像生成など多機能ですが、Claudeは長文の読み込み性能や、自然な文章を書く能力に特化しています。用途に合わせて使い分けるのが一般的です。</p>
+<p><strong>Q: 自分のデータは学習に使われますか？</strong><br>
+A: 無料プランやProプランでは設定によって学習をオフにできます。また、TeamプランやEnterpriseプランでは、入力データがモデルのトレーニングに使用されることはありません。</p>
+            </div>
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Text Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='chatgpt.html'>ChatGPT</a></h3>
+                <p>対話・文章作成・プログラミングをこなす万能AI</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
     </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
 </body>
 </html>

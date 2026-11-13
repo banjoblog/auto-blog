@@ -3,49 +3,526 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Tech Blog & Tool Database</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+    <title>AI Tech Hub | 最新AIトレンド＆AIツール比較データベース</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.9rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
 </head>
 <body>
-    <main class="container">
-        <h1>AI Tech Blog & Tool Database</h1>
-        
-        <section>
-            <h2>📝 最新の自動生成ブログ記事</h2>
-            <ul>
-                <li><strong>[2026-11-13]</strong> <a href='blog/post-2026-11-13.html'>2026年最新：AIが変える「個の生産性」の新常識</a></li>
-<li><strong>[2026-11-12]</strong> <a href='blog/post-2026-11-12.html'>【2026年最新】自律型エージェントからフィジカルAIへ！今押さえるべきAIトレンドと実践的ビジネス活用法</a></li>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav style="font-size: 0.9rem; color: var(--muted);">毎日自動更新データベース</nav>
+        </div>
+    </header>
 
-            </ul>
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>AI Tech Hub</h1>
+            <p>最新のAI活用トレンド解説と、主要AIツールの機能・料金・実践プロンプトを網羅した自動更新ナレッジデータベース。</p>
+        </div>
+    </section>
+
+    <main class="container">
+        <section>
+            <h2 class="section-title">📝 最新のAIトレンド解説記事</h2>
+            <div class="blog-list">
+                
+    <div class="blog-item">
+        <span class="blog-date">2026-11-13</span>
+        <a href="blog/post-2026-11-13.html" style="font-weight: 700; font-size: 1.05rem;">2026年、AIは「作る時代」から「使いこなす自律進化の時代」へ</a>
+    </div>
+    
+    <div class="blog-item">
+        <span class="blog-date">2026-11-12</span>
+        <a href="blog/post-2026-11-12.html" style="font-weight: 700; font-size: 1.05rem;">【2026年最新】自律型エージェントからフィジカルAIへ！今押さえるべきAIトレンドと実践的ビジネス活用法</a>
+    </div>
+    
+            </div>
         </section>
 
-        <hr>
-
         <section>
-            <h2>🛠️ AIツールデータベース</h2>
-            <ul>
-                <li><a href='chatgpt.html'>ChatGPT</a> - Text Generator (✅ 公開中)</li>
-<li><a href='claude.html'>Claude</a> - Text Generator (✅ 公開中)</li>
-<li><a href='midjourney.html'>Midjourney</a> - Image Generator (✅ 公開中)</li>
-<li><a href='stable-diffusion.html'>Stable Diffusion</a> - Image Generator (✅ 公開中)</li>
-<li>Runway - Video Generator (⏳ 順次生成中)</li>
-<li>Sora - Video Generator (⏳ 順次生成中)</li>
-<li>ElevenLabs - Voice Generator (⏳ 順次生成中)</li>
-<li>Suno AI - Music Generator (⏳ 順次生成中)</li>
-<li>Udio - Music Generator (⏳ 順次生成中)</li>
-<li>Perplexity - Search Engine (⏳ 順次生成中)</li>
-<li>v0.dev - Code Generator (⏳ 順次生成中)</li>
-<li>Cursor - Code Editor (⏳ 順次生成中)</li>
-<li>GitHub Copilot - Code Generator (⏳ 順次生成中)</li>
-<li>Notion AI - Productivity (⏳ 順次生成中)</li>
-<li>Canva AI - Design (⏳ 順次生成中)</li>
-<li>Jasper AI - Copywriting (⏳ 順次生成中)</li>
-<li>Copy.ai - Copywriting (⏳ 順次生成中)</li>
-<li>Descript - Video Editor (⏳ 順次生成中)</li>
-<li>HeyGen - Avatar Generator (⏳ 順次生成中)</li>
-
-            </ul>
+            <h2 class="section-title">🛠️ AIツールデータベース一覧</h2>
+            <div class="grid">
+                
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Text Generator</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
+            </div>
+            <h3><a href='chatgpt.html'>ChatGPT</a></h3>
+            <p>対話・文章作成・プログラミングをこなす万能AI</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Text Generator</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
+            </div>
+            <h3><a href='claude.html'>Claude</a></h3>
+            <p>長文読解と自然な日本語表現・コーディングに強み</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Image Generator</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
+            </div>
+            <h3><a href='midjourney.html'>Midjourney</a></h3>
+            <p>圧倒的なアート品質を誇る画像生成AIの定番</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Image Generator</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
+            </div>
+            <h3><a href='stable-diffusion.html'>Stable Diffusion</a></h3>
+            <p>ローカル環境や拡張機能で自在に操れるオープンソース画像AI</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Video Generator</span>
+                <span class='status-pill status-live'>✅ 公開中</span>
+            </div>
+            <h3><a href='runway.html'>Runway</a></h3>
+            <p>テキストや画像から映画品質の動画を生成・編集</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Video Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Sora</h3>
+            <p>物理法則を理解した長尺・高精細な動画生成モデル</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Voice Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>ElevenLabs</h3>
+            <p>感情豊かな多言語音声合成・ボイスクローンAI</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Music Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Suno AI</h3>
+            <p>歌詞とジャンル指定だけでボーカル入り楽曲を即生成</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Music Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Udio</h3>
+            <p>プロ品質のサウンド構成とリミックスが可能な音楽AI</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Search Engine</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Perplexity</h3>
+            <p>出典リンク付きで最新情報を即座に要約するAI検索</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Code Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>v0.dev</h3>
+            <p>プロンプトからReact/TailwindのUIコードを即生成</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Code Editor</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Cursor</h3>
+            <p>プロジェクト全体を理解して自律的に実装するAIエディタ</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Code Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>GitHub Copilot</h3>
+            <p>開発ワークフローに統合された定番AIペアプログラマー</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Productivity</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Notion AI</h3>
+            <p>ドキュメント作成・議事録要約・タスク整理を自動化</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Design</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Canva AI</h3>
+            <p>SNS画像・プレゼン資料のデザインをAIで瞬時に生成</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Copywriting</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Jasper AI</h3>
+            <p>マーケティング・広告文に特化したビジネス向けAI</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Copywriting</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Copy.ai</h3>
+            <p>セールスコピーやSNS投稿案を量産するライティングAI</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Video Editor</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>Descript</h3>
+            <p>文字起こしテキストを編集するだけで動画カットが完了</p>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div>
+            <div class="card-top">
+                <span class="cat-tag">Avatar Generator</span>
+                <span class='status-pill status-pending'>⏳ 順次生成中</span>
+            </div>
+            <h3>HeyGen</h3>
+            <p>リアルなAIアバターが自然な口パクで話す動画を作成</p>
+        </div>
+    </div>
+    
+            </div>
         </section>
     </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
 </body>
 </html>
