@@ -181,80 +181,104 @@ TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ==========================================
-# 2. 中身の濃い雑学台本の生成（ジャンルランダム抽選でネタ被り防止）
+# 2. ファクトチェック済み雑学台本の生成（2段階検証＋Google検索裏付け）
 # ==========================================
-print("高クオリティ雑学動画台本を生成中...")
+print("ファクトチェック済み雑学台本をリサーチ＆生成中...")
 
 genres = [
-    "日本の老舗企業や身近な商品の意外な誕生秘話・社名の由来",
-    "人体の驚くべき仕組みや脳の錯覚・睡眠の科学",
-    "戦国時代・幕末・明治の教科書に載っていない歴史の裏話",
-    "身近な法律・交通ルール・お金や硬貨の意外な雑学",
-    "スーパーやコンビニの食品・料理の知られざる秘密",
-    "深海生物や昆虫・動物の常識外れな生態（ヒクイドリは除外）",
-    "宇宙・気象・地球の異常現象に関する驚くべき数値データ",
-    "心理学・行動経済学の日常で使える意外な法則",
-    "日本語の語源・漢字の成り立ち・方言の意外な由来",
-    "世界の変わった文化・建築・世界遺産の裏トリビア",
-    "スポーツ・オリンピックのルール変更や伝説の記録の裏話",
-    "医療・薬・健康に関する意外と知られていない事実",
+    "科学・物理・化学の実験で証明されている驚くべき法則や現象",
+    "動物の生態・生物学で学術的に確認されている意外な能力（ヒクイドリは除外）",
+    "宇宙・惑星・気象のNASAや観測データに基づく驚くべき事実",
+    "人体の仕組み・脳科学・睡眠に関する医学的に認められている雑学",
+    "日本の老舗企業や有名商品の公式に公開されている誕生秘話・社名の由来",
+    "お金・硬貨・紙幣・法律・交通ルールの条文や公式制度に基づく意外な雑学",
+    "日本語の辞書や語源辞典に載っている漢字の成り立ち・言葉の由来",
+    "心理学・行動経済学の有名な学術実験で実証された人間の心理法則",
+    "食べ物・野菜・魚・料理の科学的な成分や調理のメカニズム",
+    "オリンピックやプロスポーツの公式ルール・実際の記録に関するトリビア",
 ]
 selected_genre = random.choice(genres)
 print(f"今回の抽選ジャンル: {selected_genre}")
 
-prompt = f"""
-YouTube ShortsとTikTok向けの、知的好奇心をくすぐる具体的な雑学・豆知識の台本を1つ作成してください。
+def call_gemini_with_fallback(prompt_text, use_search=False, json_mode=False):
+    candidate_models = ["gemini-3.1-flash-lite", "gemini-3.8-flash", "gemini-3.5-flash-lite"]
+    for model in candidate_models:
+        for attempt in range(3):
+            try:
+                cfg_kwargs = {"temperature": 0.3}
+                if use_search:
+                    cfg_kwargs["tools"] = [{"google_search": {}}]
+                if json_mode:
+                    cfg_kwargs["response_mime_type"] = "application/json"
 
-【今回の指定ジャンル】
-「{selected_genre}」のテーマから、あまり知られていないニッチで面白い具体的なトリビアを1つ選んでください。
+                res = client.models.generate_content(
+                    model=model,
+                    contents=prompt_text,
+                    config=types.GenerateContentConfig(**cfg_kwargs),
+                )
+                return res.text
+            except Exception as e:
+                err_str = str(e)
+                if "404" in err_str or "NOT_FOUND" in err_str:
+                    break
+                print(f"[{model}] 再試行待機 ({attempt+1}/3): {e}")
+                time.sleep(8)
+    raise RuntimeError("すべてのGeminiモデルでリクエストに失敗しました。")
+
+# ステップ1: Google検索グラウンディングを使って、100%実在する正確な雑学を調査・抽出
+research_prompt = f"""
+あなたは厳格なファクトチェッカー兼雑学リサーチャーです。
+「{selected_genre}」のジャンルから、Google検索で裏付けが取れる【100%事実の具体的な雑学・トリビア】を1つだけ選んでください。
+
+【絶対厳守ルール】
+1. ネット上の都市伝説、根拠のない噂、デマ、誇張された数値は絶対に選ばないこと。
+2. 必ず検索結果から確認できる「具体的な固有名詞（生物名・企業名・物質名・法則名・地名など）」と「正確な理由・数値」を整理すること。
+3. ヒクイドリ、サメ、バナナ、エッフェル塔などありきたりな定番ネタは避けること。
+4. 以下の項目を簡潔に日本語でまとめて出力すること：
+   - ネタのテーマ
+   - 事実の結論
+   - なぜそうなるのかの科学的・歴史的・公式な根拠
+   - 確認できた出典や背景情報
+"""
+
+verified_fact = call_gemini_with_fallback(research_prompt, use_search=True, json_mode=False)
+print("=== ステップ1: 事実リサーチ完了 ===")
+print(verified_fact)
+
+# ステップ2: リサーチ済みの事実のみを使って、嘘・誇張を排除したショート動画台本JSONを作成
+script_prompt = f"""
+以下の【検証済みの事実データ】のみを使って、YouTube ShortsとTikTok向けの台本JSONを作成してください。
+
+【検証済みの事実データ】
+{verified_fact}
 
 【絶対に守るルール】
-1. 抽象的な表現は禁止。必ず「具体的な生物名・地名・歴史上の人物名・企業名・数値」を台本の中に明記すること。
-2. ありきたりな定番雑学（ヒクイドリ、サメ、バナナ、エッフェル塔など）は避け、視聴者が「へぇ〜！」と驚く具体的な事実とオチまで完結させること。
+1. 上記の【検証済みの事実データ】に書かれている事実だけを使うこと。データにない数値・人物名・エピソードを勝手に創作・脚色することは厳禁。
+2. 視聴者が「へぇ〜！」と納得するテンポの良い5文構成にすること。
 3. 必ず以下のJSON形式のみで出力すること（マークダウン記法は不要）。
 
 {{
   "title": "画面上部に常時表示する短い見出し（18文字以内・ハッシュタグなし）",
   "description": "動画の説明文と関連ハッシュタグ4〜5個（#雑学 #豆知識 など）",
-  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: food, history, city, brain, money, space）",
+  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: food, science, animal, brain, money, space）",
   "script": [
     "1文目：視聴者を引き込む問いかけやフック（20〜28文字）",
     "2文目：結論となる具体的な名前・答えの提示（22〜32文字）",
-    "3文目：なぜそうなのかの驚きの理由・具体例1（25〜35文字）",
-    "4文目：さらに深い裏話や数値などの具体例2（25〜35文字）",
+    "3文目：なぜそうなのかの正確な理由・根拠1（25〜35文字）",
+    "4文目：さらに納得する具体的な補足・根拠2（25〜35文字）",
     "5文目：印象に残るまとめ・一言オチ（20〜28文字）"
   ]
 }}
 """
 
-response = None
-for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash"]:
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=1.2,
-                ),
-            )
-            break
-        except Exception as e:
-            print(f"{model} エラー、10秒待機してリトライ ({attempt+1}/3): {e}")
-            time.sleep(10)
-    if response:
-        break
-
-if not response:
-    raise RuntimeError("すべてのGeminiモデルでの台本生成に失敗しました。")
-
-data = json.loads(response.text)
+script_json_text = call_gemini_with_fallback(script_prompt, use_search=False, json_mode=True)
+data = json.loads(script_json_text)
 title = data["title"]
 description = data["description"]
 search_keyword = data["search_keyword"]
 script_lines = data["script"]
-print(f"生成完了: {title} (検索ワード: {search_keyword})")
+
+print(f"=== ステップ2: 台本確定 -> {title} (検索ワード: {search_keyword}) ===")
 for idx, s in enumerate(script_lines, 1):
     print(f"  台本{idx}: {s}")
 
@@ -359,10 +383,11 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
             client_secret=YT_CLIENT_SECRET,
         )
         youtube = build("youtube", "v3", credentials=creds)
+        yt_description = f"{description}\n\n🤖 最新AIトレンド＆ツール比較データベース「AI Tech Hub」\nhttps://banjoblog.github.io/auto-blog/"
         body = {
             "snippet": {
                 "title": f"{title} #Shorts",
-                "description": description,
+                "description": yt_description,
                 "categoryId": "22",
             },
             "status": {
@@ -401,7 +426,6 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
         video_size = os.path.getsize(output_video)
         print(f"TikTok 動画アップロード初期化中... (サイズ: {video_size} bytes)")
 
-        # まずはプロフィール直接投稿（Direct Post）を試行（video.publishスコープ有効時に動作）
         TIKTOK_DIRECT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/video/init/")
         init_res = requests.post(
             TIKTOK_DIRECT_URL,
@@ -426,7 +450,6 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
             },
         ).json()
 
-        # Direct Post 権限がない場合は Inbox（受信トレイ）送信にフォールバック
         if not init_res.get("data", {}).get("upload_url"):
             print(f"Direct Post スキップ ({init_res.get('error', {}).get('message', '')}) -> Inbox送信へ切替")
             TIKTOK_INBOX_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
@@ -465,7 +488,6 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
         )
         print(f"TikTok データ送信完了 (Status: {put_res.status_code}, Publish ID: {publish_id})")
 
-        # 処理完了（SEND_TO_USER_INBOX / PUBLISH_COMPLETE / FAILED）まで最大30秒追跡
         STATUS_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/status/fetch/")
         for check_i in range(6):
             time.sleep(5)
