@@ -134,7 +134,6 @@ def build_pr_section(category="general"):
     elif category == "Search Engine":
         keys = ["audible", "rakuten_travel", "amazon"]
     else:
-        # ブログ記事・トップページ用
         keys = ["audible", "xserver", "amazon"]
 
     cards_html = ""
@@ -153,7 +152,6 @@ def build_pr_section(category="general"):
         </div>
         """
 
-    # 記事下部にドメイン横長バナーも添える
     domain_banner = AFFILIATE_ITEMS["xserver_domain"]["html"]
     return f"""
     <section class="pr-section">
@@ -895,7 +893,6 @@ for item in TOOLS_DB:
     </div>
     """
 
-# トップページ下部にもおすすめサービスPR枠を配置（Audible / エックスサーバー / DMM FX）
 top_pr_cards = ""
 for k in ["audible", "xserver", "dmm_fx"]:
     p_item = AFFILIATE_ITEMS[k]
@@ -977,8 +974,16 @@ index_html = index_template.format(
 
 with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f:
     f.write(index_html)
+
 # ==========================================
-# 5. Google検索用 sitemap.xml の自動生成
+# 4. Google Search Console 所有権確認ファイルの自動生成
+# ==========================================
+gsc_filename = "googlee870bb95f36fa43e.html"
+with open(os.path.join(OUTPUT_DIR, gsc_filename), "w", encoding="utf-8") as f:
+    f.write(f"google-site-verification: {gsc_filename}")
+
+# ==========================================
+# 5. Google検索用サイトマップ（sitemap.xml / sitemap_index.xml）の自動生成
 # ==========================================
 base_url = "https://banjoblog.github.io/auto-blog"
 urls = [f"{base_url}/"]
@@ -997,12 +1002,8 @@ sitemap_xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 {sitemap_items}
 </urlset>"""
 
-with open(os.path.join(OUTPUT_DIR, "sitemap.xml"), "w", encoding="utf-8") as f:
-    f.write(sitemap_xml)
+for sm_name in ["sitemap.xml", "sitemap_index.xml"]:
+    with open(os.path.join(OUTPUT_DIR, sm_name), "w", encoding="utf-8") as f:
+        f.write(sitemap_xml)
+
 print("すべてのビルド処理が正常に完了しました。", flush=True)
-# ==========================================
-# 4. Google Search Console 所有権確認ファイルの自動生成
-# ==========================================
-gsc_filename = "googlee870bb95f36fa43e.html"
-with open(os.path.join(OUTPUT_DIR, gsc_filename), "w", encoding="utf-8") as f:
-    f.write(f"google-site-verification: {gsc_filename}")
