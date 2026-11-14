@@ -6,14 +6,12 @@ import math
 import time
 import random
 import asyncio
-import urllib.parse
-import requests
 import edge_tts
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
-from moviepy.editor import VideoFileClip, AudioFileClip, ImageClip, VideoClip, CompositeVideoClip, ColorClip
+from moviepy.editor import AudioFileClip, ImageClip, VideoClip, CompositeVideoClip
 from moviepy.audio.AudioClip import CompositeAudioClip, AudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -39,104 +37,201 @@ def get_jp_font(size):
                 continue
     return ImageFont.load_default()
 
-def make_animated_bg_landscape(total_duration):
-    """1920x1080 横画面用のパーティクル背景"""
+def wrap_text(text, max_chars):
+    return "\n".join([text[j:j+max_chars] for j in range(0, len(text), max_chars)])
+
+# ==========================================
+# サムネイル画像（1280x720）の自動生成
+# ==========================================
+def generate_thumbnail(thumb_top, thumb_main, thumb_sub, out_path="thumbnail.jpg"):
+    W, H = 1280, 720
+    img = Image.new("RGB", (W, H), (15, 23, 42))
+    draw = ImageDraw.Draw(img)
+
+    # グラデーション背景
+    for y in range(H):
+        ratio = y / H
+        r = int(15 * (1 - ratio) + 45 * ratio)
+        g = int(23 * (1 - ratio) + 18 * ratio)
+        b = int(42 * (1 - ratio) + 85 * ratio)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # 集中線風の放射ライン
+    cx, cy = W // 2, H // 2
+    for deg in range(0, 360, 12):
+        rad = math.radians(deg)
+        x1 = cx + math.cos(rad) * 340
+        y1 = cy + math.sin(rad) * 220
+        x2 = cx + math.cos(rad) * 900
+        y2 = cy + math.sin(rad) * 900
+        draw.line([(x1, y1), (x2, y2)], fill=(255, 215, 0), width=4)
+
+    # 外枠の強調フレーム
+    draw.rectangle([16, 16, W - 16, H - 16], outline=(255, 215, 0), width=14)
+
+    # 上部赤帯バッジ
+    font_top = get_jp_font(46)
+    draw.rounded_rectangle([140, 46, W - 140, 134], radius=18, fill=(220, 38, 38), outline=(255, 255, 255), width=5)
+    tb = draw.textbbox((0, 0), thumb_top, font=font_top)
+    draw.text(((W - (tb[2] - tb[0])) // 2, 62), thumb_top, font=font_top, fill=(255, 255, 255))
+
+    # 中央メイン巨大文字（2行まで）
+    font_main = get_jp_font(104)
+    wrapped_main = wrap_text(thumb_main, 11)
+    mb = draw.multiline_textbbox((0, 0), wrapped_main, font=font_main, spacing=18, align="center")
+    mw, mh = mb[2] - mb[0], mb[3] - mb[1]
+    mx = (W - mw) // 2
+    my = (H - mh) // 2 + 10
+    draw.multiline_text(
+        (mx, my),
+        wrapped_main,
+        font=font_main,
+        fill=(255, 230, 0),
+        stroke_width=12,
+        stroke_fill=(0, 0, 0),
+        spacing=18,
+        align="center",
+    )
+
+    # 下部白帯サブキャッチ
+    font_sub = get_jp_font(42)
+    draw.rounded_rectangle([180, H - 122, W - 180, H - 44], radius=16, fill=(255, 255, 255), outline=(0, 0, 0), width=5)
+    sb = draw.textbbox((0, 0), thumb_sub, font=font_sub)
+    draw.text(((W - (sb[2] - sb[0])) // 2, H - 106), thumb_sub, font=font_sub, fill=(15, 23, 42))
+
+    img.save(out_path, quality=95)
+    print(f"サムネイル画像を生成しました: {out_path}")
+
+# ==========================================
+# スライド・図解カード＆字幕・進行バーの描画
+# ==========================================
+CHAPTER_THEMES = [
+    ((15, 23, 42), (30, 58, 138), (56, 189, 248)),    # 0: オープニング（ブルー）
+    ((24, 24, 27), (127, 29, 29), (251, 191, 36)),    # 1: POINT 1（クリムゾン×ゴールド）
+    ((17, 24, 39), (6, 78, 59), (52, 211, 153)),      # 2: POINT 2（エメラルド）
+    ((23, 23, 38), (88, 28, 135), (216, 180, 254)),   # 3: POINT 3（パープル）
+    ((15, 23, 42), (30, 41, 59), (250, 204, 21)),     # 4: まとめ（ゴールド）
+]
+
+def make_slide_card_clip(chapter_idx, badge_text, card_headline, card_bullets, key_number, start_t, dur):
+    """チャプターごとに切り替わる解説スライドボード（1920x1080）"""
     W, H = 1920, 1080
-    palettes = [
-        ((15, 23, 42), (49, 46, 129)),   # ディープネイビー × インディゴ
-        ((20, 30, 48), (36, 59, 85)),    # ロイヤルダークブルー
-        ((28, 25, 23), (87, 37, 45)),    # ダーククリムゾン
-        ((17, 24, 39), (19, 78, 74)),    # ダークティール
-    ]
-    c1, c2 = random.choice(palettes)
+    c1, c2, accent = CHAPTER_THEMES[chapter_idx % len(CHAPTER_THEMES)]
 
     y_grid = np.linspace(0, 1, H)[:, None, None]
     grad = (np.array(c1) * (1 - y_grid) + np.array(c2) * y_grid).astype(np.uint8)
     base_bg = np.broadcast_to(grad, (H, W, 3)).copy()
 
-    rng = np.random.default_rng(42)
-    particles = []
-    for _ in range(30):
-        particles.append({
-            "x": rng.uniform(0, W),
-            "y": rng.uniform(0, H),
-            "r": rng.uniform(8, 32),
-            "speed_y": rng.uniform(25, 75),
-            "phase": rng.uniform(0, 2 * math.pi),
-            "alpha": rng.uniform(0.08, 0.22),
-        })
-
-    def make_frame(t):
-        frame = base_bg.copy()
-        img = Image.fromarray(frame).convert("RGBA")
-        overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(overlay)
-        for p in particles:
-            px = (p["x"] + math.sin(t * 1.1 + p["phase"]) * 50) % W
-            py = (p["y"] - t * p["speed_y"]) % H
-            r = p["r"]
-            a = int(255 * p["alpha"])
-            draw.ellipse([px - r, py - r, px + r, py + r], fill=(255, 255, 255, a))
-        out = Image.alpha_composite(img, overlay).convert("RGB")
-        return np.array(out)
-
-    return VideoClip(make_frame, duration=total_duration)
-
-def make_header_clip_landscape(title_text, total_duration):
-    """1920x1080 横画面上部タイトルバー"""
-    W, H = 1920, 1080
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    img = Image.fromarray(base_bg).convert("RGBA")
     draw = ImageDraw.Draw(img)
-    font = get_jp_font(44)
 
-    bbox = draw.textbbox((0, 0), title_text, font=font)
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    # 背景の装飾グリッド線
+    for gx in range(0, W, 120):
+        draw.line([(gx, 0), (gx, H)], fill=(255, 255, 255, 14), width=2)
+    for gy in range(0, H, 120):
+        draw.line([(0, gy), (W, gy)], fill=(255, 255, 255, 14), width=2)
 
-    box_pad_x, box_pad_y = 48, 20
-    box_w = min(W - 120, tw + box_pad_x * 2)
-    box_h = th + box_pad_y * 2
-    box_x = (W - box_w) // 2
-    box_y = 50
-
+    # メインの解説ホワイトボード枠（上〜中央エリア）
+    board_x1, board_y1, board_x2, board_y2 = 110, 65, W - 110, 725
     draw.rounded_rectangle(
-        [box_x, box_y, box_x + box_w, box_y + box_h],
-        radius=18,
-        fill=(255, 215, 0, 240),
-        outline=(0, 0, 0, 255),
-        width=5,
+        [board_x1, board_y1, board_x2, board_y2],
+        radius=28,
+        fill=(15, 23, 42, 225),
+        outline=accent + (255,),
+        width=6,
     )
 
-    tx = (W - tw) // 2
-    ty = box_y + box_pad_y - 4
-    draw.text((tx, ty), title_text, font=font, fill=(15, 15, 15, 255))
-    return ImageClip(np.array(img)).set_start(0).set_duration(total_duration)
+    # 左上チャプターバッジ
+    font_badge = get_jp_font(36)
+    draw.rounded_rectangle([150, 95, 430, 160], radius=14, fill=accent + (255,))
+    bb = draw.textbbox((0, 0), badge_text, font=font_badge)
+    draw.text((150 + (280 - (bb[2] - bb[0])) // 2, 106), badge_text, font=font_badge, fill=(15, 23, 42, 255))
 
-def make_subtitle_clip_landscape(text, duration, start_time):
-    """1920x1080 横画面用テロップ（26文字で自動改行）"""
+    # 見出しタイトル
+    font_head = get_jp_font(54)
+    head_wrapped = wrap_text(card_headline, 24)
+    draw.multiline_text((155, 185), head_wrapped, font=font_head, fill=(255, 255, 255, 255), spacing=14)
+
+    # 右側の強調キーワード／数値ボックス
+    if key_number:
+        kw_x1, kw_y1, kw_x2, kw_y2 = 1230, 175, 1760, 430
+        draw.rounded_rectangle(
+            [kw_x1, kw_y1, kw_x2, kw_y2],
+            radius=22,
+            fill=(255, 255, 255, 25),
+            outline=accent + (255,),
+            width=4,
+        )
+        font_kw_label = get_jp_font(28)
+        draw.text((kw_x1 + 30, kw_y1 + 22), "KEY POINT", font=font_kw_label, fill=accent + (255,))
+        font_kw_val = get_jp_font(52)
+        kw_wrapped = wrap_text(key_number, 9)
+        draw.multiline_text((kw_x1 + 30, kw_y1 + 75), kw_wrapped, font=font_kw_val, fill=(255, 230, 0, 255), spacing=12)
+
+    # 要点箇条書き（3行）
+    font_bullet = get_jp_font(38)
+    by = 365
+    for b_line in card_bullets[:3]:
+        draw.ellipse([160, by + 14, 182, by + 36], fill=accent + (255,))
+        draw.text((202, by), b_line[:32], font=font_bullet, fill=(226, 232, 240, 255))
+        by += 74
+
+    return ImageClip(np.array(img.convert("RGB"))).set_start(start_t).set_duration(dur)
+
+def make_dialogue_subtitle_clip(speaker, text, start_t, dur, total_dur):
+    """話者アイコンバッジ＋ニュース風字幕帯＋下部プログレスバー"""
     W, H = 1920, 1080
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = get_jp_font(58)
 
-    wrapped = "\n".join([text[j:j+26] for j in range(0, len(text), 26)])
-    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=18, align="center")
-    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    x = (W - tw) // 2
-    y = (H - th) // 2 + 40
-
-    draw.multiline_text(
-        (x, y),
-        wrapped,
-        font=font,
-        fill=(255, 255, 255, 255),
-        stroke_width=7,
-        stroke_fill=(0, 0, 0, 255),
-        spacing=18,
-        align="center",
+    # 下部字幕座布団
+    draw.rounded_rectangle(
+        [110, 755, W - 110, 1015],
+        radius=24,
+        fill=(10, 15, 28, 240),
+        outline=(148, 163, 184, 180),
+        width=4,
     )
-    return ImageClip(np.array(img)).set_start(start_time).set_duration(duration)
 
-def make_bgm_clip(total_duration):
+    # 話者バッジ（A: 解説博士 / B: 聞き手アシスタント）
+    if speaker == "A":
+        sp_name = "解説ナビ"
+        sp_color = (37, 99, 235, 255)
+        text_color = (255, 255, 255, 255)
+    else:
+        sp_name = "質問役"
+        sp_color = (219, 39, 119, 255)
+        text_color = (254, 240, 138, 255)
+
+    font_sp = get_jp_font(32)
+    draw.rounded_rectangle([145, 775, 335, 830], radius=12, fill=sp_color)
+    sb = draw.textbbox((0, 0), sp_name, font=font_sp)
+    draw.text((145 + (190 - (sb[2] - sb[0])) // 2, 784), sp_name, font=font_sp, fill=(255, 255, 255, 255))
+
+    # セリフ字幕
+    font_sub = get_jp_font(50)
+    wrapped = wrap_text(text, 28)
+    draw.multiline_text(
+        (150, 845),
+        wrapped,
+        font=font_sub,
+        fill=text_color,
+        stroke_width=4,
+        stroke_fill=(0, 0, 0, 255),
+        spacing=14,
+    )
+
+    # 画面最下部の進行度バー（プログレスバー）
+    progress = min(1.0, (start_t + dur * 0.5) / max(1.0, total_dur))
+    draw.rectangle([0, H - 14, W, H], fill=(30, 41, 59, 255))
+    draw.rectangle([0, H - 14, int(W * progress), H], fill=(250, 204, 21, 255))
+
+    return ImageClip(np.array(img)).set_start(start_t).set_duration(dur)
+
+# ==========================================
+# BGM ＆ チャプター切替効果音（ピンポン・チャイム）
+# ==========================================
+def make_bgm_and_sfx(total_duration, transition_times):
     chords = [
         [261.63, 329.63, 392.00, 493.88],  # Cmaj7
         [220.00, 261.63, 329.63, 392.00],  # Am7
@@ -153,7 +248,19 @@ def make_bgm_clip(total_duration):
             if np.any(mask):
                 t_sub = t_arr[mask]
                 wave = sum(np.sin(2 * np.pi * f * t_sub) for f in freqs) / len(freqs)
-                out[mask] = wave * 0.05
+                out[mask] = wave * 0.04
+
+        # チャプター切替時の軽快な2音チャイム（E5 -> A5）
+        for tr_t in transition_times:
+            m1 = (t_arr >= tr_t) & (t_arr < tr_t + 0.14)
+            if np.any(m1):
+                dt = t_arr[m1] - tr_t
+                out[m1] += np.sin(2 * np.pi * 659.25 * dt) * np.exp(-dt * 12) * 0.16
+            m2 = (t_arr >= tr_t + 0.14) & (t_arr < tr_t + 0.45)
+            if np.any(m2):
+                dt = t_arr[m2] - (tr_t + 0.14)
+                out[m2] += np.sin(2 * np.pi * 880.00 * dt) * np.exp(-dt * 8) * 0.18
+
         stereo = np.column_stack([out, out])
         return stereo[0] if np.isscalar(t) else stereo
 
@@ -163,8 +270,6 @@ def make_bgm_clip(total_duration):
 # 1. 環境変数・APIキーの読み込み
 # ==========================================
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
-
 YT_CLIENT_ID = os.environ.get("YT_CLIENT_ID")
 YT_CLIENT_SECRET = os.environ.get("YT_CLIENT_SECRET")
 YT_REFRESH_TOKEN = os.environ.get("YT_REFRESH_TOKEN")
@@ -172,9 +277,9 @@ YT_REFRESH_TOKEN = os.environ.get("YT_REFRESH_TOKEN")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 # ==========================================
-# 2. 通常動画用（1分半〜2分・12文構成）ファクトチェック済み台本生成
+# 2. 掛け合い対話＆図解スライド構成の台本生成
 # ==========================================
-print("YouTube通常動画（横画面）用の解説台本を生成中...")
+print("掛け合い形式の本格YouTube解説台本を生成中...")
 
 genres = [
     "科学・物理・化学の実験で証明されている驚くべき法則やメカニズム3選",
@@ -190,36 +295,89 @@ selected_genre = random.choice(genres)
 print(f"今回の抽選ジャンル: {selected_genre}")
 
 prompt = f"""
-あなたは厳格なファクトチェッカー兼YouTube解説動画の構成作家です。
-YouTubeの通常動画（横画面16:9・約1分半〜2分）向けに、100%事実に裏付けられた見応えのある解説台本を作成してください。
+あなたはYouTubeの人気雑学解説チャンネルの構成作家兼ファクトチェッカーです。
+2人のキャラクター（A: 落ち着いた解説ナビゲーター / B: 視聴者目線の明るい質問役）が掛け合いで進行する、約2分〜2分半の横画面YouTube動画の構成台本を作成してください。
 
 【今回の指定ジャンル】
-「{selected_genre}」のテーマで、関連する3つの確実なトリビアを分かりやすく解説する構成にしてください。
+「{selected_genre}」のテーマで、100%事実に裏付けられた確実なトリビアを3つ取り上げてください。
 
-【ハルシネーション（嘘・作話）防止の絶対ルール】
-1. ネット上の都市伝説、根拠のない噂、デマ、あやふやな記憶のエピソードは絶対に選ばないこと。
-2. 自分の知識で100%自信を持って「事実である」と断言できるネタだけを選び、細かい年号や数値に少しでも曖昧さがある場合は無理に書かず、確実に正しい事実だけを書くこと。
-3. 必ず最初にJSONの `fact_check_note` 欄で「3つのネタがそれぞれなぜ100%事実と言えるのか（科学的・歴史的・公式な根拠）」を自己検証してから、`script` を作成すること。
-4. 必ず以下のJSON形式のみで出力すること（マークダウン記法は不要）。
+【ハルシネーション（嘘）防止の絶対ルール】
+1. ネット上の都市伝説、根拠のない噂、デマは絶対に選ばないこと。
+2. 学術的・公式に100%事実と断言できるネタだけを選び、不確かな数値や年号は書かないこと。
+3. 必ず最初に `fact_check_note` で3つのネタの科学的・歴史的根拠を自己検証すること。
+4. 全5チャプター構成（0:導入 / 1:ネタ1 / 2:ネタ2 / 3:ネタ3 / 4:まとめ）とし、各チャプターに画面上の図解スライド用データと、A・Bの掛け合いセリフ（合計16〜18セリフ）を入れること。
+5. 必ず以下のJSON形式のみで出力すること（マークダウン記法は不要）。
 
 {{
-  "fact_check_note": "取り上げる3つの雑学が100%事実である科学的・歴史的・公式な根拠",
-  "title": "YouTube通常動画のクリックしたくなるタイトル（32文字以内・#Shortsは絶対に入れない）",
-  "description": "動画の詳しい概要文とハッシュタグ4〜5個（#雑学 #解説 #豆知識 など。#Shortsは入れない）",
-  "search_keyword": "背景動画検索用のシンプルな英単語1語（例: science, space, nature, brain, technology）",
-  "script": [
-    "1文目（導入）：今回のテーマと3つの雑学を紹介する挨拶・フック（30〜45文字）",
-    "2文目（1つ目の結論）：1つ目のテーマ名と驚きの結論（30〜45文字）",
-    "3文目（1つ目の解説1）：なぜそうなるのかの正確な理由・メカニズム（35〜50文字）",
-    "4文目（1つ目の解説2）：さらに納得する具体的な補足データ（35〜50文字）",
-    "5文目（2つ目の結論）：2つ目のテーマ名と驚きの結論（30〜45文字）",
-    "6文目（2つ目の解説1）：なぜそうなるのかの正確な理由・メカニズム（35〜50文字）",
-    "7文目（2つ目の解説2）：さらに納得する具体的な補足データ（35〜50文字）",
-    "8文目（3つ目の結論）：3つ目のテーマ名と驚きの結論（30〜45文字）",
-    "9文目（3つ目の解説1）：なぜそうなるのかの正確な理由・メカニズム（35〜50文字）",
-    "10文目（3つ目の解説2）：さらに納得する具体的な補足データ（35〜50文字）",
-    "11文目（まとめ）：3つの共通点や一番印象的なポイントの振り返り（30〜45文字）",
-    "12文目（エンディング）：高評価・チャンネル登録の呼びかけ（25〜40文字）"
+  "fact_check_note": "3つの雑学が100%事実である科学的・歴史的・公式な根拠",
+  "title": "クリックしたくなるYouTube動画タイトル（32文字以内・#Shorts禁止）",
+  "thumb_top": "サムネイル上部赤帯の短い煽り文句（12文字以内 例: 教科書に載らない衝撃事実）",
+  "thumb_main": "サムネイル中央の巨大メイン文字（18文字以内 例: 実は嘘だった常識3選）",
+  "thumb_sub": "サムネイル下部白帯の補足文（16文字以内 例: 科学と公式データで徹底解説）",
+  "description": "動画の概要欄テキストとハッシュタグ4〜5個（#雑学 #解説 #豆知識 など）",
+  "chapters": [
+    {{
+      "chapter_title": "オープニング",
+      "badge": "INTRODUCTION",
+      "slide_headline": "今日のテーマ（22文字以内）",
+      "key_number": "3つの真実",
+      "bullets": ["要点1（26文字以内）", "要点2（26文字以内）", "要点3（26文字以内）"],
+      "dialogues": [
+        {{"speaker": "B", "text": "Bの問いかけ・導入セリフ（30〜45文字）"}},
+        {{"speaker": "A", "text": "Aの結論提示・今回のテーマ紹介（35〜50文字）"}},
+        {{"speaker": "B", "text": "Bのリアクション・期待を高める一言（25〜40文字）"}}
+      ]
+    }},
+    {{
+      "chapter_title": "1つ目の秘密",
+      "badge": "POINT 01",
+      "slide_headline": "1つ目の雑学タイトル（22文字以内）",
+      "key_number": "強調したい単語や数値（12文字以内）",
+      "bullets": ["事実の結論（26文字以内）", "科学的・歴史的理由（26文字以内）", "意外な補足データ（26文字以内）"],
+      "dialogues": [
+        {{"speaker": "A", "text": "Aの1つ目の結論発表（35〜50文字）"}},
+        {{"speaker": "B", "text": "Bの驚きと『なぜ？』の質問（25〜40文字）"}},
+        {{"speaker": "A", "text": "Aの理由・メカニズムの詳しい解説（40〜55文字）"}},
+        {{"speaker": "B", "text": "Bの納得リアクション（25〜40文字）"}}
+      ]
+    }},
+    {{
+      "chapter_title": "2つ目の秘密",
+      "badge": "POINT 02",
+      "slide_headline": "2つ目の雑学タイトル（22文字以内）",
+      "key_number": "強調したい単語や数値（12文字以内）",
+      "bullets": ["事実の結論（26文字以内）", "科学的・歴史的理由（26文字以内）", "意外な補足データ（26文字以内）"],
+      "dialogues": [
+        {{"speaker": "A", "text": "Aの2つ目の結論発表（35〜50文字）"}},
+        {{"speaker": "B", "text": "Bの疑問・ツッコミ（25〜40文字）"}},
+        {{"speaker": "A", "text": "Aの理由・根拠の詳しい解説（40〜55文字）"}},
+        {{"speaker": "B", "text": "Bの感心リアクション（25〜40文字）"}}
+      ]
+    }},
+    {{
+      "chapter_title": "3つ目の秘密",
+      "badge": "POINT 03",
+      "slide_headline": "3つ目の雑学タイトル（22文字以内）",
+      "key_number": "強調したい単語や数値（12文字以内）",
+      "bullets": ["事実の結論（26文字以内）", "科学的・歴史的理由（26文字以内）", "意外な補足データ（26文字以内）"],
+      "dialogues": [
+        {{"speaker": "A", "text": "Aの3つ目の結論発表（35〜50文字）"}},
+        {{"speaker": "B", "text": "Bの驚き・質問（25〜40文字）"}},
+        {{"speaker": "A", "text": "Aの理由・根拠の詳しい解説（40〜55文字）"}},
+        {{"speaker": "B", "text": "Bの納得リアクション（25〜40文字）"}}
+      ]
+    }},
+    {{
+      "chapter_title": "まとめ",
+      "badge": "SUMMARY",
+      "slide_headline": "本日の重要ポイントまとめ（22文字以内）",
+      "key_number": "完全理解",
+      "bullets": ["ポイント1の振り返り（26文字以内）", "ポイント2の振り返り（26文字以内）", "ポイント3の振り返り（26文字以内）"],
+      "dialogues": [
+        {{"speaker": "A", "text": "Aの全体まとめ（35〜50文字）"}},
+        {{"speaker": "B", "text": "Bの感想とチャンネル登録のお願い（30〜45文字）"}}
+      ]
+    }}
   ]
 }}
 """
@@ -247,110 +405,127 @@ if not response:
     raise RuntimeError("すべてのGeminiモデルでの台本生成に失敗しました。")
 
 data = json.loads(response.text)
-fact_note = data.get("fact_check_note", "")
 title = data["title"].replace("#Shorts", "").replace("#shorts", "").strip()
 description = data["description"].replace("#Shorts", "").replace("#shorts", "").strip()
-search_keyword = data["search_keyword"]
-script_lines = data["script"]
+chapters = data["chapters"]
 
-print(f"ファクトチェック根拠: {fact_note}")
-print(f"生成完了: {title} (検索ワード: {search_keyword})")
-for idx, s in enumerate(script_lines, 1):
-    print(f"  台本{idx}: {s}")
+print(f"ファクトチェック根拠: {data.get('fact_check_note', '')}")
+print(f"タイトル: {title}")
 
-# ==========================================
-# 3. 横画面背景動画の取得（Pexels landscape または アニメーション背景）
-# ==========================================
-bg_video_path = "bg_long_video.mp4"
-has_bg_video = False
-
-if PEXELS_API_KEY:
-    print("Pexelsから横画面（landscape）の背景動画を検索中...")
-    headers = {"Authorization": PEXELS_API_KEY}
-    encoded_kw = urllib.parse.quote(search_keyword)
-    PEXELS_BASE = clean_url("https://" + "api." + "pexels." + "com/videos/search")
-
-    for query_url in [
-        f"{PEXELS_BASE}?query={encoded_kw}&orientation=landscape&per_page=10",
-        f"{PEXELS_BASE}?query=abstract&orientation=landscape&per_page=10",
-    ]:
-        r = requests.get(query_url, headers=headers)
-        if r.status_code != 200:
-            print(f"Pexels API警告 (Status {r.status_code}): {r.text}")
-            break
-        videos = r.json().get("videos", [])
-        if videos:
-            selected_video = random.choice(videos)
-            video_files = selected_video["video_files"]
-            hd_files = [f for f in video_files if f.get("width", 0) >= 1280 and f.get("file_type") == "video/mp4"]
-            download_url = hd_files[0]["link"] if hd_files else video_files[0]["link"]
-            with open(bg_video_path, "wb") as f:
-                f.write(requests.get(download_url).content)
-            has_bg_video = True
-            print("Pexelsから横画面背景動画を取得しました。")
-            break
+# サムネイル生成
+thumb_path = "thumbnail.jpg"
+generate_thumbnail(
+    data.get("thumb_top", "知って得する雑学解説"),
+    data.get("thumb_main", title[:16]),
+    data.get("thumb_sub", "公式データで徹底解説"),
+    thumb_path,
+)
 
 # ==========================================
-# 4. 音声生成（Edge-TTS）＆ 横画面動画合成（1920x1080）
+# 3. 2人掛け合い音声の生成（Edge-TTS）＆ チャプター時間計算
 # ==========================================
-print("音声とBGM・横画面動画を合成中...")
-VOICE = "ja-JP-NanamiNeural"
-clips = []
-audio_clips = []
-current_time = 0.0
+print("2人の掛け合い音声と図解スライドを合成中...")
 
-async def generate_tts(text, filename):
-    communicate = edge_tts.Communicate(text, VOICE, rate="+12%")
+async def generate_tts(text, voice, filename):
+    communicate = edge_tts.Communicate(text, voice, rate="+14%")
     await communicate.save(filename)
 
-for i, line in enumerate(script_lines):
-    audio_file = f"long_part_{i}.mp3"
-    asyncio.run(generate_tts(line, audio_file))
+dialogue_entries = []
+chapter_ranges = []
+current_time = 0.0
+part_idx = 0
 
-    a_clip = AudioFileClip(audio_file)
-    duration = a_clip.duration + 0.25
-    audio_clips.append(a_clip.set_start(current_time))
+for c_idx, ch in enumerate(chapters):
+    ch_start = current_time
+    for d in ch["dialogues"]:
+        sp = d.get("speaker", "A")
+        txt = d["text"]
+        voice = "ja-JP-KeitaNeural" if sp == "A" else "ja-JP-NanamiNeural"
+        audio_file = f"dlg_{part_idx}.mp3"
+        asyncio.run(generate_tts(txt, voice, audio_file))
 
-    sub_clip = make_subtitle_clip_landscape(line, duration, current_time)
-    clips.append(sub_clip)
-    current_time += duration
+        a_clip = AudioFileClip(audio_file)
+        dur = a_clip.duration + 0.22
+        dialogue_entries.append({
+            "speaker": sp,
+            "text": txt,
+            "start": current_time,
+            "duration": dur,
+            "audio_clip": a_clip.set_start(current_time),
+        })
+        current_time += dur
+        part_idx += 1
+
+    # チャプター間の余白（0.35秒）
+    current_time += 0.35
+    chapter_ranges.append({
+        "index": c_idx,
+        "title": ch["chapter_title"],
+        "badge": ch.get("badge", f"PART {c_idx}"),
+        "headline": ch.get("slide_headline", ch["chapter_title"]),
+        "key_number": ch.get("key_number", ""),
+        "bullets": ch.get("bullets", []),
+        "start": ch_start,
+        "duration": current_time - ch_start,
+    })
 
 total_duration = current_time
-print(f"完成予定動画の長さ: {total_duration:.1f} 秒")
-bgm_clip = make_bgm_clip(total_duration)
-final_audio = CompositeAudioClip(audio_clips + [bgm_clip])
+print(f"完成動画の総再生時間: {total_duration:.1f} 秒")
 
-if has_bg_video:
-    bg_clip = VideoFileClip(bg_video_path).without_audio()
-    if bg_clip.duration < total_duration:
-        bg_clip = bg_clip.loop(duration=total_duration)
-    else:
-        bg_clip = bg_clip.subclip(0, total_duration)
+# スライドクリップ生成
+slide_clips = []
+transition_times = []
+for cr in chapter_ranges:
+    if cr["index"] > 0:
+        transition_times.append(cr["start"])
+    slide_clips.append(
+        make_slide_card_clip(
+            cr["index"],
+            cr["badge"],
+            cr["headline"],
+            cr["bullets"],
+            cr["key_number"],
+            cr["start"],
+            cr["duration"],
+        )
+    )
 
-    bg_clip = bg_clip.resize(width=1920)
-    if bg_clip.h > 1080:
-        bg_clip = bg_clip.crop(y_center=bg_clip.h / 2, height=1080)
-    else:
-        bg_clip = bg_clip.resize(height=1080)
+# 字幕クリップ生成
+sub_clips = []
+audio_clips = []
+for entry in dialogue_entries:
+    audio_clips.append(entry["audio_clip"])
+    sub_clips.append(
+        make_dialogue_subtitle_clip(
+            entry["speaker"],
+            entry["text"],
+            entry["start"],
+            entry["duration"],
+            total_duration,
+        )
+    )
 
-    dark_overlay = ColorClip(size=(1920, 1080), color=(0, 0, 0), duration=total_duration).set_opacity(0.42)
-    base_layers = [bg_clip, dark_overlay]
-else:
-    print("横画面グラデーション＋パーティクル背景を生成中...")
-    base_layers = [make_animated_bg_landscape(total_duration)]
-
-header_clip = make_header_clip_landscape(title, total_duration)
+bgm_sfx_clip = make_bgm_and_sfx(total_duration, transition_times)
+final_audio = CompositeAudioClip(audio_clips + [bgm_sfx_clip])
 
 output_video = "output_long.mp4"
-final_video = CompositeVideoClip(base_layers + [header_clip] + clips).set_audio(final_audio)
+final_video = CompositeVideoClip(slide_clips + sub_clips).set_audio(final_audio)
 final_video.write_videofile(output_video, fps=30, codec="libx264", audio_codec="aac")
 
+# タイムスタンプ（目次）の自動生成
+timestamp_lines = ["【目次（タイムスタンプ）】"]
+for cr in chapter_ranges:
+    mins = int(cr["start"] // 60)
+    secs = int(cr["start"] % 60)
+    timestamp_lines.append(f"{mins:02d}:{secs:02d} {cr['headline']}")
+timestamps_text = "\n".join(timestamp_lines)
+
 # ==========================================
-# 5. YouTube 通常動画としてアップロード
+# 4. YouTube 通常動画 ＋ カスタムサムネイルのアップロード
 # ==========================================
 if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
     try:
-        print("YouTube 通常動画（16:9）をアップロード中...")
+        print("YouTube 通常動画をアップロード中...")
         TOKEN_URI = clean_url("https://" + "oauth2." + "googleapis." + "com/token")
         creds = Credentials(
             token=None,
@@ -362,6 +537,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
         youtube = build("youtube", "v3", credentials=creds)
         yt_description = (
             f"{description}\n\n"
+            f"{timestamps_text}\n\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
             "🤖 最新AIトレンド＆AIツール比較データベース「AI Tech Hub」\n"
             "https://banjoblog.github.io/auto-blog/\n"
@@ -371,7 +547,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
             "snippet": {
                 "title": title,
                 "description": yt_description,
-                "categoryId": "27",  # 27: 教育・解説系カテゴリ
+                "categoryId": "27",
             },
             "status": {
                 "privacyStatus": "public",
@@ -380,7 +556,20 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
         }
         media = MediaFileUpload(output_video, chunksize=-1, resumable=True, mimetype="video/mp4")
         yt_res = youtube.videos().insert(part="snippet,status", body=body, media_body=media).execute()
-        print(f"YouTube 通常動画アップロード完了！ Video ID: {yt_res.get('id')}")
+        video_id = yt_res.get("id")
+        print(f"YouTube 通常動画アップロード完了！ Video ID: {video_id}")
+
+        # サムネイル画像を自動設定（未認証チャンネルで失敗しても動画自体は公開済みになるよう保護）
+        if video_id and os.path.exists(thumb_path):
+            try:
+                youtube.thumbnails().set(
+                    videoId=video_id,
+                    media_body=MediaFileUpload(thumb_path, mimetype="image/jpeg"),
+                ).execute()
+                print("カスタムサムネイルの設定が完了しました！")
+            except Exception as te:
+                print(f"サムネイル設定スキップ（チャンネル電話番号認証が未完了の可能性があります）: {te}")
+
     except Exception as e:
         print(f"YouTube アップロードエラー: {e}")
 else:
