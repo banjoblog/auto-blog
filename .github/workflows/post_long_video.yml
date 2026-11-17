@@ -2,7 +2,7 @@ name: Auto Post YouTube Long Video
 
 on:
   schedule:
-    - cron: '0 10 * * 2,5'  # 毎週火曜・金曜の日本時間19:00に自動実行（毎日なら '0 10 * * *'）
+    - cron: '0 10 * * *'  # 毎日 日本時間19:00（UTC 10:00）に自動実行
   workflow_dispatch:
 
 jobs:
