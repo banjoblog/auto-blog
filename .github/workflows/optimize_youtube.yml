@@ -1,0 +1,40 @@
+name: Optimize YouTube Genres
+
+on:
+  schedule:
+    - cron: '0 18 * * *' # 毎日 日本時間 03:00（UTC 18:00）に自動分析
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "video-repo-push"
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          pip install google-api-python-client google-auth
+      - name: Run optimize_genres.py
+        env:
+          YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python optimize_genres.py
+      - name: Save genre_weights.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add genre_weights.json
+          git diff --staged --quiet || git commit -m "chore: update genre_weights.json from analytics"
+          git pull --rebase -X ours origin main
+          git push
