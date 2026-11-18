@@ -108,23 +108,26 @@ def make_header_clip(title_text, hook_badge, total_duration):
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # 上部の衝撃レッドバッジ
+    # 上部の衝撃レッドバッジ（文字幅に合わせて自動調整）
     font_small = get_jp_font(34)
-    draw.rounded_rectangle([260, 145, W - 260, 205], radius=14, fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=4)
     hb = draw.textbbox((0, 0), hook_badge, font=font_small)
-    draw.text(((W - (hb[2] - hb[0])) // 2, 156), hook_badge, font=font_small, fill=(255, 255, 255, 255))
+    hw, hh = hb[2] - hb[0], hb[3] - hb[1]
+    h_box_w = max(440, hw + 80)
+    h_box_x = (W - h_box_w) // 2
+    draw.rounded_rectangle([h_box_x, 145, h_box_x + h_box_w, 205], radius=14, fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=4)
+    draw.text(((W - hw) // 2 - hb[0], 145 + (60 - hh) // 2 - hb[1]), hook_badge, font=font_small, fill=(255, 255, 255, 255))
 
     # メインタイトルゴールド帯
-    font = get_jp_font(56)
-    wrapped = "\n".join([title_text[j:j+14] for j in range(0, len(title_text), 14)])
+    font = get_jp_font(54)
+    wrapped = "\n".join([title_text[j:j+13] for j in range(0, len(title_text), 13)])
     bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=12, align="center")
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     
     box_pad_x, box_pad_y = 48, 26
-    box_w = min(W - 100, tw + box_pad_x * 2)
+    box_w = min(W - 120, tw + box_pad_x * 2)
     box_h = th + box_pad_y * 2
     box_x = (W - box_w) // 2
-    box_y = 222
+    box_y = 224
     
     draw.rounded_rectangle(
         [box_x, box_y, box_x + box_w, box_y + box_h],
@@ -134,8 +137,8 @@ def make_header_clip(title_text, hook_badge, total_duration):
         width=6,
     )
     
-    tx = (W - tw) // 2
-    ty = box_y + box_pad_y
+    tx = (W - tw) // 2 - bbox[0]
+    ty = box_y + box_pad_y - bbox[1]
     draw.multiline_text(
         (tx, ty),
         wrapped,
@@ -150,31 +153,43 @@ def make_subtitle_clip(text, duration, start_time, total_duration, is_hook=False
     W, H = 1080, 1920
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = get_jp_font(68 if is_hook else 64)
+    font = get_jp_font(62 if is_hook else 60)
     
-    # TikTokの右側ボタン列を避けるため12文字改行＆中央セーフゾーン配置
-    wrapped = "\n".join([text[j:j+12] for j in range(0, len(text), 12)])
+    # 11文字ごとに改行して左右の余白を十分に確保（枠ズレ＆TikTokアイコン被り防止）
+    wrapped = "\n".join([text[j:j+11] for j in range(0, len(text), 11)])
     bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=18, align="center")
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    x = (W - tw) // 2 - 20
-    y = (H - th) // 2 + 40
+    
+    # セーフゾーン中心（少し左寄り X=510 を中心軸にする）
+    center_x = 510
+    center_y = H // 2 + 40
 
-    # 冒頭フックと結論は視認性の高い半透明カード座布団を敷く
+    # 冒頭フックと結論は視認性の高い半透明カード座布団を左右対称で描画
     if is_hook or is_conclusion:
-        pad_x, pad_y = 36, 26
-        bg_c = (185, 28, 28, 210) if is_hook else (15, 23, 42, 215)
+        pad_x, pad_y = 44, 32
+        box_w = tw + pad_x * 2
+        box_h = th + pad_y * 2
+        box_x1 = center_x - box_w // 2
+        box_y1 = center_y - box_h // 2
+        box_x2 = box_x1 + box_w
+        box_y2 = box_y1 + box_h
+
+        bg_c = (185, 28, 28, 220) if is_hook else (15, 23, 42, 225)
         border_c = (250, 204, 21, 255)
         draw.rounded_rectangle(
-            [max(40, x - pad_x), y - pad_y, min(W - 110, x + tw + pad_x), y + th + pad_y],
-            radius=22,
+            [box_x1, box_y1, box_x2, box_y2],
+            radius=24,
             fill=bg_c,
             outline=border_c,
-            width=5,
+            width=6,
         )
+
+    tx = center_x - tw // 2 - bbox[0]
+    ty = center_y - th // 2 - bbox[1]
 
     txt_fill = (255, 240, 0, 255) if (is_hook or is_conclusion) else (255, 255, 255, 255)
     draw.multiline_text(
-        (x, y),
+        (tx, ty),
         wrapped,
         font=font,
         fill=txt_fill,
@@ -184,7 +199,7 @@ def make_subtitle_clip(text, duration, start_time, total_duration, is_hook=False
         align="center",
     )
 
-    # 最上部の進行度ゲージ（最後まで見させる心理効果）
+    # 最上部の進行度ゲージ
     progress = min(1.0, (start_time + duration * 0.5) / max(1.0, total_duration))
     draw.rectangle([0, 0, W, 16], fill=(30, 41, 59, 220))
     draw.rectangle([0, 0, int(W * progress), 16], fill=(250, 204, 21, 255))
