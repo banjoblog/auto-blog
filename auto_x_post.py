@@ -30,14 +30,32 @@ def save_used_topics(new_items):
         json.dump(topics, f, ensure_ascii=False, indent=2)
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-X_API_KEY = os.environ.get("X_API_KEY")
-X_API_SECRET = os.environ.get("X_API_SECRET")
-X_ACCESS_TOKEN = os.environ.get("X_ACCESS_TOKEN")
-X_ACCESS_TOKEN_SECRET = os.environ.get("X_ACCESS_TOKEN_SECRET")
+X_API_KEY = (os.environ.get("X_API_KEY") or "").strip()
+X_API_SECRET = (os.environ.get("X_API_SECRET") or "").strip()
+X_ACCESS_TOKEN = (os.environ.get("X_ACCESS_TOKEN") or "").strip()
+X_ACCESS_TOKEN_SECRET = (os.environ.get("X_ACCESS_TOKEN_SECRET") or "").strip()
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 used_topics = load_used_topics()
 ng_list_text = "、".join(used_topics[-80:]) if used_topics else "なし"
+
+def call_gemini_json(prompt_text):
+    for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite"]:
+        for attempt in range(3):
+            try:
+                res = client.models.generate_content(
+                    model=model,
+                    contents=prompt_text,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.3,
+                    ),
+                )
+                return json.loads(res.text)
+            except Exception as e:
+                print(f"{model} エラー、リトライ ({attempt+1}/3): {e}")
+                time.sleep(8)
+    raise RuntimeError("Geminiでの生成に失敗しました。")
 
 genres = [
     "科学・物理・化学の実験で証明されている驚くべき法則",
@@ -45,61 +63,53 @@ genres = [
     "宇宙・惑星・気象のNASAや天文台で観測されている確実な事実",
     "人体の仕組み・脳科学・睡眠に関する医学的に認められている雑学",
     "日本の老舗企業や有名商品の公式に公開されている誕生秘話・社名の由来",
-    "日本の法律・道路交通法・硬貨や紙幣の公式仕様に基づく意外な雑学",
     "心理学・行動経済学の教科書に載っている有名な実験",
     "食べ物・料理の科学的な成分や調理のメカニズム",
     "日本語の語源・漢字の成り立ち・身近な言葉の意外な由来",
 ]
 selected_genre = random.choice(genres)
 
-prompt = f"""
-あなたはX（旧Twitter）で毎回1万いいねを獲得する雑学アカウントの運用者です。
-「{selected_genre}」のジャンルから、100%事実と認められている「思わずリポストしたくなる雑学」を1つ作成してください。
+# ステップ1：100%正確な事実の確定
+fact_prompt = f"""
+あなたは厳格なファクトチェッカーです。
+「{selected_genre}」のジャンルから、教科書や公式資料で100%事実と証明されている「誰かに話したくなる雑学」を1つ厳選してください。
 
-【使用禁止リスト（過去投稿済み）】
+【使用禁止リスト】
 [{ng_list_text}]
 
-【バズるポスト作成の厳守ルール】
-1. 外部URLは一切入れないこと（純粋なテキストのみで完結させる）。
-2. 1行目でスクロールを止める強烈なフック（「9割が勘違いしている〇〇の真実」「実は〇〇って、△△なんです」など）を入れること。
-3. 改行や箇条書き（・）を適度に使い、スマホでパッと見やすいレイアウトにすること。
-4. 全体で【全角125文字以内】（ハッシュタグ1〜2個込み）に必ず収めること。
-5. 以下のJSON形式のみで出力すること。
+【注意】都市伝説や国によって異なる曖昧なルールは絶対に除外し、確実な事実だけを選ぶこと。
+以下のJSON形式のみで出力してください。
 
 {{
   "topic_keyword": "主役キーワード（10文字以内）",
-  "tweet_text": "そのままXに投稿する完成テキスト（125文字以内）"
+  "verified_fact": "100%正確な事実と理由の要約（100文字以内）"
 }}
 """
 
-data = None
-for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite"]:
-    for attempt in range(3):
-        try:
-            res = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.5,
-                ),
-            )
-            data = json.loads(res.text)
-            break
-        except Exception as e:
-            print(f"{model} エラー、リトライ ({attempt+1}/3): {e}")
-            time.sleep(8)
-    if data:
-        break
+fact_data = call_gemini_json(fact_prompt)
+topic_keyword = fact_data.get("topic_keyword", "X雑学")
+verified_fact = fact_data["verified_fact"]
 
-if not data:
-    raise RuntimeError("Geminiでのポスト生成に失敗しました。")
+# ステップ2：X向けに文字数オーバーせず綺麗に完結するポストを作成
+tweet_prompt = f"""
+以下の【検証済みの事実】だけを使って、X（旧Twitter）でリポストしたくなる短い雑学ポストを作成してください。
 
-topic_keyword = data.get("topic_keyword", "X雑学")
-tweet_text = data["tweet_text"].strip()
+【検証済みの事実】
+{verified_fact}
 
-if len(tweet_text) > 138:
-    tweet_text = tweet_text[:135] + "…"
+【厳守ルール】
+1. 外部URLは一切入れないこと。
+2. 1行目に「実は〇〇って、△△なんです。」のような惹きつける見出しを入れること。
+3. 途中で文字が切れないよう、ハッシュタグ（#雑学 #豆知識）を含めて【必ず全体で110文字以内】にスッキリ収めること。
+4. 以下のJSON形式のみで出力すること。
+
+{{
+  "tweet_text": "110文字以内の完成ポスト"
+}}
+"""
+
+tweet_data = call_gemini_json(tweet_prompt)
+tweet_text = tweet_data["tweet_text"].strip()
 
 print(f"生成されたポスト（{len(tweet_text)}文字）:\n{tweet_text}")
 
