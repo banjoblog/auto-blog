@@ -2,7 +2,7 @@ name: Optimize YouTube Genres
 
 on:
   schedule:
-    - cron: '0 18 * * *' # 毎日 日本時間 03:00（UTC 18:00）に自動分析
+    - cron: '0 18 * * *' # 毎日 日本時間 03:00 に自動分析
   workflow_dispatch:
 
 permissions:
@@ -15,21 +15,15 @@ concurrency:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install google-api-python-client google-auth
       - name: Run optimize_genres.py
         env:
           YOUTUBE_CHANNEL_ID: ${{ secrets.YOUTUBE_CHANNEL_ID }}
-          YT_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
-          YT_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
-          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: python optimize_genres.py
       - name: Save genre_weights.json
         run: |
