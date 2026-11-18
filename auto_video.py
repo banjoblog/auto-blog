@@ -451,25 +451,32 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
             raise RuntimeError(f"TikTok トークン取得失敗: {token_res}")
         video_size = os.path.getsize(output_video)
         TIKTOK_DIRECT_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/video/init/")
-        init_res = requests.post(
-            TIKTOK_DIRECT_URL,
-            headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
-            json={
-                "post_info": {
-                    "title": f"{title} {description}"[:150],
-                    "privacy_level": "SELF_ONLY",
-                    "disable_duet": False,
-                    "disable_comment": False,
-                    "disable_stitch": False,
+
+        init_res = {}
+        for privacy in ["PUBLIC_TO_EVERYONE", "SELF_ONLY"]:
+            init_res = requests.post(
+                TIKTOK_DIRECT_URL,
+                headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
+                json={
+                    "post_info": {
+                        "title": f"{title} {description}"[:150],
+                        "privacy_level": privacy,
+                        "disable_duet": False,
+                        "disable_comment": False,
+                        "disable_stitch": False,
+                    },
+                    "source_info": {
+                        "source": "FILE_UPLOAD",
+                        "video_size": video_size,
+                        "chunk_size": video_size,
+                        "total_chunk_count": 1,
+                    },
                 },
-                "source_info": {
-                    "source": "FILE_UPLOAD",
-                    "video_size": video_size,
-                    "chunk_size": video_size,
-                    "total_chunk_count": 1,
-                },
-            },
-        ).json()
+            ).json()
+            if init_res.get("data", {}).get("upload_url"):
+                print(f"TikTok 公開モード: {privacy} で初期化成功")
+                break
+
         if not init_res.get("data", {}).get("upload_url"):
             TIKTOK_INBOX_URL = clean_url("https://" + "open." + "tiktokapis." + "com/v2/post/publish/inbox/video/init/")
             init_res = requests.post(
@@ -477,6 +484,7 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
                 headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
                 json={"source_info": {"source": "FILE_UPLOAD", "video_size": video_size, "chunk_size": video_size, "total_chunk_count": 1}},
             ).json()
+
         upload_url = init_res.get("data", {}).get("upload_url")
         publish_id = init_res.get("data", {}).get("publish_id")
         if upload_url:
@@ -496,6 +504,7 @@ if TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET and TIKTOK_REFRESH_TOKEN:
                     json={"publish_id": publish_id},
                 ).json()
                 if status_res.get("data", {}).get("status") in ["SEND_TO_USER_INBOX", "PUBLISH_COMPLETE", "FAILED"]:
+                    print(f"TikTok 投稿ステータス: {status_res.get('data', {}).get('status')}")
                     break
     except Exception as e:
         print(f"TikTok アップロードエラー: {e}")
