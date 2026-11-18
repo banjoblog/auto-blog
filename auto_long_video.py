@@ -36,7 +36,7 @@ def save_used_topics(new_items):
         item = item.strip()
         if item and item not in topics:
             topics.append(item)
-    topics = topics[-150:]
+    topics = topics[-200:]
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(topics, f, ensure_ascii=False, indent=2)
 
@@ -69,46 +69,34 @@ def wrap_text(text, max_chars):
 def draw_avatar_image(role="A", mouth_open=False, size=240):
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    cx, cy = size // 2, size // 2
+    cx = size // 2
 
     if role == "A":
-        # 解説博士（ブルー系スーツ・メガネ・落ち着いた知的キャラ）
         bg_col = (30, 58, 138, 255)
         ring_col = (56, 189, 248, 255)
         suit_col = (15, 23, 42, 255)
         hair_col = (30, 41, 59, 255)
     else:
-        # 質問役アシスタント（ピンク系・明るいリアクションキャラ）
         bg_col = (131, 24, 67, 255)
         ring_col = (244, 114, 182, 255)
         suit_col = (219, 39, 119, 255)
         hair_col = (88, 28, 135, 255)
 
-    # 背景サークル枠
     draw.ellipse([8, 8, size - 8, size - 8], fill=bg_col, outline=ring_col, width=7)
-
-    # 体（肩）
     draw.pieslice([38, 148, size - 38, size + 40], start=180, end=360, fill=suit_col, outline=(255, 255, 255, 200), width=3)
     if role == "A":
-        # ネクタイ
         draw.polygon([(cx - 10, 165), (cx + 10, 165), (cx + 14, 215), (cx, 228), (cx - 14, 215)], fill=(239, 68, 68, 255))
     else:
-        # リボン
         draw.polygon([(cx, 175), (cx - 24, 162), (cx - 24, 188)], fill=(250, 204, 21, 255))
         draw.polygon([(cx, 175), (cx + 24, 162), (cx + 24, 188)], fill=(250, 204, 21, 255))
 
-    # 後ろ髪（質問役のみ）
     if role == "B":
         draw.ellipse([52, 42, size - 52, 168], fill=hair_col)
 
-    # 顔の輪郭
     skin_col = (255, 228, 196, 255)
     draw.ellipse([66, 52, size - 66, 158], fill=skin_col, outline=(180, 130, 100, 255), width=3)
-
-    # 前髪
     draw.pieslice([62, 44, size - 62, 120], start=180, end=360, fill=hair_col)
 
-    # 目
     eye_y = 102
     draw.ellipse([88, eye_y - 7, 102, eye_y + 7], fill=(20, 20, 30, 255))
     draw.ellipse([size - 102, eye_y - 7, size - 88, eye_y + 7], fill=(20, 20, 30, 255))
@@ -116,16 +104,13 @@ def draw_avatar_image(role="A", mouth_open=False, size=240):
     draw.ellipse([size - 99, eye_y - 4, size - 94, eye_y + 1], fill=(255, 255, 255, 255))
 
     if role == "A":
-        # 博士メガネ
         draw.rectangle([80, eye_y - 12, 110, eye_y + 12], outline=(250, 204, 21, 255), width=3)
         draw.rectangle([size - 110, eye_y - 12, size - 80, eye_y + 12], outline=(250, 204, 21, 255), width=3)
         draw.line([(110, eye_y), (size - 110, eye_y)], fill=(250, 204, 21, 255), width=3)
     else:
-        # チーク
         draw.ellipse([76, 114, 94, 124], fill=(251, 113, 133, 150))
         draw.ellipse([size - 94, 114, size - 76, 124], fill=(251, 113, 133, 150))
 
-    # 口（口パク切り替え）
     mouth_y = 132
     if mouth_open:
         draw.ellipse([cx - 14, mouth_y - 9, cx + 14, mouth_y + 11], fill=(220, 38, 38, 255), outline=(80, 20, 20, 255), width=2)
@@ -168,19 +153,17 @@ def generate_thumbnail(thumb_top, thumb_main, thumb_sub, out_path="thumbnail.jpg
 
     draw.rectangle([14, 14, W - 14, H - 14], outline=(255, 215, 0), width=16)
 
-    # 上部赤帯バッジ
     font_top = get_jp_font(48)
     draw.rounded_rectangle([120, 42, W - 120, 134], radius=18, fill=(220, 38, 38), outline=(255, 255, 255), width=6)
     tb = draw.textbbox((0, 0), thumb_top, font=font_top)
-    draw.text(((W - (tb[2] - tb[0])) // 2, 58), thumb_top, font=font_top, fill=(255, 255, 255))
+    draw.text(((W - (tb[2] - tb[0])) // 2 - tb[0], 42 + (92 - (tb[3] - tb[1])) // 2 - tb[1]), thumb_top, font=font_top, fill=(255, 255, 255))
 
-    # 中央メイン巨大文字
-    font_main = get_jp_font(108)
+    font_main = get_jp_font(106)
     wrapped_main = wrap_text(thumb_main, 11)
     mb = draw.multiline_textbbox((0, 0), wrapped_main, font=font_main, spacing=18, align="center")
     mw, mh = mb[2] - mb[0], mb[3] - mb[1]
-    mx = (W - mw) // 2
-    my = (H - mh) // 2 + 8
+    mx = (W - mw) // 2 - mb[0]
+    my = (H - mh) // 2 + 8 - mb[1]
     draw.multiline_text(
         (mx, my),
         wrapped_main,
@@ -192,18 +175,14 @@ def generate_thumbnail(thumb_top, thumb_main, thumb_sub, out_path="thumbnail.jpg
         align="center",
     )
 
-    # 下部白帯サブキャッチ
     font_sub = get_jp_font(44)
     draw.rounded_rectangle([160, H - 124, W - 160, H - 42], radius=16, fill=(255, 255, 255), outline=(0, 0, 0), width=6)
     sb = draw.textbbox((0, 0), thumb_sub, font=font_sub)
-    draw.text(((W - (sb[2] - sb[0])) // 2, H - 108), thumb_sub, font=font_sub, fill=(15, 23, 42))
+    draw.text(((W - (sb[2] - sb[0])) // 2 - sb[0], (H - 124) + (82 - (sb[3] - sb[1])) // 2 - sb[1]), thumb_sub, font=font_sub, fill=(15, 23, 42))
 
     img.save(out_path, quality=95)
     print(f"サムネイル画像を生成しました: {out_path}")
 
-# ==========================================
-# スライド・図解カード（クイズ伏せ字モード / 正解オープンモード）
-# ==========================================
 CHAPTER_THEMES = [
     ((15, 23, 42), (30, 58, 138), (56, 189, 248)),
     ((24, 24, 27), (127, 29, 29), (251, 191, 36)),
@@ -244,22 +223,20 @@ def make_slide_card_clip(chapter_idx, badge_text, card_headline, card_bullets, k
     font_badge = get_jp_font(36)
     draw.rounded_rectangle([150, 85, 430, 150], radius=14, fill=accent + (255,))
     bb = draw.textbbox((0, 0), badge_text, font=font_badge)
-    draw.text((150 + (280 - (bb[2] - bb[0])) // 2, 96), badge_text, font=font_badge, fill=(15, 23, 42, 255))
+    draw.text((150 + (280 - (bb[2] - bb[0])) // 2 - bb[0], 85 + (65 - (bb[3] - bb[1])) // 2 - bb[1]), badge_text, font=font_badge, fill=(15, 23, 42, 255))
 
-    # クイズモードステータス表示
     font_status = get_jp_font(30)
     if mystery_mode:
-        draw.rounded_rectangle([455, 88, 740, 148], radius=12, fill=(220, 38, 38, 255))
-        draw.text((482, 100), "★ 理由を予想しよう！", font=font_status, fill=(255, 255, 255, 255))
+        draw.rounded_rectangle([455, 88, 760, 148], radius=12, fill=(220, 38, 38, 255))
+        draw.text((480, 100), "★ 理由を予想しよう！", font=font_status, fill=(255, 255, 255, 255))
     elif 1 <= chapter_idx <= 7:
-        draw.rounded_rectangle([455, 88, 700, 148], radius=12, fill=(22, 163, 74, 255))
-        draw.text((485, 100), "✔ 事実解説オープン", font=font_status, fill=(255, 255, 255, 255))
+        draw.rounded_rectangle([455, 88, 720, 148], radius=12, fill=(22, 163, 74, 255))
+        draw.text((482, 100), "✔ 事実解説オープン", font=font_status, fill=(255, 255, 255, 255))
 
     font_head = get_jp_font(52)
-    head_wrapped = wrap_text(card_headline, 24)
+    head_wrapped = wrap_text(card_headline, 21)
     draw.multiline_text((155, 175), head_wrapped, font=font_head, fill=(255, 255, 255, 255), spacing=14)
 
-    # 右側の強調キーワード／数値ボックス
     kw_x1, kw_y1, kw_x2, kw_y2 = 1230, 165, 1760, 420
     draw.rounded_rectangle(
         [kw_x1, kw_y1, kw_x2, kw_y2],
@@ -270,37 +247,29 @@ def make_slide_card_clip(chapter_idx, badge_text, card_headline, card_bullets, k
     )
     font_kw_label = get_jp_font(28)
     draw.text((kw_x1 + 30, kw_y1 + 22), "SECRET ANSWER" if mystery_mode else "KEY POINT", font=font_kw_label, fill=accent + (255,))
-    font_kw_val = get_jp_font(54)
+    font_kw_val = get_jp_font(52)
     disp_kw = "？？？" if mystery_mode else (key_number or "重要事実")
-    kw_wrapped = wrap_text(disp_kw, 9)
+    kw_wrapped = wrap_text(disp_kw, 8)
     draw.multiline_text((kw_x1 + 30, kw_y1 + 78), kw_wrapped, font=font_kw_val, fill=(255, 230, 0, 255), spacing=12)
 
-    # 要点箇条書き（3行）
     font_bullet = get_jp_font(38)
     by = 355
     for idx_b, b_line in enumerate(card_bullets[:3]):
         if mystery_mode and idx_b > 0:
-            # 2行目・3行目の核心理由は答えめくりまで伏せ字カードにする
             draw.rounded_rectangle([160, by - 4, 1180, by + 54], radius=12, fill=(30, 41, 59, 255), outline=(100, 116, 139, 180), width=2)
             draw.text((185, by + 4), "🔒 衝撃のメカニズムはすぐ後に公開！", font=get_jp_font(34), fill=(148, 163, 184, 255))
         else:
             draw.ellipse([160, by + 14, 182, by + 36], fill=accent + (255,))
-            draw.text((202, by), b_line[:32], font=font_bullet, fill=(226, 232, 240, 255))
+            draw.text((202, by), b_line[:26], font=font_bullet, fill=(226, 232, 240, 255))
         by += 74
 
     return ImageClip(np.array(img.convert("RGB"))).set_start(start_t).set_duration(dur)
 
-# ==========================================
-# 口パク立ち絵付き字幕帯＋下部プログレスバー
-# ==========================================
 def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
     W, H = 1920, 1080
-
-    # ベースとなる静的UI部分（字幕枠・話者バッジ・セリフ・プログレスバー）を事前描画
     base_ui = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(base_ui)
 
-    # 中央の字幕座布団（左右に立ち絵スペースを確保）
     draw.rounded_rectangle(
         [320, 745, W - 320, 1020],
         radius=24,
@@ -319,12 +288,12 @@ def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
         text_color = (254, 240, 138, 255)
 
     font_sp = get_jp_font(30)
-    draw.rounded_rectangle([355, 765, 625, 818], radius=12, fill=sp_color)
+    draw.rounded_rectangle([355, 765, 635, 818], radius=12, fill=sp_color)
     sb = draw.textbbox((0, 0), sp_name, font=font_sp)
-    draw.text((355 + (270 - (sb[2] - sb[0])) // 2, 773), sp_name, font=font_sp, fill=(255, 255, 255, 255))
+    draw.text((355 + (280 - (sb[2] - sb[0])) // 2 - sb[0], 765 + (53 - (sb[3] - sb[1])) // 2 - sb[1]), sp_name, font=font_sp, fill=(255, 255, 255, 255))
 
     font_sub = get_jp_font(46)
-    wrapped = wrap_text(text, 23)
+    wrapped = wrap_text(text, 24)
     draw.multiline_text(
         (360, 835),
         wrapped,
@@ -340,8 +309,6 @@ def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
     draw.rectangle([0, H - 14, int(W * progress), H], fill=(250, 204, 21, 255))
 
     base_arr = np.array(base_ui)
-
-    # 口パク＆バウンドアニメーションフレーム生成（最後の0.3秒は口を閉じる）
     speak_end = max(0.2, dur - 0.3)
 
     def make_frame(t):
@@ -349,7 +316,6 @@ def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
         is_speaking = (t < speak_end) and (int(t * 7) % 2 == 0)
         bounce = -8 if is_speaking else 0
 
-        # 左側：解説博士（A）
         a_open = is_speaking if speaker == "A" else False
         a_y = 770 + (bounce if speaker == "A" else 0)
         av_a = AVATAR_CACHE[("A", a_open)]
@@ -359,7 +325,6 @@ def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
         frame[a_y:a_y + h_a, 50:50 + w_a, :3] = (av_a[:, :, :3] * alpha_a + roi_a[:, :, :3] * (1 - alpha_a)).astype(np.uint8)
         frame[a_y:a_y + h_a, 50:50 + w_a, 3] = np.maximum(roi_a[:, :, 3], av_a[:, :, 3])
 
-        # 右側：質問アシスタント（B）
         b_open = is_speaking if speaker == "B" else False
         b_y = 770 + (bounce if speaker == "B" else 0)
         av_b = AVATAR_CACHE[("B", b_open)]
@@ -396,9 +361,6 @@ def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
     mask_clip = VideoClip(make_mask, duration=dur, ismask=True).set_start(start_t)
     return clip.set_mask(mask_clip)
 
-# ==========================================
-# BGM ＆ チャプター切替チャイム ＋ 正解オープン効果音
-# ==========================================
 def make_bgm_and_sfx(total_duration, transition_times, reveal_times):
     chords = [
         [261.63, 329.63, 392.00, 493.88],
@@ -418,7 +380,6 @@ def make_bgm_and_sfx(total_duration, transition_times, reveal_times):
                 wave = sum(np.sin(2 * np.pi * f * t_sub) for f in freqs) / len(freqs)
                 out[mask] = wave * 0.038
 
-        # チャプター切替SE（E5 -> A5）
         for tr_t in transition_times:
             m1 = (t_arr >= tr_t) & (t_arr < tr_t + 0.14)
             if np.any(m1):
@@ -429,7 +390,6 @@ def make_bgm_and_sfx(total_duration, transition_times, reveal_times):
                 dt = t_arr[m2] - (tr_t + 0.14)
                 out[m2] += np.sin(2 * np.pi * 880.00 * dt) * np.exp(-dt * 8) * 0.17
 
-        # 正解オープンSE（C5 -> E5 -> G5 -> C6 アルペジオ）
         notes = [(0.0, 523.25), (0.07, 659.25), (0.14, 783.99), (0.21, 1046.50)]
         for rv_t in reveal_times:
             for offset, freq in notes:
@@ -442,6 +402,62 @@ def make_bgm_and_sfx(total_duration, transition_times, reveal_times):
         return stereo[0] if np.isscalar(t) else stereo
 
     return AudioClip(make_frame, duration=total_duration, fps=44100)
+
+# ==========================================
+# 再生リスト自動振り分け＆固定コメント自動投稿ヘルパー
+# ==========================================
+def add_video_to_playlist(youtube, video_id, playlist_title):
+    try:
+        playlists_res = youtube.playlists().list(part="snippet", mine=True, maxResults=50).execute()
+        playlist_id = None
+        for item in playlists_res.get("items", []):
+            if item["snippet"]["title"] == playlist_title:
+                playlist_id = item["id"]
+                break
+
+        if not playlist_id:
+            create_res = youtube.playlists().insert(
+                part="snippet,status",
+                body={
+                    "snippet": {
+                        "title": playlist_title,
+                        "description": f"{playlist_title}の厳選解説動画をまとめた再生リストです。",
+                    },
+                    "status": {"privacyStatus": "public"},
+                },
+            ).execute()
+            playlist_id = create_res["id"]
+            print(f"新規再生リストを作成しました: {playlist_title}")
+
+        youtube.playlistItems().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "playlistId": playlist_id,
+                    "resourceId": {"kind": "youtube#video", "videoId": video_id},
+                }
+            },
+        ).execute()
+        print(f"再生リスト「{playlist_title}」へ動画を追加しました！")
+    except Exception as pe:
+        print(f"再生リスト追加スキップ: {pe}")
+
+def post_engagement_comment(youtube, video_id, comment_text):
+    try:
+        youtube.commentThreads().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "videoId": video_id,
+                    "topLevelComment": {
+                        "snippet": {"textOriginal": comment_text}
+                    },
+                }
+            },
+        ).execute()
+        print("動画への誘導コメントを自動投稿しました！")
+    except Exception as ce:
+        print(f"コメント自動投稿スキップ（権限未付与など）: {ce}")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 YT_CLIENT_ID = os.environ.get("YT_CLIENT_ID") or os.environ.get("YOUTUBE_CLIENT_ID")
@@ -473,20 +489,20 @@ used_topics = load_used_topics()
 ng_list_text = "、".join(used_topics) if used_topics else "なし"
 print(f"投稿済みNGワード数: {len(used_topics)}件")
 
-genres = [
-    "科学・物理・化学の実験で証明されている驚くべき法則やメカニズム7選",
-    "動物の生態・生物学で学術的に確立されている意外な能力7選",
-    "宇宙・惑星・気象のNASAや天文台で観測されている確実な事実7選",
-    "人体の仕組み・脳科学・睡眠に関する医学的に広く認められている雑学7選",
-    "日本の老舗企業や有名商品の公式に公開されている誕生秘話・社名の由来7選",
-    "日本の法律・道路交通法・硬貨や紙幣の公式仕様に基づく意外な雑学7選",
-    "心理学・行動経済学の教科書に載っている有名な実験と日常への応用7選",
-    "食べ物・野菜・魚・料理の科学的な成分や調理のメカニズム7選",
-    "日本語の語源・漢字の成り立ち・身近な言葉の意外な由来7選",
-    "世界遺産・建築・歴史の教科書に載っていない確実な裏トリビア7選",
+genre_configs = [
+    ("科学・物理・化学の実験で証明されている驚くべき法則やメカニズム7選", "【図解】科学・物理の雑学まとめ"),
+    ("動物の生態・生物学で学術的に確立されている意外な能力7選", "【図解】生き物・動物の雑学まとめ"),
+    ("宇宙・惑星・気象のNASAや天文台で観測されている確実な事実7選", "【図解】宇宙・地球の雑学まとめ"),
+    ("人体の仕組み・脳科学・睡眠に関する医学的に広く認められている雑学7選", "【図解】人体・脳科学の雑学まとめ"),
+    ("日本の老舗企業や有名商品の公式に公開されている誕生秘話・社名の由来7選", "【図解】企業・商品の裏話まとめ"),
+    ("日本の法律・道路交通法・硬貨や紙幣の公式仕様に基づく意外な雑学7選", "【図解】法律・お金の雑学まとめ"),
+    ("心理学・行動経済学の教科書に載っている有名な実験と日常への応用7選", "【図解】心理学・行動経済学まとめ"),
+    ("食べ物・野菜・魚・料理の科学的な成分や調理のメカニズム7選", "【図解】食・料理の科学雑学まとめ"),
+    ("日本語の語源・漢字の成り立ち・身近な言葉の意外な由来7選", "【図解】日本語・言葉の由来まとめ"),
+    ("世界遺産・建築・歴史の教科書に載っていない確実な裏トリビア7選", "【図解】歴史・世界の雑学まとめ"),
 ]
-selected_genre = random.choice(genres)
-print(f"今回の抽選ジャンル: {selected_genre}")
+selected_genre, playlist_name = random.choice(genre_configs)
+print(f"今回の抽選ジャンル: {selected_genre} / 再生リスト: {playlist_name}")
 
 step1_prompt = f"""
 あなたは厳格なファクトチェッカー兼雑学リサーチャーです。
@@ -537,9 +553,9 @@ step2_prompt = f"""
      ・3セリフ目(A): メカニズム・科学的/歴史的理由の核心解説（ここでスライドの答えが開く）
      ・4セリフ目(A): 具体例・数値・補足エピソードの深掘り
      ・5セリフ目(B): 納得と感心のリアクション）
-   - チャプター8: まとめ（掛け合い4セリフ）
+   - チャプター8: まとめ（掛け合い4セリフ。最後のセリフでは「再生リストの他の解説動画もぜひチェックしてみてくださいね！」と案内すること）
 2. 1セリフあたり **35〜55文字** の読み応えのある日本語にし、動画全体が5〜8分になるボリュームを確保すること。
-3. サムネイル文言（`thumb_top`, `thumb_main`, `thumb_sub`）は「9割が知らない」「実は逆だった」などクリックしたくなる強いパワーワードを使うこと。
+3. `tags` にはYouTube検索に強いSEOタグを8〜10個入れること。
 4. 必ず以下のJSON形式のみで出力すること。
 
 {{
@@ -548,13 +564,14 @@ step2_prompt = f"""
   "thumb_main": "サムネイル中央の巨大メイン文字（18文字以内 例: 実は嘘だった常識7選）",
   "thumb_sub": "サムネイル下部白帯の補足文（16文字以内 例: 科学と公式データで徹底解説）",
   "description": "動画の詳しい概要文とハッシュタグ4〜5個（#雑学 #解説 #豆知識 など）",
+  "tags": ["雑学", "豆知識", "解説", "ゆっくり解説風", "トリビア", "教養", "睡眠用", "作業用BGM"],
   "chapters": [
     {{
       "chapter_title": "オープニング",
       "badge": "INTRODUCTION",
       "slide_headline": "今日のテーマ（22文字以内）",
       "key_number": "厳選7選",
-      "bullets": ["要点1（26文字以内）", "要点2（26文字以内）", "要点3（26文字以内）"],
+      "bullets": ["要点1（24文字以内）", "要点2（24文字以内）", "要点3（24文字以内）"],
       "dialogues": [
         {{"speaker": "B", "text": "セリフ"}},
         {{"speaker": "A", "text": "セリフ"}},
@@ -569,6 +586,7 @@ step2_prompt = f"""
 data = call_gemini_json(step2_prompt)
 title = data["title"].replace("#Shorts", "").replace("#shorts", "").strip()
 description = data["description"].replace("#Shorts", "").replace("#shorts", "").strip()
+tags = data.get("tags", ["雑学", "豆知識", "解説", "トリビア", "教養"])
 chapters = data["chapters"]
 
 save_used_topics(new_keywords + [title])
@@ -598,7 +616,6 @@ for c_idx, ch in enumerate(chapters):
     reveal_t = None
     for d_idx, d in enumerate(ch["dialogues"]):
         if d_idx == 2:
-            # 3セリフ目（解説開始）のタイミングで正解カードをオープン
             reveal_t = current_time
         sp = d.get("speaker", "A")
         txt = d["text"]
@@ -641,7 +658,6 @@ for cr in chapter_ranges:
     if cr["index"] > 0:
         transition_times.append(cr["start"])
 
-    # POINT 01〜07 は前半を「？？？伏せ字カード」、後半を「正解オープンカード」の2段階にする
     if 1 <= cr["index"] <= 7 and cr["reveal_t"] and cr["reveal_t"] > cr["start"] + 1.0:
         mystery_dur = cr["reveal_t"] - cr["start"]
         open_dur = (cr["start"] + cr["duration"]) - cr["reveal_t"]
@@ -743,6 +759,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
             "snippet": {
                 "title": title,
                 "description": yt_description,
+                "tags": tags,
                 "categoryId": "27",
             },
             "status": {
@@ -755,15 +772,26 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
         video_id = yt_res.get("id")
         print(f"YouTube 長尺解説動画アップロード完了！ Video ID: {video_id}")
 
-        if video_id and os.path.exists(thumb_path):
-            try:
-                youtube.thumbnails().set(
-                    videoId=video_id,
-                    media_body=MediaFileUpload(thumb_path, mimetype="image/jpeg"),
-                ).execute()
-                print("カスタムサムネイルの設定が完了しました！")
-            except Exception as te:
-                print(f"サムネイル設定スキップ: {te}")
+        if video_id:
+            if os.path.exists(thumb_path):
+                try:
+                    youtube.thumbnails().set(
+                        videoId=video_id,
+                        media_body=MediaFileUpload(thumb_path, mimetype="image/jpeg"),
+                    ).execute()
+                    print("カスタムサムネイルの設定が完了しました！")
+                except Exception as te:
+                    print(f"サムネイル設定スキップ: {te}")
+
+            # 再生リスト自動追加 ＆ 誘導コメント自動投稿
+            add_video_to_playlist(youtube, video_id, playlist_name)
+            post_engagement_comment(
+                youtube,
+                video_id,
+                "今回の7選の中で、一番「へぇ〜！」となったのは何番でしたか？ぜひコメント欄で教えてください！👇\n\n"
+                "▼ 最新AIツール比較・活用データベースはこちら\n"
+                "https://banjoblog.github.io/auto-blog/",
+            )
 
     except Exception as e:
         print(f"YouTube アップロードエラー: {e}")
