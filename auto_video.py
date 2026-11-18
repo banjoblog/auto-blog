@@ -38,7 +38,7 @@ def save_used_topics(new_items):
         item = item.strip()
         if item and item not in topics:
             topics.append(item)
-    topics = topics[-150:]
+    topics = topics[-200:]
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(topics, f, ensure_ascii=False, indent=2)
 
@@ -108,7 +108,6 @@ def make_header_clip(title_text, hook_badge, total_duration):
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # 上部の衝撃レッドバッジ（文字幅に合わせて自動調整）
     font_small = get_jp_font(34)
     hb = draw.textbbox((0, 0), hook_badge, font=font_small)
     hw, hh = hb[2] - hb[0], hb[3] - hb[1]
@@ -117,7 +116,6 @@ def make_header_clip(title_text, hook_badge, total_duration):
     draw.rounded_rectangle([h_box_x, 145, h_box_x + h_box_w, 205], radius=14, fill=(220, 38, 38, 255), outline=(255, 255, 255, 255), width=4)
     draw.text(((W - hw) // 2 - hb[0], 145 + (60 - hh) // 2 - hb[1]), hook_badge, font=font_small, fill=(255, 255, 255, 255))
 
-    # メインタイトルゴールド帯
     font = get_jp_font(54)
     wrapped = "\n".join([title_text[j:j+13] for j in range(0, len(title_text), 13)])
     bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=12, align="center")
@@ -155,16 +153,13 @@ def make_subtitle_clip(text, duration, start_time, total_duration, is_hook=False
     draw = ImageDraw.Draw(img)
     font = get_jp_font(62 if is_hook else 60)
     
-    # 11文字ごとに改行して左右の余白を十分に確保（枠ズレ＆TikTokアイコン被り防止）
     wrapped = "\n".join([text[j:j+11] for j in range(0, len(text), 11)])
     bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=18, align="center")
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
     
-    # セーフゾーン中心（少し左寄り X=510 を中心軸にする）
     center_x = 510
     center_y = H // 2 + 40
 
-    # 冒頭フックと結論は視認性の高い半透明カード座布団を左右対称で描画
     if is_hook or is_conclusion:
         pad_x, pad_y = 44, 32
         box_w = tw + pad_x * 2
@@ -199,7 +194,6 @@ def make_subtitle_clip(text, duration, start_time, total_duration, is_hook=False
         align="center",
     )
 
-    # 最上部の進行度ゲージ
     progress = min(1.0, (start_time + duration * 0.5) / max(1.0, total_duration))
     draw.rectangle([0, 0, W, 16], fill=(30, 41, 59, 220))
     draw.rectangle([0, 0, int(W * progress), 16], fill=(250, 204, 21, 255))
@@ -235,6 +229,41 @@ def make_bgm_and_pop_sfx(total_duration, sfx_times):
         return stereo[0] if np.isscalar(t) else stereo
 
     return AudioClip(make_frame, duration=total_duration, fps=44100)
+
+def add_video_to_playlist(youtube, video_id, playlist_title):
+    try:
+        playlists_res = youtube.playlists().list(part="snippet", mine=True, maxResults=50).execute()
+        playlist_id = None
+        for item in playlists_res.get("items", []):
+            if item["snippet"]["title"] == playlist_title:
+                playlist_id = item["id"]
+                break
+        if not playlist_id:
+            create_res = youtube.playlists().insert(
+                part="snippet,status",
+                body={
+                    "snippet": {"title": playlist_title, "description": f"{playlist_title}の連続再生リストです。"},
+                    "status": {"privacyStatus": "public"},
+                },
+            ).execute()
+            playlist_id = create_res["id"]
+        youtube.playlistItems().insert(
+            part="snippet",
+            body={"snippet": {"playlistId": playlist_id, "resourceId": {"kind": "youtube#video", "videoId": video_id}}},
+        ).execute()
+        print(f"再生リスト「{playlist_title}」へ追加完了")
+    except Exception as pe:
+        print(f"再生リスト追加スキップ: {pe}")
+
+def post_engagement_comment(youtube, video_id, comment_text):
+    try:
+        youtube.commentThreads().insert(
+            part="snippet",
+            body={"snippet": {"videoId": video_id, "topLevelComment": {"snippet": {"textOriginal": comment_text}}}},
+        ).execute()
+        print("ショート動画へ誘導コメントを自動投稿しました！")
+    except Exception as ce:
+        print(f"コメント投稿スキップ: {ce}")
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY")
@@ -289,6 +318,7 @@ prompt = f"""
   "hook_badge": "上部赤帯の短いバッジ（10文字以内 例: 9割が知らない事実）",
   "title": "画面上部に常時表示する短い見出し（18文字以内・ハッシュタグなし）",
   "description": "動画の説明文と関連ハッシュタグ4〜5個（#雑学 #豆知識 など）",
+  "tags": ["雑学", "豆知識", "ショート", "トリビア", "教養", "解説"],
   "search_keyword": "背景動画検索用のシンプルな英単語1語",
   "script": [
     "1文目：スクロールを止める強烈なフック・疑問（18〜26文字）",
@@ -327,6 +357,7 @@ title = data["title"]
 hook_badge = data.get("hook_badge", "衝撃の事実")
 topic_keyword = data.get("topic_keyword", title)
 description = data["description"]
+tags = data.get("tags", ["雑学", "豆知識", "Shorts", "トリビア"])
 search_keyword = data["search_keyword"]
 script_lines = data["script"]
 
@@ -435,6 +466,7 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
             "snippet": {
                 "title": f"{title} #Shorts",
                 "description": yt_description,
+                "tags": tags,
                 "categoryId": "22",
             },
             "status": {
@@ -444,7 +476,16 @@ if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
         }
         media = MediaFileUpload(output_video, chunksize=-1, resumable=True, mimetype="video/mp4")
         yt_res = youtube.videos().insert(part="snippet,status", body=body, media_body=media).execute()
-        print(f"YouTube アップロード完了！ Video ID: {yt_res.get('id')}")
+        video_id = yt_res.get("id")
+        print(f"YouTube アップロード完了！ Video ID: {video_id}")
+        if video_id:
+            add_video_to_playlist(youtube, video_id, "【1分雑学】ショート動画まとめ")
+            post_engagement_comment(
+                youtube,
+                video_id,
+                "この雑学は知っていましたか？感想をぜひコメント欄で教えてください！👇\n"
+                "▼ 5〜8分の本格解説まとめ動画もチャンネルページで毎日公開中！",
+            )
     except Exception as e:
         print(f"YouTube アップロードエラー: {e}")
 
