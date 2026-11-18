@@ -2,15 +2,20 @@ name: Auto Post Short Video
 
 on:
   schedule:
-    - cron: '0 9 * * *'  # 毎日 日本時間18:00（UTC 09:00）に自動実行
+    - cron: '0 9 * * *' # 毎日 日本時間18:00（UTC 09:00）に自動実行
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: "video-repo-push"
+  cancel-in-progress: false
+
 jobs:
   build-and-post:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -35,7 +40,7 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git pull --rebase origin main || true
           git add used_topics.json
           git diff --staged --quiet || git commit -m "chore: update used_topics.json from short"
+          git pull --rebase -X ours origin main
           git push
