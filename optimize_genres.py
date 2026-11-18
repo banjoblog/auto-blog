@@ -2,8 +2,6 @@ import os
 import json
 import urllib.request
 import xml.etree.ElementTree as ET
-from google.oauth2.credentials import Credentials
-from googleapiclient.discovery import build
 
 WEIGHTS_FILE = "genre_weights.json"
 
@@ -19,63 +17,51 @@ GENRE_KEYWORDS = {
 }
 
 
-def get_video_ids_from_rss(channel_id):
-    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
-    req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=20) as res:
-        xml_data = res.read()
-    root = ET.fromstring(xml_data)
-    ns = {"yt": "http://www.youtube.com/xml/schemas/2015"}
-    return [el.text for el in root.findall(".//yt:videoId", ns) if el.text]
-
-
 def analyze_and_optimize():
     channel_id = (os.environ.get("YOUTUBE_CHANNEL_ID") or "").strip()
     if not channel_id:
         raise RuntimeError("YOUTUBE_CHANNEL_ID が設定されていません。GitHub Secrets に登録してください。")
 
-    # 1. 公式公開RSSから直近の動画IDを取得（認証・APIクォータ不要）
-    video_ids = get_video_ids_from_rss(channel_id)
-    if not video_ids:
+    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+    req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=20) as res:
+        xml_data = res.read()
+
+    root = ET.fromstring(xml_data)
+    ns = {
+        "atom": "http://www.w3.org/2005/Atom",
+        "media": "http://search.yahoo.com/mrss/",
+    }
+
+    entries = root.findall("atom:entry", ns)
+    if not entries:
         print("まだ投稿済み動画がありません。初期重み付けを保存します。")
         default_weights = {g: 1.0 for g in GENRE_KEYWORDS}
         with open(WEIGHTS_FILE, "w", encoding="utf-8") as f:
             json.dump(default_weights, f, ensure_ascii=False, indent=2)
         return
 
-    # 2. 既存の OAuth 認証で動画ごとの再生数・高評価・コメント数を取得
-    creds = Credentials(
-        token=None,
-        refresh_token=os.environ.get("YT_REFRESH_TOKEN"),
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=os.environ.get("YT_CLIENT_ID"),
-        client_secret=os.environ.get("YT_CLIENT_SECRET"),
-    )
-    youtube = build("youtube", "v3", credentials=creds)
-
     genre_scores = {g: [] for g in GENRE_KEYWORDS}
-    v_res = youtube.videos().list(
-        part="snippet,statistics",
-        id=",".join(video_ids[:50])
-    ).execute()
 
-    for v in v_res.get("items", []):
-        title = v["snippet"]["title"]
-        desc = v["snippet"].get("description", "")
+    for entry in entries:
+        title_el = entry.find("atom:title", ns)
+        desc_el = entry.find(".//media:description", ns)
+        stats_el = entry.find(".//media:statistics", ns)
+        rating_el = entry.find(".//media:starRating", ns)
+
+        title = title_el.text if (title_el is not None and title_el.text) else ""
+        desc = desc_el.text if (desc_el is not None and desc_el.text) else ""
         text = f"{title} {desc}"
-        stats = v.get("statistics", {})
 
-        views = int(stats.get("viewCount", 0))
-        likes = int(stats.get("likeCount", 0))
-        comments = int(stats.get("commentCount", 0))
+        views = int(stats_el.attrib.get("views", 0)) if stats_el is not None else 0
+        likes = int(rating_el.attrib.get("count", 0)) if rating_el is not None else 0
 
-        score = views + (likes * 15) + (comments * 30)
+        score = views + (likes * 15)
 
         for genre, keywords in GENRE_KEYWORDS.items():
             if any(kw in text for kw in keywords):
                 genre_scores[genre].append(score)
 
-    # 3. 平均スコアから抽選重み（0.5 〜 3.0倍）を算出
     avg_scores = {
         genre: (sum(scores) / len(scores)) if scores else 0.0
         for genre, scores in genre_scores.items()
@@ -93,7 +79,7 @@ def analyze_and_optimize():
     with open(WEIGHTS_FILE, "w", encoding="utf-8") as f:
         json.dump(weights, f, ensure_ascii=False, indent=2)
 
-    print("=== YouTube パフォーマンス分析＆ジャンル重み更新完了 ===")
+    print(f"=== YouTube パフォーマンス分析＆ジャンル重み更新完了（対象動画: {len(entries)}本） ===")
     for g, w in sorted(weights.items(), key=lambda x: x[1], reverse=True):
         print(f"・{g}: 重み {w}倍 (平均スコア: {avg_scores[g]:.1f})")
 
