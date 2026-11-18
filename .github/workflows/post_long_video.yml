@@ -23,7 +23,7 @@ jobs:
           python-version: '3.11'
       - name: Install dependencies
         run: |
-          sudo apt-get update && sudo-get install -y fonts-noto-cjk ffmpeg
+          sudo apt-get update && sudo apt-get install -y fonts-noto-cjk ffmpeg
           pip install google-genai edge-tts moviepy==1.0.3 Pillow numpy requests google-api-python-client google-auth
       - name: Run auto_long_video.py
         env:
