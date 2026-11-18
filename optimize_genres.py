@@ -1,5 +1,8 @@
 import os
 import json
+import urllib.request
+import xml.etree.ElementTree as ET
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 WEIGHTS_FILE = "genre_weights.json"
@@ -16,39 +19,23 @@ GENRE_KEYWORDS = {
 }
 
 
-def analyze_and_optimize():
-    api_key = os.environ.get("GEMINI_API_KEY")
-    channel_id = (os.environ.get("YOUTUBE_CHANNEL_ID") or "").strip()
+def get_video_ids_from_rss(channel_id):
+    rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+    req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
+    with urllib.request.urlopen(req, timeout=20) as res:
+        xml_data = res.read()
+    root = ET.fromstring(xml_data)
+    ns = {"yt": "http://www.youtube.com/xml/schemas/2015"}
+    return [el.text for el in root.findall(".//yt:videoId", ns) if el.text]
 
+
+def analyze_and_optimize():
+    channel_id = (os.environ.get("YOUTUBE_CHANNEL_ID") or "").strip()
     if not channel_id:
         raise RuntimeError("YOUTUBE_CHANNEL_ID が設定されていません。GitHub Secrets に登録してください。")
 
-    youtube = build("youtube", "v3", developerKey=api_key)
-
-    # 1. チャンネルIDからアップロード済み再生リストIDを取得（1ユニット）
-    ch_res = youtube.channels().list(part="contentDetails", id=channel_id).execute()
-    items = ch_res.get("items", [])
-    if not items:
-        raise RuntimeError(f"チャンネルが見つかりませんでした (ID: {channel_id})。UCから始まるIDか確認してください。")
-
-    uploads_playlist_id = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
-
-    # 2. 直近最大100本の動画IDを取得（1〜2ユニット）
-    video_ids = []
-    next_page_token = None
-    while len(video_ids) < 100:
-        pl_res = youtube.playlistItems().list(
-            part="contentDetails",
-            playlistId=uploads_playlist_id,
-            maxResults=50,
-            pageToken=next_page_token
-        ).execute()
-        for item in pl_res.get("items", []):
-            video_ids.append(item["contentDetails"]["videoId"])
-        next_page_token = pl_res.get("nextPageToken")
-        if not next_page_token:
-            break
-
+    # 1. 公式公開RSSから直近の動画IDを取得（認証・APIクォータ不要）
+    video_ids = get_video_ids_from_rss(channel_id)
     if not video_ids:
         print("まだ投稿済み動画がありません。初期重み付けを保存します。")
         default_weights = {g: 1.0 for g in GENRE_KEYWORDS}
@@ -56,36 +43,43 @@ def analyze_and_optimize():
             json.dump(default_weights, f, ensure_ascii=False, indent=2)
         return
 
-    # 3. 動画ごとのタイトル・統計（再生数・高評価・コメント数）を一括取得（1〜2ユニット）
+    # 2. 既存の OAuth 認証で動画ごとの再生数・高評価・コメント数を取得
+    creds = Credentials(
+        token=None,
+        refresh_token=os.environ.get("YT_REFRESH_TOKEN"),
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=os.environ.get("YT_CLIENT_ID"),
+        client_secret=os.environ.get("YT_CLIENT_SECRET"),
+    )
+    youtube = build("youtube", "v3", credentials=creds)
+
     genre_scores = {g: [] for g in GENRE_KEYWORDS}
-    for i in range(0, len(video_ids), 50):
-        batch = video_ids[i:i+50]
-        v_res = youtube.videos().list(
-            part="snippet,statistics",
-            id=",".join(batch)
-        ).execute()
+    v_res = youtube.videos().list(
+        part="snippet,statistics",
+        id=",".join(video_ids[:50])
+    ).execute()
 
-        for v in v_res.get("items", []):
-            title = v["snippet"]["title"]
-            desc = v["snippet"].get("description", "")
-            text = f"{title} {desc}"
-            stats = v.get("statistics", {})
+    for v in v_res.get("items", []):
+        title = v["snippet"]["title"]
+        desc = v["snippet"].get("description", "")
+        text = f"{title} {desc}"
+        stats = v.get("statistics", {})
 
-            views = int(stats.get("viewCount", 0))
-            likes = int(stats.get("likeCount", 0))
-            comments = int(stats.get("commentCount", 0))
+        views = int(stats.get("viewCount", 0))
+        likes = int(stats.get("likeCount", 0))
+        comments = int(stats.get("commentCount", 0))
 
-            score = views + (likes * 15) + (comments * 30)
+        score = views + (likes * 15) + (comments * 30)
 
-            for genre, keywords in GENRE_KEYWORDS.items():
-                if any(kw in text for kw in keywords):
-                    genre_scores[genre].append(score)
+        for genre, keywords in GENRE_KEYWORDS.items():
+            if any(kw in text for kw in keywords):
+                genre_scores[genre].append(score)
 
-    # 4. 平均スコアから抽選重み（0.5 〜 3.0倍）を算出
-    avg_scores = {}
-    for genre, scores in genre_scores.items():
-        avg_scores[genre] = (sum(scores) / len(scores)) if scores else 0.0
-
+    # 3. 平均スコアから抽選重み（0.5 〜 3.0倍）を算出
+    avg_scores = {
+        genre: (sum(scores) / len(scores)) if scores else 0.0
+        for genre, scores in genre_scores.items()
+    }
     overall_avg = sum(avg_scores.values()) / len(avg_scores) if any(avg_scores.values()) else 0.0
 
     weights = {}
