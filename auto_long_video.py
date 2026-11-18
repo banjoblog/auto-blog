@@ -19,6 +19,13 @@ from googleapiclient.http import MediaFileUpload
 HISTORY_FILE = "used_topics.json"
 WEIGHTS_FILE = "genre_weights.json"
 
+# 広告単価(RPM)が高いジャンルの収益ブースト倍率
+HIGH_CPM_BOOST = {
+    "心理学・行動経済学": 1.6,
+    "人体の仕組み・脳科学・睡眠": 1.5,
+    "日本の企業・商品の誕生秘話": 1.4,
+}
+
 
 def load_used_topics():
     if os.path.exists(HISTORY_FILE):
@@ -44,24 +51,30 @@ def save_used_topics(new_items):
 
 
 def pick_weighted_genre(default_genres):
+    weights_map = {}
     if os.path.exists(WEIGHTS_FILE):
         try:
             with open(WEIGHTS_FILE, "r", encoding="utf-8") as f:
                 weights_map = json.load(f)
-            weights = []
-            for g in default_genres:
-                matched_w = 1.0
-                for key, w in weights_map.items():
-                    if key.split("・")[0] in g:
-                        matched_w = float(w)
-                        break
-                weights.append(matched_w)
-            chosen = random.choices(default_genres, weights=weights, k=1)[0]
-            print(f"重み付け抽選により長尺ジャンル選択: {chosen}")
-            return chosen
-        except Exception as e:
-            print(f"重み付け読み込みスキップ（通常ランダムを使用）: {e}")
-    return random.choice(default_genres)
+        except Exception:
+            pass
+
+    weights = []
+    for g in default_genres:
+        matched_w = 1.0
+        for key, w in weights_map.items():
+            if key.split("・")[0] in g:
+                matched_w = float(w)
+                break
+        for cpm_key, boost in HIGH_CPM_BOOST.items():
+            if cpm_key.split("・")[0] in g:
+                matched_w *= boost
+                break
+        weights.append(matched_w)
+
+    chosen = random.choices(default_genres, weights=weights, k=1)[0]
+    print(f"収益最適化抽選により長尺ジャンル選択: {chosen}")
+    return chosen
 
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
@@ -78,7 +91,7 @@ genres = [
     "人体の仕組み・脳科学・睡眠に関する医学的に認められている雑学",
     "動物の生態・生物学で学術的に確立されている意外な能力",
     "科学・物理・化学の実験で証明されている驚くべき法則",
-    "心理学・行動経済学の教科書に載っている有名な実験",
+    "心理学・行動経済学・お金の判断に関する有名な実験",
     "食べ物・料理の科学的な成分や調理のメカニズム",
     "日本の老舗企業や有名商品の公式に公開されている誕生秘話・社名の由来",
     "日本語の語源・漢字の成り立ち・身近な言葉の意外な由来",
@@ -105,7 +118,6 @@ def call_gemini_json(prompt_text, temp=0.3):
     raise RuntimeError("Geminiでの生成に失敗しました。")
 
 
-# ステージ1：オムニバス形式（5選）の100%正確なファクト抽出
 fact_prompt = f"""
 あなたは厳格な科学・雑学のファクトチェッカーです。
 「{selected_genre}」のジャンルから、100%事実と証明されている「誰かに話したくなる厳選雑学」を5つ選んでください。
@@ -119,7 +131,7 @@ fact_prompt = f"""
 3. 以下のJSON形式のみで出力すること。
 
 {{
-  "theme_title": "動画全体のテーマ（例：宇宙の常識が覆る驚きの雑学5選）",
+  "theme_title": "動画全体のテーマ（例：お金と心の常識が変わる行動経済学5選）",
   "facts": [
     {{
       "keyword": "主役キーワード（10文字以内）",
@@ -134,7 +146,6 @@ fact_data = call_gemini_json(fact_prompt, temp=0.2)
 theme_title = fact_data["theme_title"]
 facts_list = fact_data["facts"][:5]
 
-# ステージ2：スライド解説動画用の台本・SEO・チャプター生成
 script_prompt = f"""
 以下の【検証済みの5つの事実】を元に、聞き流し・睡眠用・作業用としても最後まで見られるYouTube長尺解説動画（16:9横画面スライド形式）の構成データを作成してください。
 
@@ -183,16 +194,13 @@ def create_slide_image(label, heading, bullets, out_path, width=1920, height=108
     font_head = ImageFont.truetype(font_path, 64)
     font_body = ImageFont.truetype(font_path, 48)
 
-    # 上部アクセントバーとカード枠
     draw.rectangle([(80, 70), (width - 80, height - 70)], fill=(28, 36, 56), outline=(70, 130, 220), width=4)
     draw.rectangle([(120, 110), (480, 175)], fill=(70, 130, 220))
     draw.text((145, 120), label[:16], font=font_label, fill=(255, 255, 255))
 
-    # 見出し
     draw.text((120, 220), heading[:24], font=font_head, fill=(255, 230, 120))
     draw.line([(120, 320), (width - 120, 320)], fill=(90, 110, 150), width=3)
 
-    # 箇条書きポイント
     y_pos = 390
     for b in bullets[:4]:
         draw.text((140, y_pos), f"・ {b[:28]}", font=font_body, fill=(240, 245, 255))
