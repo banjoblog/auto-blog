@@ -3,6 +3,8 @@ import json
 import time
 import asyncio
 import random
+import urllib.request
+import xml.etree.ElementTree as ET
 import edge_tts
 from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (
@@ -19,7 +21,6 @@ from googleapiclient.http import MediaFileUpload
 HISTORY_FILE = "used_topics.json"
 WEIGHTS_FILE = "genre_weights.json"
 
-# 広告単価(RPM)が高いジャンルの収益ブースト倍率
 HIGH_CPM_BOOST = {
     "心理学・行動経済学": 1.6,
     "人体の仕組み・脳科学・睡眠": 1.5,
@@ -77,10 +78,37 @@ def pick_weighted_genre(default_genres):
     return chosen
 
 
+def get_related_links(channel_id):
+    if not channel_id:
+        return ""
+    lines = [f"▼チャンネル登録・他の雑学動画一覧はこちら\nhttps://www.youtube.com/channel/{channel_id}"]
+    try:
+        rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+        req = urllib.request.Request(rss_url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=15) as res:
+            xml_data = res.read()
+        root = ET.fromstring(xml_data)
+        ns = {
+            "atom": "http://www.w3.org/2005/Atom",
+            "yt": "http://www.youtube.com/xml/schemas/2015",
+        }
+        for entry in root.findall("atom:entry", ns):
+            title_el = entry.find("atom:title", ns)
+            vid_el = entry.find("yt:videoId", ns)
+            title_txt = title_el.text if (title_el is not None and title_el.text) else ""
+            if "#Shorts" not in title_txt and vid_el is not None and vid_el.text:
+                lines.append(f"▼前回の聞き流し雑学まとめはこちら\nhttps://www.youtube.com/watch?v={vid_el.text}")
+                break
+    except Exception as e:
+        print(f"関連リンク取得スキップ: {e}")
+    return "\n\n".join(lines)
+
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 YT_CLIENT_ID = os.environ.get("YT_CLIENT_ID")
 YT_CLIENT_SECRET = os.environ.get("YT_CLIENT_SECRET")
 YT_REFRESH_TOKEN = os.environ.get("YT_REFRESH_TOKEN")
+YOUTUBE_CHANNEL_ID = (os.environ.get("YOUTUBE_CHANNEL_ID") or "").strip()
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 used_topics = load_used_topics()
@@ -252,7 +280,12 @@ final_video.write_videofile(
     preset="ultrafast",
 )
 
-full_description = f"{description}\n\n【目次】\n" + "\n".join(timestamp_lines) + "\n\n#雑学 #聞き流し #教養"
+related_block = get_related_links(YOUTUBE_CHANNEL_ID)
+full_description = f"{description}\n\n【目次】\n" + "\n".join(timestamp_lines)
+if related_block:
+    full_description += f"\n\n{related_block}"
+    pinned_comment = f"{pinned_comment}\n\n{related_block}"
+full_description += "\n\n#雑学 #聞き流し #教養"
 
 creds = Credentials(
     token=None,
