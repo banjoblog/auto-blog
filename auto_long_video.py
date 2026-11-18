@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
-from moviepy.editor import AudioFileClip, ImageClip, CompositeVideoClip
+from moviepy.editor import AudioFileClip, ImageClip, VideoClip, CompositeVideoClip
 from moviepy.audio.AudioClip import CompositeAudioClip, AudioClip
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -63,6 +63,88 @@ def get_jp_font(size):
 def wrap_text(text, max_chars):
     return "\n".join([text[j:j+max_chars] for j in range(0, len(text), max_chars)])
 
+# ==========================================
+# ベクター風立ち絵キャラクター生成（口閉じ / 口開き）
+# ==========================================
+def draw_avatar_image(role="A", mouth_open=False, size=240):
+    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    cx, cy = size // 2, size // 2
+
+    if role == "A":
+        # 解説博士（ブルー系スーツ・メガネ・落ち着いた知的キャラ）
+        bg_col = (30, 58, 138, 255)
+        ring_col = (56, 189, 248, 255)
+        suit_col = (15, 23, 42, 255)
+        hair_col = (30, 41, 59, 255)
+    else:
+        # 質問役アシスタント（ピンク系・明るいリアクションキャラ）
+        bg_col = (131, 24, 67, 255)
+        ring_col = (244, 114, 182, 255)
+        suit_col = (219, 39, 119, 255)
+        hair_col = (88, 28, 135, 255)
+
+    # 背景サークル枠
+    draw.ellipse([8, 8, size - 8, size - 8], fill=bg_col, outline=ring_col, width=7)
+
+    # 体（肩）
+    draw.pieslice([38, 148, size - 38, size + 40], start=180, end=360, fill=suit_col, outline=(255, 255, 255, 200), width=3)
+    if role == "A":
+        # ネクタイ
+        draw.polygon([(cx - 10, 165), (cx + 10, 165), (cx + 14, 215), (cx, 228), (cx - 14, 215)], fill=(239, 68, 68, 255))
+    else:
+        # リボン
+        draw.polygon([(cx, 175), (cx - 24, 162), (cx - 24, 188)], fill=(250, 204, 21, 255))
+        draw.polygon([(cx, 175), (cx + 24, 162), (cx + 24, 188)], fill=(250, 204, 21, 255))
+
+    # 後ろ髪（質問役のみ）
+    if role == "B":
+        draw.ellipse([52, 42, size - 52, 168], fill=hair_col)
+
+    # 顔の輪郭
+    skin_col = (255, 228, 196, 255)
+    draw.ellipse([66, 52, size - 66, 158], fill=skin_col, outline=(180, 130, 100, 255), width=3)
+
+    # 前髪
+    draw.pieslice([62, 44, size - 62, 120], start=180, end=360, fill=hair_col)
+
+    # 目
+    eye_y = 102
+    draw.ellipse([88, eye_y - 7, 102, eye_y + 7], fill=(20, 20, 30, 255))
+    draw.ellipse([size - 102, eye_y - 7, size - 88, eye_y + 7], fill=(20, 20, 30, 255))
+    draw.ellipse([91, eye_y - 4, 96, eye_y + 1], fill=(255, 255, 255, 255))
+    draw.ellipse([size - 99, eye_y - 4, size - 94, eye_y + 1], fill=(255, 255, 255, 255))
+
+    if role == "A":
+        # 博士メガネ
+        draw.rectangle([80, eye_y - 12, 110, eye_y + 12], outline=(250, 204, 21, 255), width=3)
+        draw.rectangle([size - 110, eye_y - 12, size - 80, eye_y + 12], outline=(250, 204, 21, 255), width=3)
+        draw.line([(110, eye_y), (size - 110, eye_y)], fill=(250, 204, 21, 255), width=3)
+    else:
+        # チーク
+        draw.ellipse([76, 114, 94, 124], fill=(251, 113, 133, 150))
+        draw.ellipse([size - 94, 114, size - 76, 124], fill=(251, 113, 133, 150))
+
+    # 口（口パク切り替え）
+    mouth_y = 132
+    if mouth_open:
+        draw.ellipse([cx - 14, mouth_y - 9, cx + 14, mouth_y + 11], fill=(220, 38, 38, 255), outline=(80, 20, 20, 255), width=2)
+        draw.pieslice([cx - 10, mouth_y, cx + 10, mouth_y + 10], start=0, end=180, fill=(251, 146, 160, 255))
+    else:
+        draw.arc([cx - 14, mouth_y - 6, cx + 14, mouth_y + 8], start=15, end=165, fill=(120, 40, 40, 255), width=4)
+
+    return np.array(img)
+
+AVATAR_CACHE = {
+    ("A", False): draw_avatar_image("A", False),
+    ("A", True): draw_avatar_image("A", True),
+    ("B", False): draw_avatar_image("B", False),
+    ("B", True): draw_avatar_image("B", True),
+}
+
+# ==========================================
+# 高CTRサムネイル画像（1280x720）の自動生成
+# ==========================================
 def generate_thumbnail(thumb_top, thumb_main, thumb_sub, out_path="thumbnail.jpg"):
     W, H = 1280, 720
     img = Image.new("RGB", (W, H), (15, 23, 42))
@@ -70,52 +152,58 @@ def generate_thumbnail(thumb_top, thumb_main, thumb_sub, out_path="thumbnail.jpg
 
     for y in range(H):
         ratio = y / H
-        r = int(15 * (1 - ratio) + 45 * ratio)
-        g = int(23 * (1 - ratio) + 18 * ratio)
-        b = int(42 * (1 - ratio) + 85 * ratio)
+        r = int(20 * (1 - ratio) + 65 * ratio)
+        g = int(15 * (1 - ratio) + 12 * ratio)
+        b = int(45 * (1 - ratio) + 35 * ratio)
         draw.line([(0, y), (W, y)], fill=(r, g, b))
 
     cx, cy = W // 2, H // 2
-    for deg in range(0, 360, 12):
+    for deg in range(0, 360, 10):
         rad = math.radians(deg)
-        x1 = cx + math.cos(rad) * 340
-        y1 = cy + math.sin(rad) * 220
+        x1 = cx + math.cos(rad) * 320
+        y1 = cy + math.sin(rad) * 200
         x2 = cx + math.cos(rad) * 900
         y2 = cy + math.sin(rad) * 900
-        draw.line([(x1, y1), (x2, y2)], fill=(255, 215, 0), width=4)
+        draw.line([(x1, y1), (x2, y2)], fill=(255, 215, 0), width=5)
 
-    draw.rectangle([16, 16, W - 16, H - 16], outline=(255, 215, 0), width=14)
+    draw.rectangle([14, 14, W - 14, H - 14], outline=(255, 215, 0), width=16)
 
-    font_top = get_jp_font(46)
-    draw.rounded_rectangle([140, 46, W - 140, 134], radius=18, fill=(220, 38, 38), outline=(255, 255, 255), width=5)
+    # 上部赤帯バッジ
+    font_top = get_jp_font(48)
+    draw.rounded_rectangle([120, 42, W - 120, 134], radius=18, fill=(220, 38, 38), outline=(255, 255, 255), width=6)
     tb = draw.textbbox((0, 0), thumb_top, font=font_top)
-    draw.text(((W - (tb[2] - tb[0])) // 2, 62), thumb_top, font=font_top, fill=(255, 255, 255))
+    draw.text(((W - (tb[2] - tb[0])) // 2, 58), thumb_top, font=font_top, fill=(255, 255, 255))
 
-    font_main = get_jp_font(104)
+    # 中央メイン巨大文字
+    font_main = get_jp_font(108)
     wrapped_main = wrap_text(thumb_main, 11)
     mb = draw.multiline_textbbox((0, 0), wrapped_main, font=font_main, spacing=18, align="center")
     mw, mh = mb[2] - mb[0], mb[3] - mb[1]
     mx = (W - mw) // 2
-    my = (H - mh) // 2 + 10
+    my = (H - mh) // 2 + 8
     draw.multiline_text(
         (mx, my),
         wrapped_main,
         font=font_main,
-        fill=(255, 230, 0),
-        stroke_width=12,
+        fill=(255, 235, 0),
+        stroke_width=14,
         stroke_fill=(0, 0, 0),
         spacing=18,
         align="center",
     )
 
-    font_sub = get_jp_font(42)
-    draw.rounded_rectangle([180, H - 122, W - 180, H - 44], radius=16, fill=(255, 255, 255), outline=(0, 0, 0), width=5)
+    # 下部白帯サブキャッチ
+    font_sub = get_jp_font(44)
+    draw.rounded_rectangle([160, H - 124, W - 160, H - 42], radius=16, fill=(255, 255, 255), outline=(0, 0, 0), width=6)
     sb = draw.textbbox((0, 0), thumb_sub, font=font_sub)
-    draw.text(((W - (sb[2] - sb[0])) // 2, H - 106), thumb_sub, font=font_sub, fill=(15, 23, 42))
+    draw.text(((W - (sb[2] - sb[0])) // 2, H - 108), thumb_sub, font=font_sub, fill=(15, 23, 42))
 
     img.save(out_path, quality=95)
     print(f"サムネイル画像を生成しました: {out_path}")
 
+# ==========================================
+# スライド・図解カード（クイズ伏せ字モード / 正解オープンモード）
+# ==========================================
 CHAPTER_THEMES = [
     ((15, 23, 42), (30, 58, 138), (56, 189, 248)),
     ((24, 24, 27), (127, 29, 29), (251, 191, 36)),
@@ -128,7 +216,7 @@ CHAPTER_THEMES = [
     ((15, 23, 42), (30, 41, 59), (250, 204, 21)),
 ]
 
-def make_slide_card_clip(chapter_idx, badge_text, card_headline, card_bullets, key_number, start_t, dur):
+def make_slide_card_clip(chapter_idx, badge_text, card_headline, card_bullets, key_number, start_t, dur, mystery_mode=False):
     W, H = 1920, 1080
     c1, c2, accent = CHAPTER_THEMES[chapter_idx % len(CHAPTER_THEMES)]
 
@@ -144,94 +232,174 @@ def make_slide_card_clip(chapter_idx, badge_text, card_headline, card_bullets, k
     for gy in range(0, H, 120):
         draw.line([(0, gy), (W, gy)], fill=(255, 255, 255, 14), width=2)
 
-    board_x1, board_y1, board_x2, board_y2 = 110, 65, W - 110, 725
+    board_x1, board_y1, board_x2, board_y2 = 110, 55, W - 110, 715
     draw.rounded_rectangle(
         [board_x1, board_y1, board_x2, board_y2],
         radius=28,
-        fill=(15, 23, 42, 225),
+        fill=(15, 23, 42, 230),
         outline=accent + (255,),
         width=6,
     )
 
     font_badge = get_jp_font(36)
-    draw.rounded_rectangle([150, 95, 430, 160], radius=14, fill=accent + (255,))
+    draw.rounded_rectangle([150, 85, 430, 150], radius=14, fill=accent + (255,))
     bb = draw.textbbox((0, 0), badge_text, font=font_badge)
-    draw.text((150 + (280 - (bb[2] - bb[0])) // 2, 106), badge_text, font=font_badge, fill=(15, 23, 42, 255))
+    draw.text((150 + (280 - (bb[2] - bb[0])) // 2, 96), badge_text, font=font_badge, fill=(15, 23, 42, 255))
 
-    font_head = get_jp_font(54)
+    # クイズモードステータス表示
+    font_status = get_jp_font(30)
+    if mystery_mode:
+        draw.rounded_rectangle([455, 88, 740, 148], radius=12, fill=(220, 38, 38, 255))
+        draw.text((482, 100), "★ 理由を予想しよう！", font=font_status, fill=(255, 255, 255, 255))
+    elif 1 <= chapter_idx <= 7:
+        draw.rounded_rectangle([455, 88, 700, 148], radius=12, fill=(22, 163, 74, 255))
+        draw.text((485, 100), "✔ 事実解説オープン", font=font_status, fill=(255, 255, 255, 255))
+
+    font_head = get_jp_font(52)
     head_wrapped = wrap_text(card_headline, 24)
-    draw.multiline_text((155, 185), head_wrapped, font=font_head, fill=(255, 255, 255, 255), spacing=14)
+    draw.multiline_text((155, 175), head_wrapped, font=font_head, fill=(255, 255, 255, 255), spacing=14)
 
-    if key_number:
-        kw_x1, kw_y1, kw_x2, kw_y2 = 1230, 175, 1760, 430
-        draw.rounded_rectangle(
-            [kw_x1, kw_y1, kw_x2, kw_y2],
-            radius=22,
-            fill=(255, 255, 255, 25),
-            outline=accent + (255,),
-            width=4,
-        )
-        font_kw_label = get_jp_font(28)
-        draw.text((kw_x1 + 30, kw_y1 + 22), "KEY POINT", font=font_kw_label, fill=accent + (255,))
-        font_kw_val = get_jp_font(52)
-        kw_wrapped = wrap_text(key_number, 9)
-        draw.multiline_text((kw_x1 + 30, kw_y1 + 75), kw_wrapped, font=font_kw_val, fill=(255, 230, 0, 255), spacing=12)
+    # 右側の強調キーワード／数値ボックス
+    kw_x1, kw_y1, kw_x2, kw_y2 = 1230, 165, 1760, 420
+    draw.rounded_rectangle(
+        [kw_x1, kw_y1, kw_x2, kw_y2],
+        radius=22,
+        fill=(220, 38, 38, 45) if mystery_mode else (255, 255, 255, 25),
+        outline=(248, 113, 113, 255) if mystery_mode else accent + (255,),
+        width=4,
+    )
+    font_kw_label = get_jp_font(28)
+    draw.text((kw_x1 + 30, kw_y1 + 22), "SECRET ANSWER" if mystery_mode else "KEY POINT", font=font_kw_label, fill=accent + (255,))
+    font_kw_val = get_jp_font(54)
+    disp_kw = "？？？" if mystery_mode else (key_number or "重要事実")
+    kw_wrapped = wrap_text(disp_kw, 9)
+    draw.multiline_text((kw_x1 + 30, kw_y1 + 78), kw_wrapped, font=font_kw_val, fill=(255, 230, 0, 255), spacing=12)
 
+    # 要点箇条書き（3行）
     font_bullet = get_jp_font(38)
-    by = 365
-    for b_line in card_bullets[:3]:
-        draw.ellipse([160, by + 14, 182, by + 36], fill=accent + (255,))
-        draw.text((202, by), b_line[:32], font=font_bullet, fill=(226, 232, 240, 255))
+    by = 355
+    for idx_b, b_line in enumerate(card_bullets[:3]):
+        if mystery_mode and idx_b > 0:
+            # 2行目・3行目の核心理由は答えめくりまで伏せ字カードにする
+            draw.rounded_rectangle([160, by - 4, 1180, by + 54], radius=12, fill=(30, 41, 59, 255), outline=(100, 116, 139, 180), width=2)
+            draw.text((185, by + 4), "🔒 衝撃のメカニズムはすぐ後に公開！", font=get_jp_font(34), fill=(148, 163, 184, 255))
+        else:
+            draw.ellipse([160, by + 14, 182, by + 36], fill=accent + (255,))
+            draw.text((202, by), b_line[:32], font=font_bullet, fill=(226, 232, 240, 255))
         by += 74
 
     return ImageClip(np.array(img.convert("RGB"))).set_start(start_t).set_duration(dur)
 
-def make_dialogue_subtitle_clip(speaker, text, start_t, dur, total_dur):
+# ==========================================
+# 口パク立ち絵付き字幕帯＋下部プログレスバー
+# ==========================================
+def make_dialogue_subtitle_with_avatars(speaker, text, start_t, dur, total_dur):
     W, H = 1920, 1080
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
 
+    # ベースとなる静的UI部分（字幕枠・話者バッジ・セリフ・プログレスバー）を事前描画
+    base_ui = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(base_ui)
+
+    # 中央の字幕座布団（左右に立ち絵スペースを確保）
     draw.rounded_rectangle(
-        [110, 755, W - 110, 1015],
+        [320, 745, W - 320, 1020],
         radius=24,
-        fill=(10, 15, 28, 240),
-        outline=(148, 163, 184, 180),
-        width=4,
+        fill=(10, 15, 28, 245),
+        outline=(56, 189, 248, 220) if speaker == "A" else (244, 114, 182, 220),
+        width=5,
     )
 
     if speaker == "A":
-        sp_name = "解説ナビ"
+        sp_name = "解説博士"
         sp_color = (37, 99, 235, 255)
         text_color = (255, 255, 255, 255)
     else:
-        sp_name = "質問役"
+        sp_name = "質問アシスタント"
         sp_color = (219, 39, 119, 255)
         text_color = (254, 240, 138, 255)
 
-    font_sp = get_jp_font(32)
-    draw.rounded_rectangle([145, 775, 335, 830], radius=12, fill=sp_color)
+    font_sp = get_jp_font(30)
+    draw.rounded_rectangle([355, 765, 625, 818], radius=12, fill=sp_color)
     sb = draw.textbbox((0, 0), sp_name, font=font_sp)
-    draw.text((145 + (190 - (sb[2] - sb[0])) // 2, 784), sp_name, font=font_sp, fill=(255, 255, 255, 255))
+    draw.text((355 + (270 - (sb[2] - sb[0])) // 2, 773), sp_name, font=font_sp, fill=(255, 255, 255, 255))
 
-    font_sub = get_jp_font(50)
-    wrapped = wrap_text(text, 28)
+    font_sub = get_jp_font(46)
+    wrapped = wrap_text(text, 23)
     draw.multiline_text(
-        (150, 845),
+        (360, 835),
         wrapped,
         font=font_sub,
         fill=text_color,
         stroke_width=4,
         stroke_fill=(0, 0, 0, 255),
-        spacing=14,
+        spacing=12,
     )
 
     progress = min(1.0, (start_t + dur * 0.5) / max(1.0, total_dur))
     draw.rectangle([0, H - 14, W, H], fill=(30, 41, 59, 255))
     draw.rectangle([0, H - 14, int(W * progress), H], fill=(250, 204, 21, 255))
 
-    return ImageClip(np.array(img)).set_start(start_t).set_duration(dur)
+    base_arr = np.array(base_ui)
 
-def make_bgm_and_sfx(total_duration, transition_times):
+    # 口パク＆バウンドアニメーションフレーム生成（最後の0.3秒は口を閉じる）
+    speak_end = max(0.2, dur - 0.3)
+
+    def make_frame(t):
+        frame = base_arr.copy()
+        is_speaking = (t < speak_end) and (int(t * 7) % 2 == 0)
+        bounce = -8 if is_speaking else 0
+
+        # 左側：解説博士（A）
+        a_open = is_speaking if speaker == "A" else False
+        a_y = 770 + (bounce if speaker == "A" else 0)
+        av_a = AVATAR_CACHE[("A", a_open)]
+        h_a, w_a = av_a.shape[:2]
+        alpha_a = av_a[:, :, 3:4] / 255.0
+        roi_a = frame[a_y:a_y + h_a, 50:50 + w_a]
+        frame[a_y:a_y + h_a, 50:50 + w_a, :3] = (av_a[:, :, :3] * alpha_a + roi_a[:, :, :3] * (1 - alpha_a)).astype(np.uint8)
+        frame[a_y:a_y + h_a, 50:50 + w_a, 3] = np.maximum(roi_a[:, :, 3], av_a[:, :, 3])
+
+        # 右側：質問アシスタント（B）
+        b_open = is_speaking if speaker == "B" else False
+        b_y = 770 + (bounce if speaker == "B" else 0)
+        av_b = AVATAR_CACHE[("B", b_open)]
+        h_b, w_b = av_b.shape[:2]
+        rx = W - 50 - w_b
+        roi_b = frame[b_y:b_y + h_b, rx:rx + w_b]
+        alpha_b = av_b[:, :, 3:4] / 255.0
+        frame[b_y:b_y + h_b, rx:rx + w_b, :3] = (av_b[:, :, :3] * alpha_b + roi_b[:, :, :3] * (1 - alpha_b)).astype(np.uint8)
+        frame[b_y:b_y + h_b, rx:rx + w_b, 3] = np.maximum(roi_b[:, :, 3], av_b[:, :, 3])
+
+        return frame[:, :, :3]
+
+    def make_mask(t):
+        frame = base_arr.copy()
+        is_speaking = (t < speak_end) and (int(t * 7) % 2 == 0)
+        bounce = -8 if is_speaking else 0
+
+        a_open = is_speaking if speaker == "A" else False
+        a_y = 770 + (bounce if speaker == "A" else 0)
+        av_a = AVATAR_CACHE[("A", a_open)]
+        h_a, w_a = av_a.shape[:2]
+        frame[a_y:a_y + h_a, 50:50 + w_a, 3] = np.maximum(frame[a_y:a_y + h_a, 50:50 + w_a, 3], av_a[:, :, 3])
+
+        b_open = is_speaking if speaker == "B" else False
+        b_y = 770 + (bounce if speaker == "B" else 0)
+        av_b = AVATAR_CACHE[("B", b_open)]
+        h_b, w_b = av_b.shape[:2]
+        rx = W - 50 - w_b
+        frame[b_y:b_y + h_b, rx:rx + w_b, 3] = np.maximum(frame[b_y:b_y + h_b, rx:rx + w_b, 3], av_b[:, :, 3])
+
+        return frame[:, :, 3] / 255.0
+
+    clip = VideoClip(make_frame, duration=dur).set_start(start_t)
+    mask_clip = VideoClip(make_mask, duration=dur, ismask=True).set_start(start_t)
+    return clip.set_mask(mask_clip)
+
+# ==========================================
+# BGM ＆ チャプター切替チャイム ＋ 正解オープン効果音
+# ==========================================
+def make_bgm_and_sfx(total_duration, transition_times, reveal_times):
     chords = [
         [261.63, 329.63, 392.00, 493.88],
         [220.00, 261.63, 329.63, 392.00],
@@ -248,17 +416,27 @@ def make_bgm_and_sfx(total_duration, transition_times):
             if np.any(mask):
                 t_sub = t_arr[mask]
                 wave = sum(np.sin(2 * np.pi * f * t_sub) for f in freqs) / len(freqs)
-                out[mask] = wave * 0.04
+                out[mask] = wave * 0.038
 
+        # チャプター切替SE（E5 -> A5）
         for tr_t in transition_times:
             m1 = (t_arr >= tr_t) & (t_arr < tr_t + 0.14)
             if np.any(m1):
                 dt = t_arr[m1] - tr_t
-                out[m1] += np.sin(2 * np.pi * 659.25 * dt) * np.exp(-dt * 12) * 0.16
+                out[m1] += np.sin(2 * np.pi * 659.25 * dt) * np.exp(-dt * 12) * 0.15
             m2 = (t_arr >= tr_t + 0.14) & (t_arr < tr_t + 0.45)
             if np.any(m2):
                 dt = t_arr[m2] - (tr_t + 0.14)
-                out[m2] += np.sin(2 * np.pi * 880.00 * dt) * np.exp(-dt * 8) * 0.18
+                out[m2] += np.sin(2 * np.pi * 880.00 * dt) * np.exp(-dt * 8) * 0.17
+
+        # 正解オープンSE（C5 -> E5 -> G5 -> C6 アルペジオ）
+        notes = [(0.0, 523.25), (0.07, 659.25), (0.14, 783.99), (0.21, 1046.50)]
+        for rv_t in reveal_times:
+            for offset, freq in notes:
+                mr = (t_arr >= rv_t + offset) & (t_arr < rv_t + offset + 0.25)
+                if np.any(mr):
+                    dt = t_arr[mr] - (rv_t + offset)
+                    out[mr] += np.sin(2 * np.pi * freq * dt) * np.exp(-dt * 10) * 0.14
 
         stereo = np.column_stack([out, out])
         return stereo[0] if np.isscalar(t) else stereo
@@ -345,7 +523,7 @@ new_keywords = [it.get("topic_keyword", it.get("topic", "")) for it in verified_
 print(f"ステップ1完了: {new_keywords}")
 
 step2_prompt = f"""
-以下の【検証済みの7つの事実データ】だけを使って、2人のキャラクター（A: 落ち着いた解説ナビゲーター / B: 視聴者目線の明るい質問役）が掛け合いで進行する、約6分前後の横画面YouTube解説動画の完全台本を作成してください。
+以下の【検証済みの7つの事実データ】だけを使って、2人のキャラクター（A: 落ち着いた解説博士 / B: 視聴者目線の明るい質問アシスタント）が掛け合いで進行する、約6分前後の横画面YouTube解説動画の完全台本を作成してください。
 
 【検証済みの7つの事実データ】
 {json.dumps(fact_data, ensure_ascii=False, indent=2)}
@@ -353,17 +531,22 @@ step2_prompt = f"""
 【台本構成の厳守ルール】
 1. 全9チャプター構成にすること：
    - チャプター0: オープニング（掛け合い4セリフ）
-   - チャプター1〜7: POINT 01 〜 POINT 07（各チャプターにつき、AとBの掛け合いを【必ず5セリフ】ずつ作成：結論発表 ➔ Bの質問 ➔ メカニズム解説 ➔ 具体例・数値の深掘り ➔ Bの納得リアクション）
+   - チャプター1〜7: POINT 01 〜 POINT 07（各チャプターにつき、AとBの掛け合いを【必ず5セリフ】ずつ作成：
+     ・1セリフ目(A): 驚くべき現象・事実の問題提起
+     ・2セリフ目(B): 視聴者を代弁する「えっ、なんでそうなるの？」という質問
+     ・3セリフ目(A): メカニズム・科学的/歴史的理由の核心解説（ここでスライドの答えが開く）
+     ・4セリフ目(A): 具体例・数値・補足エピソードの深掘り
+     ・5セリフ目(B): 納得と感心のリアクション）
    - チャプター8: まとめ（掛け合い4セリフ）
 2. 1セリフあたり **35〜55文字** の読み応えのある日本語にし、動画全体が5〜8分になるボリュームを確保すること。
-3. データにない嘘や誇張を勝手に創作しないこと。
+3. サムネイル文言（`thumb_top`, `thumb_main`, `thumb_sub`）は「9割が知らない」「実は逆だった」などクリックしたくなる強いパワーワードを使うこと。
 4. 必ず以下のJSON形式のみで出力すること。
 
 {{
   "title": "クリックしたくなるYouTube動画タイトル（32文字以内・#Shorts禁止）",
-  "thumb_top": "サムネイル上部赤帯の短い煽り文句（12文字以内）",
-  "thumb_main": "サムネイル中央の巨大メイン文字（18文字以内）",
-  "thumb_sub": "サムネイル下部白帯の補足文（16文字以内）",
+  "thumb_top": "サムネイル上部赤帯の短い煽り文句（12文字以内 例: 9割が勘違いしていた！）",
+  "thumb_main": "サムネイル中央の巨大メイン文字（18文字以内 例: 実は嘘だった常識7選）",
+  "thumb_sub": "サムネイル下部白帯の補足文（16文字以内 例: 科学と公式データで徹底解説）",
   "description": "動画の詳しい概要文とハッシュタグ4〜5個（#雑学 #解説 #豆知識 など）",
   "chapters": [
     {{
@@ -388,19 +571,21 @@ title = data["title"].replace("#Shorts", "").replace("#shorts", "").strip()
 description = data["description"].replace("#Shorts", "").replace("#shorts", "").strip()
 chapters = data["chapters"]
 
-# 今回の7ネタとタイトルを履歴ファイルに保存
 save_used_topics(new_keywords + [title])
 
 thumb_path = "thumbnail.jpg"
 generate_thumbnail(
-    data.get("thumb_top", "知って得する雑学解説7選"),
+    data.get("thumb_top", "9割が知らなかった衝撃事実"),
     data.get("thumb_main", title[:16]),
     data.get("thumb_sub", "公式データで徹底解説"),
     thumb_path,
 )
 
-async def generate_tts(text, voice, filename):
-    communicate = edge_tts.Communicate(text, voice, rate="+8%")
+async def generate_tts(text, speaker, filename):
+    if speaker == "A":
+        communicate = edge_tts.Communicate(text, "ja-JP-KeitaNeural", rate="+7%", pitch="-5Hz")
+    else:
+        communicate = edge_tts.Communicate(text, "ja-JP-NanamiNeural", rate="+10%", pitch="+8Hz")
     await communicate.save(filename)
 
 dialogue_entries = []
@@ -410,12 +595,15 @@ part_idx = 0
 
 for c_idx, ch in enumerate(chapters):
     ch_start = current_time
-    for d in ch["dialogues"]:
+    reveal_t = None
+    for d_idx, d in enumerate(ch["dialogues"]):
+        if d_idx == 2:
+            # 3セリフ目（解説開始）のタイミングで正解カードをオープン
+            reveal_t = current_time
         sp = d.get("speaker", "A")
         txt = d["text"]
-        voice = "ja-JP-KeitaNeural" if sp == "A" else "ja-JP-NanamiNeural"
         audio_file = f"dlg_{part_idx}.mp3"
-        asyncio.run(generate_tts(txt, voice, audio_file))
+        asyncio.run(generate_tts(txt, sp, audio_file))
 
         a_clip = AudioFileClip(audio_file)
         dur = a_clip.duration + 0.25
@@ -438,6 +626,7 @@ for c_idx, ch in enumerate(chapters):
         "key_number": ch.get("key_number", ""),
         "bullets": ch.get("bullets", []),
         "start": ch_start,
+        "reveal_t": reveal_t,
         "duration": current_time - ch_start,
     })
 
@@ -446,27 +635,62 @@ print(f"完成動画の総再生時間: {total_duration:.1f} 秒（約 {total_du
 
 slide_clips = []
 transition_times = []
+reveal_times = []
+
 for cr in chapter_ranges:
     if cr["index"] > 0:
         transition_times.append(cr["start"])
-    slide_clips.append(
-        make_slide_card_clip(
-            cr["index"],
-            cr["badge"],
-            cr["headline"],
-            cr["bullets"],
-            cr["key_number"],
-            cr["start"],
-            cr["duration"],
+
+    # POINT 01〜07 は前半を「？？？伏せ字カード」、後半を「正解オープンカード」の2段階にする
+    if 1 <= cr["index"] <= 7 and cr["reveal_t"] and cr["reveal_t"] > cr["start"] + 1.0:
+        mystery_dur = cr["reveal_t"] - cr["start"]
+        open_dur = (cr["start"] + cr["duration"]) - cr["reveal_t"]
+        reveal_times.append(cr["reveal_t"])
+
+        slide_clips.append(
+            make_slide_card_clip(
+                cr["index"],
+                cr["badge"],
+                cr["headline"],
+                cr["bullets"],
+                cr["key_number"],
+                cr["start"],
+                mystery_dur,
+                mystery_mode=True,
+            )
         )
-    )
+        slide_clips.append(
+            make_slide_card_clip(
+                cr["index"],
+                cr["badge"],
+                cr["headline"],
+                cr["bullets"],
+                cr["key_number"],
+                cr["reveal_t"],
+                open_dur,
+                mystery_mode=False,
+            )
+        )
+    else:
+        slide_clips.append(
+            make_slide_card_clip(
+                cr["index"],
+                cr["badge"],
+                cr["headline"],
+                cr["bullets"],
+                cr["key_number"],
+                cr["start"],
+                cr["duration"],
+                mystery_mode=False,
+            )
+        )
 
 sub_clips = []
 audio_clips = []
 for entry in dialogue_entries:
     audio_clips.append(entry["audio_clip"])
     sub_clips.append(
-        make_dialogue_subtitle_clip(
+        make_dialogue_subtitle_with_avatars(
             entry["speaker"],
             entry["text"],
             entry["start"],
@@ -475,7 +699,7 @@ for entry in dialogue_entries:
         )
     )
 
-bgm_sfx_clip = make_bgm_and_sfx(total_duration, transition_times)
+bgm_sfx_clip = make_bgm_and_sfx(total_duration, transition_times, reveal_times)
 final_audio = CompositeAudioClip(audio_clips + [bgm_sfx_clip])
 
 output_video = "output_long.mp4"
