@@ -14,6 +14,7 @@ from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
     ImageClip,
+    ColorClip,
     CompositeVideoClip,
     concatenate_videoclips,
 )
@@ -199,32 +200,37 @@ if long_video_url:
     description = f"{description}\n\n▼作業用・睡眠用の雑学まとめ動画はこちら\n{long_video_url}"
     pinned_comment = f"{pinned_comment}\n\n▼聞き流し用の雑学まとめ動画はこちら！\n{long_video_url}"
 
+
+def download_pexels_video(query_word, save_path):
+    if not PEXELS_API_KEY:
+        return False
+    headers = {"Authorization": PEXELS_API_KEY}
+    for q in [query_word, "space stars", "nature", "abstract"]:
+        try:
+            url = f"https://api.pexels.com/videos/search?query={urllib.parse.quote(q)}&orientation=portrait&size=medium&per_page=5"
+            res = requests.get(url, headers=headers, timeout=20).json()
+            videos = res.get("videos", [])
+            for v in videos:
+                for vf in v.get("video_files", []):
+                    link = vf.get("link")
+                    if link and vf.get("file_type") == "video/mp4":
+                        r_vid = requests.get(link, timeout=60)
+                        if r_vid.status_code == 200 and len(r_vid.content) > 10000:
+                            with open(save_path, "wb") as f:
+                                f.write(r_vid.content)
+                            return True
+        except Exception as e:
+            print(f"Pexels検索リトライ ({q}): {e}")
+    return False
+
+
 bg_video_path = "bg_short.mp4"
-headers = {"Authorization": PEXELS_API_KEY}
-pexels_url = f"https://api.pexels.com/videos/search?query={pexels_query}&orientation=portrait&size=medium&per_page=5"
-res_p = requests.get(pexels_url, headers=headers, timeout=20).json()
-videos = res_p.get("videos", [])
-if not videos:
-    res_p = requests.get(
-        "https://api.pexels.com/videos/search?query=nature&orientation=portrait&size=medium&per_page=5",
-        headers=headers,
-        timeout=20,
-    ).json()
-    videos = res_p.get("videos", [])
-
-video_link = None
-for v in videos:
-    for vf in v.get("video_files", []):
-        if vf.get("width", 0) >= 720 and vf.get("file_type") == "video/mp4":
-            video_link = vf["link"]
-            break
-    if video_link:
-        break
-if not video_link and videos:
-    video_link = videos[0]["video_files"][0]["link"]
-
-with open(bg_video_path, "wb") as f:
-    f.write(requests.get(video_link, timeout=60).content)
+has_bg_video = download_pexels_video(pexels_query, bg_video_path)
+if has_bg_video:
+    raw_bg = VideoFileClip(bg_video_path).resize((1080, 1920))
+else:
+    print("背景動画が見つからないためダークネイビー背景を使用します。")
+    raw_bg = ColorClip(size=(1080, 1920), color=(18, 26, 44), duration=60)
 
 
 async def generate_tts(text, out_path):
@@ -273,7 +279,6 @@ def create_caption_image(text, out_path, width=1080, height=1920):
     img.save(out_path)
 
 
-raw_bg = VideoFileClip(bg_video_path).resize((1080, 1920))
 scene_clips = []
 current_t = 0.0
 
