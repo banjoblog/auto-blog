@@ -1,6 +1,5 @@
 import os
 import json
-from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
 WEIGHTS_FILE = "genre_weights.json"
@@ -16,25 +15,21 @@ GENRE_KEYWORDS = {
     "日本語の語源・漢字の由来": ["日本語", "語源", "漢字", "言葉", "意味", "ことわざ", "四字熟語", "敬語", "方言"],
 }
 
-def get_youtube_client():
-    creds = Credentials(
-        token=None,
-        refresh_token=os.environ.get("YT_REFRESH_TOKEN"),
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=os.environ.get("YT_CLIENT_ID"),
-        client_secret=os.environ.get("YT_CLIENT_SECRET"),
-    )
-    return build("youtube", "v3", credentials=creds)
 
 def analyze_and_optimize():
-    youtube = get_youtube_client()
+    api_key = os.environ.get("GEMINI_API_KEY")
+    channel_id = (os.environ.get("YOUTUBE_CHANNEL_ID") or "").strip()
 
-    # 1. 自分のチャンネルのアップロード済み動画リストIDを取得（1ユニット）
-    ch_res = youtube.channels().list(part="contentDetails", mine=True).execute()
+    if not channel_id:
+        raise RuntimeError("YOUTUBE_CHANNEL_ID が設定されていません。GitHub Secrets に登録してください。")
+
+    youtube = build("youtube", "v3", developerKey=api_key)
+
+    # 1. チャンネルIDからアップロード済み再生リストIDを取得（1ユニット）
+    ch_res = youtube.channels().list(part="contentDetails", id=channel_id).execute()
     items = ch_res.get("items", [])
     if not items:
-        print("チャンネル情報が見つかりませんでした。")
-        return
+        raise RuntimeError(f"チャンネルが見つかりませんでした (ID: {channel_id})。UCから始まるIDか確認してください。")
 
     uploads_playlist_id = items[0]["contentDetails"]["relatedPlaylists"]["uploads"]
 
@@ -80,7 +75,6 @@ def analyze_and_optimize():
             likes = int(stats.get("likeCount", 0))
             comments = int(stats.get("commentCount", 0))
 
-            # エンゲージメントを加味したパフォーマンススコア
             score = views + (likes * 15) + (comments * 30)
 
             for genre, keywords in GENRE_KEYWORDS.items():
@@ -98,7 +92,6 @@ def analyze_and_optimize():
     for genre, avg in avg_scores.items():
         if overall_avg > 0 and avg > 0:
             ratio = avg / overall_avg
-            # 極端な偏りを防ぎつつ伸びるジャンルを最大3倍優遇
             weights[genre] = round(max(0.5, min(3.0, ratio)), 2)
         else:
             weights[genre] = 1.0
@@ -109,6 +102,7 @@ def analyze_and_optimize():
     print("=== YouTube パフォーマンス分析＆ジャンル重み更新完了 ===")
     for g, w in sorted(weights.items(), key=lambda x: x[1], reverse=True):
         print(f"・{g}: 重み {w}倍 (平均スコア: {avg_scores[g]:.1f})")
+
 
 if __name__ == "__main__":
     analyze_and_optimize()
