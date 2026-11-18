@@ -151,7 +151,7 @@ def make_subtitle_clip(text, duration, start_time, total_duration, is_hook=False
     W, H = 1080, 1920
     img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = get_jp_font(62 if is_hook else 60)
+    font = get_jp_font(60 if is_hook else 58)
     
     wrapped = "\n".join([text[j:j+11] for j in range(0, len(text), 11)])
     bbox = draw.multiline_textbbox((0, 0), wrapped, font=font, spacing=18, align="center")
@@ -276,6 +276,24 @@ TIKTOK_REFRESH_TOKEN = os.environ.get("TIKTOK_REFRESH_TOKEN")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+def call_gemini_json(prompt_text):
+    for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite"]:
+        for attempt in range(3):
+            try:
+                res = client.models.generate_content(
+                    model=model,
+                    contents=prompt_text,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=0.3,
+                    ),
+                )
+                return json.loads(res.text)
+            except Exception as e:
+                print(f"{model} エラー、10秒待機してリトライ ({attempt+1}/3): {e}")
+                time.sleep(10)
+    raise RuntimeError("すべてのGeminiモデルでの生成に失敗しました。")
+
 used_topics = load_used_topics()
 ng_list_text = "、".join(used_topics) if used_topics else "なし"
 print(f"投稿済みNGワード数: {len(used_topics)}件")
@@ -295,73 +313,82 @@ genres = [
 selected_genre = random.choice(genres)
 print(f"今回の抽選ジャンル: {selected_genre}")
 
-prompt = f"""
-あなたはYouTube ShortsとTikTokで100万再生を連発する雑学クリエイター兼ファクトチェッカーです。
-100%事実に裏付けられた、最後まで見ずにいられないショート動画台本を1つ作成してください。
-
-【今回の指定ジャンル】
-「{selected_genre}」のテーマから、学術的・公式に事実と認められている具体的なトリビアを1つ選んでください。
+# ==========================================
+# ステップ1：100%筋が通る事実データと論理構成を先に確定
+# ==========================================
+step1_prompt = f"""
+あなたは厳格なファクトチェッカー兼雑学リサーチャーです。
+「{selected_genre}」のテーマから、誰が聞いても一発で「なるほど！すごい！」と納得できる【100%事実のトリビア】を1つ選んで整理してください。
 
 【過去投稿済み・重複禁止リスト（絶対に使用禁止）】
 以下のテーマ・対象・食材・生物・企業はすでに動画化済みのため、絶対に選ばないでください：
 [玉ねぎ, ヒクイドリ, サメ, バナナ, エッフェル塔, {ng_list_text}]
 
-【バズるショート構成の絶対ルール】
-1. 都市伝説やデマは除外し、100%事実と断言できるネタだけを選ぶこと。
-2. 1文目は視聴者のスクロールを止める強烈なフック（「9割が勘違いしている〇〇の真実」など）にすること。
-3. 2文目で結論を明かし、3〜4文目で「なるほど！」と納得する科学的・公式な根拠をテンポよく語ること。
-4. 必ず以下のJSON形式のみで出力すること。
+【絶対ルール】
+1. 都市伝説や曖昧な噂は除外し、科学的・歴史的・公式に事実と断言できるネタだけを選ぶこと。
+2. 専門用語をそのまま使わず、中学生でも直感的に理解できる因果関係（「〜だから、〜になる」）に整理すること。
+3. 以下のJSON形式のみで出力すること。
 
 {{
-  "fact_check_note": "100%事実である科学的・歴史的・公式な根拠",
-  "topic_keyword": "今回の主役キーワード（履歴保存用・10文字以内）",
+  "topic_keyword": "主役となる単語（10文字以内 例: ペンギン, 500円玉）",
+  "question_hook": "視聴者が気になる素朴な疑問（例: なぜペンギンは氷の上でも足が凍らないのか？）",
+  "clear_answer": "疑問に対するハッキリした答え（例: 足の血液の温度を自動で下げる仕組みがあるから！）",
+  "reason_mechanism": "なぜそうなるのかの分かりやすい仕組み（80文字以内）",
+  "concrete_example": "なるほどと納得する具体的な数値や比較（80文字以内）",
+  "search_keyword": "背景動画検索用のシンプルな英単語1語"
+}}
+"""
+
+fact_data = call_gemini_json(step1_prompt)
+topic_keyword = fact_data.get("topic_keyword", "雑学")
+search_keyword = fact_data.get("search_keyword", "science")
+print(f"ステップ1完了: {topic_keyword} -> {fact_data.get('question_hook')}")
+
+# ==========================================
+# ステップ2：確定した事実データをもとに、前後の文脈が完璧につながる5文台本を作成
+# ==========================================
+step2_prompt = f"""
+以下の【確定済みの事実データ】だけを使って、YouTube ShortsとTikTok向けの「1本のお話として自然に流れる解説台本（全5文）」を作成してください。
+
+【確定済みの事実データ】
+{json.dumps(fact_data, ensure_ascii=False, indent=2)}
+
+【意味が通る台本にするための厳守ルール】
+1. 5つの文はバラバラの箇条書きではなく、**1つの繋がった会話・解説ストーリー**として自然につながる日本語にすること（主語を省略しすぎて意味不明にしないこと）。
+2. 各文の役割と文字数目安：
+   - 1文目（疑問フック）：「実は〇〇って、なぜ△△か知ってる？」（22〜30文字）
+   - 2文目（ズバリ結論）：「実は、〇〇だからなんです！」と1文目の疑問に真っ正面から答える（22〜32文字）
+   - 3文目（理由の解説）：「というのも、〜という仕組みがあるから。」と理由を噛み砕いて説明（26〜36文字）
+   - 4文目（具体例・納得）：「実際に〜なので、〜になるんです。」と具体例や数値を出す（26〜36文字）
+   - 5文目（一言まとめ）：「〇〇の体って（仕組みって）本当によくできてますよね！」と綺麗に締める（20〜30文字）
+3. 必ず以下のJSON形式のみで出力すること。
+
+{{
   "hook_badge": "上部赤帯の短いバッジ（10文字以内 例: 9割が知らない事実）",
-  "title": "画面上部に常時表示する短い見出し（18文字以内・ハッシュタグなし）",
-  "description": "動画の説明文と関連ハッシュタグ4〜5個（#雑学 #豆知識 など）",
+  "title": "画面上部に常時表示する短い見出し（16文字以内・ハッシュタグなし）",
+  "description": "動画の内容を分かりやすくまとめた説明文とハッシュタグ4〜5個（#雑学 #豆知識 など）",
   "tags": ["雑学", "豆知識", "ショート", "トリビア", "教養", "解説"],
-  "search_keyword": "背景動画検索用のシンプルな英単語1語",
   "script": [
-    "1文目：スクロールを止める強烈なフック・疑問（18〜26文字）",
-    "2文目：ズバリ結論となる具体的な事実の発表（20〜30文字）",
-    "3文目：なぜそうなるのかの科学的・公式な根拠1（24〜34文字）",
-    "4文目：さらに驚く具体的な数値・比較データ（24〜34文字）",
-    "5文目：コメント欄で語りたくなる一言まとめ（18〜26文字）"
+    "1文目",
+    "2文目",
+    "3文目",
+    "4文目",
+    "5文目"
   ]
 }}
 """
 
-response = None
-for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite"]:
-    for attempt in range(3):
-        try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=0.35,
-                ),
-            )
-            break
-        except Exception as e:
-            print(f"{model} エラー、10秒待機してリトライ ({attempt+1}/3): {e}")
-            time.sleep(10)
-    if response:
-        break
-
-if not response:
-    raise RuntimeError("すべてのGeminiモデルでの台本生成に失敗しました。")
-
-data = json.loads(response.text)
+data = call_gemini_json(step2_prompt)
 title = data["title"]
 hook_badge = data.get("hook_badge", "衝撃の事実")
-topic_keyword = data.get("topic_keyword", title)
 description = data["description"]
 tags = data.get("tags", ["雑学", "豆知識", "Shorts", "トリビア"])
-search_keyword = data["search_keyword"]
 script_lines = data["script"]
 
-print(f"生成完了: {title} (主役: {topic_keyword})")
+print(f"生成完了: {title}")
+for idx_l, sl in enumerate(script_lines, 1):
+    print(f"  {idx_l}: {sl}")
+
 save_used_topics([topic_keyword, title])
 
 bg_video_path = "bg_video.mp4"
@@ -394,14 +421,14 @@ audio_entries = []
 current_time = 0.0
 
 async def generate_tts(text, filename):
-    communicate = edge_tts.Communicate(text, VOICE, rate="+18%", pitch="+5Hz")
+    communicate = edge_tts.Communicate(text, VOICE, rate="+16%", pitch="+5Hz")
     await communicate.save(filename)
 
 for i, line in enumerate(script_lines):
     audio_file = f"part_{i}.mp3"
     asyncio.run(generate_tts(line, audio_file))
     a_clip = AudioFileClip(audio_file)
-    duration = a_clip.duration + 0.14
+    duration = a_clip.duration + 0.16
     audio_entries.append({
         "index": i,
         "text": line,
