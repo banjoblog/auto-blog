@@ -9,7 +9,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import requests
 import edge_tts
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
@@ -75,7 +75,6 @@ def pick_weighted_genre(default_genres):
 
 def get_latest_long_video_url(channel_id):
     if not channel_id:
-        print("YOUTUBE_CHANNEL_ID が未設定のためリンク取得をスキップします。")
         return ""
     try:
         rss_url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
@@ -94,11 +93,9 @@ def get_latest_long_video_url(channel_id):
             title_txt = title_el.text if (title_el is not None and title_el.text) else ""
             if "#Shorts" not in title_txt and any(k in title_txt for k in long_keywords):
                 if vid_el is not None and vid_el.text:
-                    url = f"https://www.youtube.com/watch?v={vid_el.text}"
-                    print(f"長尺動画リンク取得成功: {title_txt} -> {url}")
-                    return url
+                    return f"https://www.youtube.com/watch?v={vid_el.text}"
     except Exception as e:
-        print(f"長尺動画URL取得エラー: {e}")
+        print(f"長尺動画URL取得スキップ: {e}")
     return ""
 
 
@@ -154,53 +151,55 @@ fact_prompt = f"""
 [{ng_list_text}]
 
 【厳守ルール】
-1. 都市伝説、俗説、国や時代によって変わる曖昧なルール、数字の計算ミスが起こりやすいネタは絶対に除外すること。
-2. 「AだからBになる」という因果関係・メカニズムが100%論理的に破綻していない事実のみを選ぶこと。
+1. 都市伝説、俗説、曖昧なルールは絶対に除外すること。
+2. 「AだからBになる」という因果関係が100%論理的に破綻していない事実のみを選ぶこと。
 3. 以下のJSON形式のみで出力すること。
 
 {{
   "topic_keyword": "主役キーワード（10文字以内）",
-  "verified_fact": "100%正確な結論と科学的・公式な理由（150文字以内）",
-  "pexels_search_words": ["シーン用の英語検索語1（例: galaxy stars）", "英語検索語2（例: earth space）", "英語検索語3（例: science lab）"]
+  "verified_fact": "100%正確な結論と科学的・公式な理由（160文字以内）",
+  "pexels_search_words": ["英語検索語1（例: galaxy stars）", "英語検索語2（例: earth space）", "英語検索語3（例: laboratory）", "英語検索語4（例: city night）"]
 }}
 """
 
 fact_data = call_gemini_json(fact_prompt, temp=0.2)
 topic_keyword = fact_data.get("topic_keyword", "雑学")
 verified_fact = fact_data["verified_fact"]
-pexels_queries = fact_data.get("pexels_search_words", ["night sky", "nature landscape", "abstract light"])
+pexels_queries = fact_data.get("pexels_search_words", ["night sky", "ocean waves", "city lights", "abstract"])
 
+# 2人掛け合い（質問役A＋解説役B）の超ハイテンポ台本生成
 script_prompt = f"""
-以下の【検証済みの事実】のみをベースにして、YouTubeショート・TikTokで最後まで見られる40秒前後の台本と投稿メタデータを作成してください。
+以下の【検証済みの事実】のみをベースにして、YouTubeショート・TikTokでバズる「2人のテンポ良い掛け合い雑学台本（約35秒）」を作成してください。
 
 【検証済みの事実】
 {verified_fact}
 
 【厳守ルール】
-1. 検証済みの事実に書かれていない数字や嘘のエピソードを勝手に付け足さないこと。
-2. 音声読み上げ（TTS）で不自然な漢字誤読が起きないよう、難読漢字はひらがな表記にすること。
-3. `scenes` は5〜6シーンに分け、1シーンあたり15〜28文字のテンポ良い日本語にすること。
-4. 最初のシーン（フック）は疑問形または衝撃の結論から入り、1秒目で視聴者を惹きつけること。
-5. 以下のJSON形式のみで出力すること。
+1. 検証済みの事実にない嘘のエピソードや数字は絶対に追加しないこと。
+2. 難読漢字はTTS（音声合成）が読み間違えないよう、必ずひらがな表記にすること。
+3. `cuts` は全部で **10〜12カット** に細かく分割し、1カットあたり **10〜18文字** の超短文にすること（2秒ごとに画面と声が変わるテンポにする）。
+4. `speaker` は `"A"`（驚き・質問役の女性）と `"B"`（解説役の男性）を交互にテンポ良く入れ替えること。
+5. `style` は各カットの重要度に合わせて `"hook"`（最初の衝撃フレーズ）、`"highlight"`（結論・重要ポイント）、`"normal"`（通常の会話）を指定すること。
+6. 以下のJSON形式のみで出力すること。
 
 {{
-  "title": "クリックしたくなる動画タイトル（32文字以内・#Shortsなし）",
-  "description": "SEOを意識した動画説明文（120文字前後・ハッシュタグ3個含む）",
+  "title": "クリックしたくなる動画タイトル（30文字以内・#Shortsなし）",
+  "description": "SEOを意識した動画説明文（110文字前後）",
   "tags": ["雑学", "豆知識", "教育", "{topic_keyword}"],
-  "pinned_comment": "視聴者がコメント欄に書き込みたくなる一言質問",
-  "scenes": [
-    {{"caption": "画面中央に出す短い字幕（18文字以内）", "narration": "読み上げ音声テキスト"}},
-    {{"caption": "画面中央に出す短い字幕（18文字以内）", "narration": "読み上げ音声テキスト"}}
+  "pinned_comment": "コメント欄が盛り上がる一言質問",
+  "cuts": [
+    {{"speaker": "A", "style": "hook", "caption": "えっ、これマジなの！？", "narration": "えっ、これマジなの！？"}},
+    {{"speaker": "B", "style": "normal", "caption": "実は科学で証明されてる", "narration": "実は科学で証明されてるんだ。"}}
   ]
 }}
 """
 
-script_data = call_gemini_json(script_prompt, temp=0.4)
+script_data = call_gemini_json(script_prompt, temp=0.45)
 title = script_data["title"]
 description = script_data["description"]
 tags = script_data.get("tags", ["雑学", "豆知識"])
 pinned_comment = script_data.get("pinned_comment", "知らなかった人は高評価で教えてください！")
-scenes = script_data["scenes"]
+cuts = script_data["cuts"]
 
 long_video_url = get_latest_long_video_url(YOUTUBE_CHANNEL_ID)
 if long_video_url:
@@ -211,12 +210,9 @@ if long_video_url:
 def download_multiple_pexels_videos(query_list, needed_count=6):
     downloaded = []
     if not PEXELS_API_KEY:
-        print("PEXELS_API_KEY が未設定です。")
         return downloaded
-
     headers = {"Authorization": PEXELS_API_KEY}
     search_pool = list(query_list) + ["galaxy stars", "ocean waves", "city night", "abstract motion"]
-
     for q in search_pool:
         if len(downloaded) >= needed_count:
             break
@@ -224,8 +220,7 @@ def download_multiple_pexels_videos(query_list, needed_count=6):
             encoded_q = urllib.parse.quote(str(q))
             url = f"https://api.pexels.com/videos/search?query={encoded_q}&orientation=portrait&per_page=5"
             res = requests.get(url, headers=headers, timeout=20).json()
-            videos = res.get("videos", [])
-            for v in videos:
+            for v in res.get("videos", []):
                 if len(downloaded) >= needed_count:
                     break
                 best_link = None
@@ -235,7 +230,6 @@ def download_multiple_pexels_videos(query_list, needed_count=6):
                         break
                 if not best_link and v.get("video_files"):
                     best_link = v["video_files"][0].get("link")
-
                 if best_link:
                     fname = f"bg_clip_{len(downloaded)}.mp4"
                     r_vid = requests.get(best_link, timeout=60)
@@ -243,22 +237,50 @@ def download_multiple_pexels_videos(query_list, needed_count=6):
                         with open(fname, "wb") as f:
                             f.write(r_vid.content)
                         downloaded.append(fname)
-                        print(f"背景動画ダウンロード成功 ({len(downloaded)}/{needed_count}): {q}")
         except Exception as e:
             print(f"Pexels検索エラー ({q}): {e}")
-
     return downloaded
 
 
-bg_files = download_multiple_pexels_videos(pexels_queries, needed_count=len(scenes))
+bg_files = download_multiple_pexels_videos(pexels_queries, needed_count=6)
 
 
-async def generate_tts(text, out_path):
-    communicate = edge_tts.Communicate(text, "ja-JP-NanamiNeural", rate="+14%")
+# 効果音（SE）とBGMの自動生成（ffmpeg）
+def generate_sound_effects():
+    # 1. インパクト音（フック・結論用「ドン／ピコン」）
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", "sine=frequency=880:duration=0.18",
+            "-af", "afade=t=out:st=0.05:d=0.13,volume=0.35",
+            "se_pop.wav",
+        ],
+        check=False,
+    )
+    # 2. スウィッシュ音（カット切り替え用）
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-f", "lavfi",
+            "-i", "anoisesrc=d=0.14:c=white:r=44100:a=0.15",
+            "-af", "bandpass=f=1200:width_type=h:w=800,afade=t=in:st=0:d=0.04,afade=t=out:st=0.06:d=0.08",
+            "se_whoosh.wav",
+        ],
+        check=False,
+    )
+
+
+generate_sound_effects()
+
+
+async def generate_tts(text, speaker, out_path):
+    # A: 明るい女性声 / B: 落ち着いた男性声
+    voice = "ja-JP-NanamiNeural" if speaker == "A" else "ja-JP-KeitaNeural"
+    rate = "+18%" if speaker == "A" else "+15%"
+    communicate = edge_tts.Communicate(text, voice, rate=rate)
     await communicate.save(out_path)
 
 
-def create_styled_overlay(text, badge_text, progress_ratio, is_hook, out_path, width=1080, height=1920):
+def create_tv_telop_overlay(text, speaker, style, badge_text, progress_ratio, out_path, width=1080, height=1920):
     img = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
@@ -266,32 +288,44 @@ def create_styled_overlay(text, badge_text, progress_ratio, is_hook, out_path, w
     if not os.path.exists(font_path):
         font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
 
-    font_badge = ImageFont.truetype(font_path, 40)
-    font_main = ImageFont.truetype(font_path, 74 if is_hook else 68)
+    font_badge = ImageFont.truetype(font_path, 38)
+    font_role = ImageFont.truetype(font_path, 34)
+    font_size = 86 if style in ("hook", "highlight") else 78
+    font_main = ImageFont.truetype(font_path, font_size)
 
-    # 上下ビネット風の半透明グラデーション帯（映像を見やすくする）
-    draw.rectangle([(0, 0), (width, 260)], fill=(0, 0, 0, 120))
-    draw.rectangle([(0, height - 260), (width, height)], fill=(0, 0, 0, 130))
+    # 上下ビネット（映画・TV風の引き締め）
+    draw.rectangle([(0, 0), (width, 280)], fill=(0, 0, 0, 145))
+    draw.rectangle([(0, height - 280), (width, height)], fill=(0, 0, 0, 155))
 
-    # 上部ジャンルバッジ（角丸風ピルデザイン）
-    badge_w = 420
+    # 上部ジャンルピル
+    badge_w = 400
     badge_x = (width - badge_w) // 2
     draw.rounded_rectangle(
-        [(badge_x, 110), (badge_x + badge_w, 180)],
-        radius=35,
-        fill=(220, 50, 70, 235) if is_hook else (30, 110, 220, 230),
-        outline=(255, 255, 255, 220),
+        [(badge_x, 105), (badge_x + badge_w, 172)],
+        radius=34,
+        fill=(20, 28, 45, 230),
+        outline=(255, 215, 0, 230),
         width=3,
     )
     b_box = draw.textbbox((0, 0), badge_text, font=font_badge)
     bx = (width - (b_box[2] - b_box[0])) // 2
-    draw.text((bx, 122), badge_text, font=font_badge, fill=(255, 255, 255, 255))
+    draw.text((bx, 117), badge_text, font=font_badge, fill=(255, 225, 90, 255))
 
-    # 中央メイン字幕の改行処理
+    # 話者ラベル（質問 vs 解説）
+    role_text = "【疑問】" if speaker == "A" else "【事実】"
+    role_bg = (220, 55, 80, 240) if speaker == "A" else (30, 130, 230, 240)
+    r_w = 190
+    r_x = (width - r_w) // 2
+    role_y = 660
+    draw.rounded_rectangle([(r_x, role_y), (r_x + r_w, role_y + 56)], radius=16, fill=role_bg)
+    r_box = draw.textbbox((0, 0), role_text, font=font_role)
+    draw.text(((width - (r_box[2] - r_box[0])) // 2, role_y + 8), role_text, font=font_role, fill=(255, 255, 255, 255))
+
+    # テキスト自動改行（1行最大9文字で大きくドカンと表示）
     lines = []
     current = ""
     for ch in text:
-        if len(current) >= 10:
+        if len(current) >= 9:
             lines.append(current)
             current = ch
         else:
@@ -299,104 +333,137 @@ def create_styled_overlay(text, badge_text, progress_ratio, is_hook, out_path, w
     if current:
         lines.append(current)
 
-    line_height = 96
+    line_height = font_size + 24
     total_h = len(lines) * line_height
-    start_y = (height - total_h) // 2
+    start_y = 750
 
-    # 角丸カード背景
-    pad_x = 55
-    pad_y = 40
-    draw.rounded_rectangle(
-        [(pad_x, start_y - pad_y), (width - pad_x, start_y + total_h + pad_y)],
-        radius=28,
-        fill=(10, 14, 24, 185),
-        outline=(255, 215, 0, 220) if is_hook else (120, 180, 255, 180),
-        width=4,
-    )
+    # hook時は赤座布団、highlight時は黒座布団＋金枠
+    if style == "hook":
+        draw.rounded_rectangle(
+            [(50, start_y - 30), (width - 50, start_y + total_h + 30)],
+            radius=24,
+            fill=(210, 25, 45, 235),
+            outline=(255, 255, 255, 255),
+            width=5,
+        )
+        fill_color = (255, 255, 255, 255)
+        stroke_color = (80, 0, 10, 255)
+    elif style == "highlight":
+        draw.rounded_rectangle(
+            [(50, start_y - 30), (width - 50, start_y + total_h + 30)],
+            radius=24,
+            fill=(12, 16, 28, 220),
+            outline=(255, 215, 0, 255),
+            width=5,
+        )
+        fill_color = (255, 235, 60, 255)
+        stroke_color = (0, 0, 0, 255)
+    else:
+        fill_color = (255, 255, 255, 255) if speaker == "B" else (140, 230, 255, 255)
+        stroke_color = (0, 0, 0, 255)
 
-    text_color = (255, 230, 70, 255) if is_hook else (255, 255, 255, 255)
     for idx, line in enumerate(lines):
         bbox = draw.textbbox((0, 0), line, font=font_main)
         text_w = bbox[2] - bbox[0]
         x = (width - text_w) // 2
         y = start_y + idx * line_height
-        for dx, dy in [(-4, -4), (4, -4), (-4, 4), (4, 4), (0, 5)]:
-            draw.text((x + dx, y + dy), line, font=font_main, fill=(0, 0, 0, 255))
-        draw.text((x, y), line, font=font_main, fill=text_color)
+        # 極太の二重縁取り＋ドロップシャドウ
+        draw.text((x + 6, y + 8), line, font=font_main, fill=(0, 0, 0, 200))
+        for dx in range(-5, 6, 2):
+            for dy in range(-5, 6, 2):
+                draw.text((x + dx, y + dy), line, font=font_main, fill=stroke_color)
+        draw.text((x, y), line, font=font_main, fill=fill_color)
 
-    # 下部プログレスバー（視聴維持率アップ用）
-    bar_margin = 100
+    # 下部プログレスバー
+    bar_margin = 90
     bar_w = width - (bar_margin * 2)
-    bar_y = height - 180
-    draw.rounded_rectangle([(bar_margin, bar_y), (bar_margin + bar_w, bar_y + 14)], radius=7, fill=(255, 255, 255, 80))
-    fill_w = max(14, int(bar_w * progress_ratio))
-    draw.rounded_rectangle([(bar_margin, bar_y), (bar_margin + fill_w, bar_y + 14)], radius=7, fill=(255, 215, 0, 240))
+    bar_y = height - 190
+    draw.rounded_rectangle([(bar_margin, bar_y), (bar_margin + bar_w, bar_y + 16)], radius=8, fill=(255, 255, 255, 70))
+    fill_w = max(16, int(bar_w * progress_ratio))
+    draw.rounded_rectangle([(bar_margin, bar_y), (bar_margin + fill_w, bar_y + 16)], radius=8, fill=(255, 215, 0, 255))
 
     img.save(out_path)
 
 
 scene_clips = []
-total_scenes = len(scenes)
+total_cuts = len(cuts)
+loaded_bg_clips = []
 
-for idx, sc in enumerate(scenes):
-    audio_path = f"scene_{idx}.mp3"
-    img_path = f"scene_{idx}.png"
-    asyncio.run(generate_tts(sc["narration"], audio_path))
-    audio_clip = AudioFileClip(audio_path)
-    dur = audio_clip.duration + 0.12
-
-    if bg_files:
-        chosen_bg_file = bg_files[idx % len(bg_files)]
-        clip_raw = VideoFileClip(chosen_bg_file).without_audio()
-        # 縦画面1080x1920にアスペクト比を維持して中央クロップ
-        w, h = clip_raw.size
+for bf in bg_files:
+    try:
+        c = VideoFileClip(bf).without_audio()
+        w, h = c.size
         target_ratio = 1080 / 1920
         if w / h > target_ratio:
-            new_w = int(h * target_ratio)
-            clip_raw = clip_raw.crop(x_center=w / 2, width=new_w)
+            c = c.crop(x_center=w / 2, width=int(h * target_ratio))
         else:
-            new_h = int(w / target_ratio)
-            clip_raw = clip_raw.crop(y_center=h / 2, height=new_h)
-        clip_raw = clip_raw.resize((1080, 1920))
+            c = c.crop(y_center=h / 2, height=int(w / target_ratio))
+        loaded_bg_clips.append(c.resize((1080, 1920)))
+    except Exception:
+        pass
 
-        if clip_raw.duration < dur:
-            bg_sub = clip_raw.loop(duration=dur)
+for idx, cut in enumerate(cuts):
+    audio_path = f"cut_{idx}.mp3"
+    img_path = f"cut_{idx}.png"
+    speaker = cut.get("speaker", "B")
+    style = cut.get("style", "normal")
+
+    asyncio.run(generate_tts(cut["narration"], speaker, audio_path))
+    voice_clip = AudioFileClip(audio_path)
+    dur = voice_clip.duration + 0.08
+
+    # 2カットごとに背景映像を切り替え＋ゆっくりズームイン（動きをつける）
+    if loaded_bg_clips:
+        base_bg = loaded_bg_clips[(idx // 2) % len(loaded_bg_clips)]
+        start_offset = (idx % 2) * 1.5
+        if base_bg.duration < start_offset + dur:
+            sub = base_bg.loop(duration=start_offset + dur).subclip(start_offset, start_offset + dur)
         else:
-            bg_sub = clip_raw.subclip(0, dur)
+            sub = base_bg.subclip(start_offset, start_offset + dur)
+        # 1.0倍 -> 1.08倍へ滑らかにズームイン
+        bg_sub = sub.resize(lambda t: 1.0 + 0.08 * (t / max(0.1, dur))).set_position(("center", "center"))
     else:
-        bg_sub = ColorClip(size=(1080, 1920), color=(22, 32, 54), duration=dur)
+        bg_sub = ColorClip(size=(1080, 1920), color=(20, 28, 48), duration=dur)
 
-    progress = (idx + 1) / total_scenes
-    create_styled_overlay(
-        sc["caption"],
+    progress = (idx + 1) / total_cuts
+    create_tv_telop_overlay(
+        cut["caption"],
+        speaker,
+        style,
         genre_badge,
         progress,
-        is_hook=(idx == 0),
         out_path=img_path,
     )
     txt_clip = ImageClip(img_path).set_duration(dur)
 
-    comp = CompositeVideoClip([bg_sub, txt_clip]).set_audio(audio_clip)
+    # 効果音（SE）の合成
+    audio_tracks = [voice_clip]
+    if style in ("hook", "highlight") and os.path.exists("se_pop.wav"):
+        audio_tracks.append(AudioFileClip("se_pop.wav"))
+    elif idx > 0 and idx % 2 == 0 and os.path.exists("se_whoosh.wav"):
+        audio_tracks.append(AudioFileClip("se_whoosh.wav"))
+
+    comp_audio = CompositeAudioClip(audio_tracks)
+    comp = CompositeVideoClip([bg_sub, txt_clip], size=(1080, 1920)).set_audio(comp_audio)
     scene_clips.append(comp)
 
 final_video = concatenate_videoclips(scene_clips, method="compose")
 
-# 心地よい低音アンビエントBGMを生成してミックス
+# 背景にうっすらアンビエントBGMをミックス
 bgm_path = "ambient_bgm.wav"
 total_dur = final_video.duration
 subprocess.run(
     [
         "ffmpeg", "-y", "-f", "lavfi",
-        "-i", f"anoisesrc=d={total_dur}:c=pink:r=44100:a=0.015",
-        "-af", "lowpass=f=280,afade=t=in:st=0:d=1,afade=t=out:st=" + str(max(0, total_dur - 1.5)) + ":d=1.5",
+        "-i", f"anoisesrc=d={total_dur}:c=pink:r=44100:a=0.012",
+        "-af", f"lowpass=f=260,afade=t=in:st=0:d=1,afade=t=out:st={max(0, total_dur - 1.5)}:d=1.5",
         bgm_path,
     ],
     check=False,
 )
 if os.path.exists(bgm_path):
     bgm_clip = AudioFileClip(bgm_path).set_duration(total_dur)
-    final_audio = CompositeAudioClip([final_video.audio, bgm_clip])
-    final_video = final_video.set_audio(final_audio)
+    final_video = final_video.set_audio(CompositeAudioClip([final_video.audio, bgm_clip]))
 
 output_mp4 = "short_output.mp4"
 final_video.write_videofile(
