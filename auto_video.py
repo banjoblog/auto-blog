@@ -9,7 +9,8 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import requests
 import edge_tts
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import imageio_ffmpeg
+from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
@@ -25,6 +26,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
+FFMPEG_BIN = imageio_ffmpeg.get_ffmpeg_exe()
 HISTORY_FILE = "used_topics.json"
 WEIGHTS_FILE = "genre_weights.json"
 
@@ -167,7 +169,6 @@ topic_keyword = fact_data.get("topic_keyword", "雑学")
 verified_fact = fact_data["verified_fact"]
 pexels_queries = fact_data.get("pexels_search_words", ["night sky", "ocean waves", "city lights", "abstract"])
 
-# 2人掛け合い（質問役A＋解説役B）の超ハイテンポ台本生成
 script_prompt = f"""
 以下の【検証済みの事実】のみをベースにして、YouTubeショート・TikTokでバズる「2人のテンポ良い掛け合い雑学台本（約35秒）」を作成してください。
 
@@ -245,22 +246,19 @@ def download_multiple_pexels_videos(query_list, needed_count=6):
 bg_files = download_multiple_pexels_videos(pexels_queries, needed_count=6)
 
 
-# 効果音（SE）とBGMの自動生成（ffmpeg）
 def generate_sound_effects():
-    # 1. インパクト音（フック・結論用「ドン／ピコン」）
     subprocess.run(
         [
-            "ffmpeg", "-y", "-f", "lavfi",
+            FFMPEG_BIN, "-y", "-f", "lavfi",
             "-i", "sine=frequency=880:duration=0.18",
             "-af", "afade=t=out:st=0.05:d=0.13,volume=0.35",
             "se_pop.wav",
         ],
         check=False,
     )
-    # 2. スウィッシュ音（カット切り替え用）
     subprocess.run(
         [
-            "ffmpeg", "-y", "-f", "lavfi",
+            FFMPEG_BIN, "-y", "-f", "lavfi",
             "-i", "anoisesrc=d=0.14:c=white:r=44100:a=0.15",
             "-af", "bandpass=f=1200:width_type=h:w=800,afade=t=in:st=0:d=0.04,afade=t=out:st=0.06:d=0.08",
             "se_whoosh.wav",
@@ -273,7 +271,6 @@ generate_sound_effects()
 
 
 async def generate_tts(text, speaker, out_path):
-    # A: 明るい女性声 / B: 落ち着いた男性声
     voice = "ja-JP-NanamiNeural" if speaker == "A" else "ja-JP-KeitaNeural"
     rate = "+18%" if speaker == "A" else "+15%"
     communicate = edge_tts.Communicate(text, voice, rate=rate)
@@ -293,11 +290,9 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, progress_ratio, ou
     font_size = 86 if style in ("hook", "highlight") else 78
     font_main = ImageFont.truetype(font_path, font_size)
 
-    # 上下ビネット（映画・TV風の引き締め）
     draw.rectangle([(0, 0), (width, 280)], fill=(0, 0, 0, 145))
     draw.rectangle([(0, height - 280), (width, height)], fill=(0, 0, 0, 155))
 
-    # 上部ジャンルピル
     badge_w = 400
     badge_x = (width - badge_w) // 2
     draw.rounded_rectangle(
@@ -311,7 +306,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, progress_ratio, ou
     bx = (width - (b_box[2] - b_box[0])) // 2
     draw.text((bx, 117), badge_text, font=font_badge, fill=(255, 225, 90, 255))
 
-    # 話者ラベル（質問 vs 解説）
     role_text = "【疑問】" if speaker == "A" else "【事実】"
     role_bg = (220, 55, 80, 240) if speaker == "A" else (30, 130, 230, 240)
     r_w = 190
@@ -321,7 +315,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, progress_ratio, ou
     r_box = draw.textbbox((0, 0), role_text, font=font_role)
     draw.text(((width - (r_box[2] - r_box[0])) // 2, role_y + 8), role_text, font=font_role, fill=(255, 255, 255, 255))
 
-    # テキスト自動改行（1行最大9文字で大きくドカンと表示）
     lines = []
     current = ""
     for ch in text:
@@ -337,7 +330,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, progress_ratio, ou
     total_h = len(lines) * line_height
     start_y = 750
 
-    # hook時は赤座布団、highlight時は黒座布団＋金枠
     if style == "hook":
         draw.rounded_rectangle(
             [(50, start_y - 30), (width - 50, start_y + total_h + 30)],
@@ -367,14 +359,12 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, progress_ratio, ou
         text_w = bbox[2] - bbox[0]
         x = (width - text_w) // 2
         y = start_y + idx * line_height
-        # 極太の二重縁取り＋ドロップシャドウ
         draw.text((x + 6, y + 8), line, font=font_main, fill=(0, 0, 0, 200))
         for dx in range(-5, 6, 2):
             for dy in range(-5, 6, 2):
                 draw.text((x + dx, y + dy), line, font=font_main, fill=stroke_color)
         draw.text((x, y), line, font=font_main, fill=fill_color)
 
-    # 下部プログレスバー
     bar_margin = 90
     bar_w = width - (bar_margin * 2)
     bar_y = height - 190
@@ -412,7 +402,6 @@ for idx, cut in enumerate(cuts):
     voice_clip = AudioFileClip(audio_path)
     dur = voice_clip.duration + 0.08
 
-    # 2カットごとに背景映像を切り替え＋ゆっくりズームイン（動きをつける）
     if loaded_bg_clips:
         base_bg = loaded_bg_clips[(idx // 2) % len(loaded_bg_clips)]
         start_offset = (idx % 2) * 1.5
@@ -420,7 +409,6 @@ for idx, cut in enumerate(cuts):
             sub = base_bg.loop(duration=start_offset + dur).subclip(start_offset, start_offset + dur)
         else:
             sub = base_bg.subclip(start_offset, start_offset + dur)
-        # 1.0倍 -> 1.08倍へ滑らかにズームイン
         bg_sub = sub.resize(lambda t: 1.0 + 0.08 * (t / max(0.1, dur))).set_position(("center", "center"))
     else:
         bg_sub = ColorClip(size=(1080, 1920), color=(20, 28, 48), duration=dur)
@@ -436,7 +424,6 @@ for idx, cut in enumerate(cuts):
     )
     txt_clip = ImageClip(img_path).set_duration(dur)
 
-    # 効果音（SE）の合成
     audio_tracks = [voice_clip]
     if style in ("hook", "highlight") and os.path.exists("se_pop.wav"):
         audio_tracks.append(AudioFileClip("se_pop.wav"))
@@ -449,12 +436,11 @@ for idx, cut in enumerate(cuts):
 
 final_video = concatenate_videoclips(scene_clips, method="compose")
 
-# 背景にうっすらアンビエントBGMをミックス
 bgm_path = "ambient_bgm.wav"
 total_dur = final_video.duration
 subprocess.run(
     [
-        "ffmpeg", "-y", "-f", "lavfi",
+        FFMPEG_BIN, "-y", "-f", "lavfi",
         "-i", f"anoisesrc=d={total_dur}:c=pink:r=44100:a=0.012",
         "-af", f"lowpass=f=260,afade=t=in:st=0:d=1,afade=t=out:st={max(0, total_dur - 1.5)}:d=1.5",
         bgm_path,
