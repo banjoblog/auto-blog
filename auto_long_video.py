@@ -81,7 +81,7 @@ selected_theme = random.choice(themes)
 
 
 def call_gemini_json(prompt_text, temp=0.35):
-    for model in ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"]:
+    for model in ["gemini-3.8-flash", "gemini-3.5-flash-lite"]:
         for attempt in range(3):
             try:
                 res = client.models.generate_content(
