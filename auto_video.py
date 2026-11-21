@@ -12,6 +12,8 @@ import requests
 import edge_tts
 import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
+if not hasattr(Image, "ANTIALIAS"):
+    Image.ANTIALIAS = Image.Resampling.LANCZOS
 from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
