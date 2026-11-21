@@ -11,7 +11,7 @@ import numpy as np
 import requests
 import edge_tts
 import imageio_ffmpeg
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont
 from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
@@ -147,66 +147,77 @@ def call_gemini_json(prompt_text, temp=0.35):
 
 
 fact_prompt = f"""
-あなたは厳格な科学・雑学のファクトチェッカーです。
-「{selected_genre}」のジャンルから、教科書・学術論文・公式発表で100%事実と証明されている「誰かに話したくなる雑学」を1つ厳選してください。
+あなたは人気テレビ雑学番組（チコちゃんに叱られる・水曜日のダウンタウン・林修の今でしょ講座など）のリサーチャー兼ファクトチェッカーです。
+「{selected_genre}」のジャンルから、教科書・学術論文・公式発表で100%事実と証明されている「9割の人が勘違いしている衝撃の雑学」を1つ厳選してください。
 
 【使用禁止リスト（過去投稿済み）】
 [{ng_list_text}]
 
 【厳守ルール】
-1. 都市伝説、俗説、曖昧なルールは絶対に除外すること。
-2. 「AだからBになる」という因果関係が100%論理的に破綻していない事実のみを選ぶこと。
+1. 都市伝説、俗説、曖昧な噂は絶対に除外すること。
+2. 「普通の人は〇〇だと思っているが、実は△△である」というギャップが強いネタを最優先すること。
 3. 以下のJSON形式のみで出力すること。
 
 {{
   "topic_keyword": "主役キーワード（10文字以内）",
+  "common_myth": "多くの人が勘違いしている常識（30文字以内）",
   "verified_fact": "100%正確な結論と科学的・公式な理由（180文字以内）",
+  "practical_takeaway": "明日誰かに話したくなる一言オチ・豆知識（40文字以内）",
   "pexels_search_words": ["英語検索語1", "英語検索語2", "英語検索語3", "英語検索語4", "英語検索語5"]
 }}
 """
 
-fact_data = call_gemini_json(fact_prompt, temp=0.25)
+fact_data = call_gemini_json(fact_prompt, temp=0.3)
 topic_keyword = fact_data.get("topic_keyword", "衝撃雑学")
+common_myth = fact_data.get("common_myth", "")
 verified_fact = fact_data["verified_fact"]
+practical_takeaway = fact_data.get("practical_takeaway", "")
 pexels_queries = fact_data.get("pexels_search_words", ["night sky", "ocean waves", "city lights", "abstract", "science"])
 
 script_prompt = f"""
-以下の【検証済みの事実】のみをベースにして、YouTubeショートで視聴維持率85%以上を叩き出す「テレビ雑学番組風の2人掛け合い台本（約38秒）」を作成してください。
+あなたは登録者100万人超えのYouTubeショート専門構成作家です。
+以下の【検証済みの事実】のみを使い、視聴者が最初の1秒で指を止め、最後まで一気に見てコメントしたくなる「テレビ雑学番組風の2人掛け合い台本（約38秒）」を作成してください。
 
-【検証済みの事実】
-{verified_fact}
+【世間の勘違い】{common_myth}
+【検証済みの事実】{verified_fact}
+【一言オチ】{practical_takeaway}
 
-【厳守ルール】
-1. 検証済みの事実にない嘘のエピソードや数字は絶対に追加しないこと。
-2. 難読漢字はTTS（音声合成）が読み間違えないよう、必ずひらがな・カタカナ表記にすること。
-3. `top_banner` は動画中ずっと画面上部に固定表示する「番組コーナー見出し（12〜16文字・体言止めや疑問形）」にすること（例：「なぜ空は青く見えるのか？」）。
-4. `cuts` は全部で **14〜16カット** に細かく分割し、1カットあたり **8〜15文字** の超短文にすること（1.5〜2.2秒ごとに画面と声が変わる高速テンポ）。
-5. `speaker` は `"A"`（驚き・質問役の女性）と `"B"`（解説役の男性）を交互にテンポ良く入れ替えること。
-6. `style` は各カットの役割に合わせて以下から指定すること：
-   - `"hook"`: 最初の1〜2カット目の衝撃フック
-   - `"highlight"`: 核心の結論・最も驚く数値や理由
-   - `"normal"`: 通常のテンポ良い掛け合い
-7. 以下のJSON形式のみで出力すること。
+【構成の黄金ルール（全15カット）】
+- カット1〜2（フック）：世間の常識を否定する衝撃の一言（「えっ、まだ〇〇だと思ってるの？」「実はそれ、真っ赤なウソなんです！」など）
+- カット3〜5（疑問・共感）：Aが視聴者目線で「え、どういうこと！？だって〇〇じゃないの？」と食い気味に質問する
+- カット6〜11（種明かし・核心）：Bが科学・公式の理由をテンポよく解説し、Aが「うわ、マジか！」「なるほど〜！」とリアルに相槌を打つ
+- カット12〜15（オチ・余韻）：明日誰かに話したくなる一言オチで綺麗に締め、ループ再生したくなる終わり方にする
+
+【テロップと音声の分離ルール（超重要）】
+- `caption`（画面文字）：パッと見て0.5秒で意味が入る **7〜13文字の体言止め・インパクト重視テロップ** にする（例：「99%が勘違い！」「実は逆だった！？」）
+- `narration`（読み上げ音声）：人間が自然に喋る口語にし、感情が乗るように読点（、）や「えっ、」「実は…」を入れる。難読漢字は必ずひらがな・カタカナにする。
+- `emotion`：`"surprise"`（驚き・フック）、`"explain"`（落ち着いた解説）、`"punchline"`（決めゼリフ・オチ）のいずれかを指定。
+- `style`：`"hook"`（冒頭フック）、`"highlight"`（核心・結論・オチ）、`"normal"`（通常）のいずれかを指定。
+
+【コメント欄を伸ばす固定コメント】
+- `pinned_comment` は視聴者が思わず返信したくなる「2択アンケート形式」にする（例：「あなたは知ってましたか？ 知ってた ➔ 👍 / 初めて知った ➔ 😱 で教えてください！」）。
+
+以下のJSON形式のみで出力すること。
 
 {{
-  "title": "クリックしたくなる動画タイトル（28文字以内・#Shortsなし）",
-  "top_banner": "画面上部に常時固定する短い見出し（15文字以内）",
+  "title": "クリックしたくなる動画タイトル（26文字以内・#Shortsなし）",
+  "top_banner": "画面上部に常時固定する短い見出し（14文字以内）",
   "description": "SEOを意識した動画説明文（110文字前後）",
   "tags": ["雑学", "豆知識", "教育", "{topic_keyword}"],
-  "pinned_comment": "コメント欄が盛り上がる一言質問",
+  "pinned_comment": "2択アンケート形式の固定コメント",
   "cuts": [
-    {{"speaker": "A", "style": "hook", "caption": "えっ、これマジなの！？", "narration": "えっ、これマジなの！？"}},
-    {{"speaker": "B", "style": "normal", "caption": "実は科学で証明されてる", "narration": "実は科学で証明されてるんだ。"}}
+    {{"speaker": "A", "style": "hook", "emotion": "surprise", "caption": "まだ〇〇信じてる？", "narration": "えっ、まだ〇〇って信じてるの！？"}},
+    {{"speaker": "B", "style": "normal", "emotion": "explain", "caption": "実は完全に逆なんです", "narration": "実はそれ、科学的には完全に逆なんだよね。"}}
   ]
 }}
 """
 
-script_data = call_gemini_json(script_prompt, temp=0.45)
+script_data = call_gemini_json(script_prompt, temp=0.5)
 title = script_data["title"]
 top_banner = script_data.get("top_banner", f"【検証】{topic_keyword}の真実")
 description = script_data["description"]
 tags = script_data.get("tags", ["雑学", "豆知識"])
-pinned_comment = script_data.get("pinned_comment", "知らなかった人は高評価で教えてください！")
+pinned_comment = script_data.get("pinned_comment", "知らなかった人はコメントで教えてください！")
 cuts = script_data["cuts"]
 
 long_video_url = get_latest_long_video_url(YOUTUBE_CHANNEL_ID)
@@ -254,7 +265,6 @@ bg_files = download_multiple_pexels_videos(pexels_queries, needed_count=7)
 
 
 def generate_pro_audio_assets(total_dur):
-    # 1. フック用「ジャジャーン！」和音ヒットSE（Cメジャー和音の減衰）
     subprocess.run(
         [
             FFMPEG_BIN, "-y", "-f", "lavfi",
@@ -267,7 +277,6 @@ def generate_pro_audio_assets(total_dur):
         ],
         check=False,
     )
-    # 2. 場面転換用「シュッ！」風切りSE
     subprocess.run(
         [
             FFMPEG_BIN, "-y", "-f", "lavfi",
@@ -277,7 +286,6 @@ def generate_pro_audio_assets(total_dur):
         ],
         check=False,
     )
-    # 3. 雑音ではない「柔らかいアンビエント和音BGM（Cadd9パッド）」
     subprocess.run(
         [
             FFMPEG_BIN, "-y",
@@ -286,23 +294,29 @@ def generate_pro_audio_assets(total_dur):
             "-f", "lavfi", "-i", f"sine=frequency=392.00:duration={total_dur}",
             "-f", "lavfi", "-i", f"sine=frequency=587.33:duration={total_dur}",
             "-filter_complex",
-            f"[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first,lowpass=f=480,tremolo=f=0.35:d=0.35,afade=t=in:st=0:d=1.2,afade=t=out:st={max(0, total_dur - 1.5)}:d=1.5,volume=0.09",
+            f"[0:a][1:a][2:a][3:a]amix=inputs=4:duration=first,lowpass=f=480,tremolo=f=0.35:d=0.35,afade=t=in:st=0:d=1.2,afade=t=out:st={max(0, total_dur - 1.5)}:d=1.5,volume=0.085",
             "ambient_bgm.wav",
         ],
         check=False,
     )
 
 
-async def generate_tts(text, speaker, style, out_path):
+async def generate_tts(text, speaker, emotion, out_path):
     voice = "ja-JP-NanamiNeural" if speaker == "A" else "ja-JP-KeitaNeural"
-    rate = "+22%" if speaker == "A" else "+18%"
-    pitch = "+4Hz" if (speaker == "A" and style == "hook") else ("+2Hz" if style == "highlight" else "+0Hz")
+    if emotion == "surprise":
+        rate = "+24%" if speaker == "A" else "+20%"
+        pitch = "+6Hz" if speaker == "A" else "+3Hz"
+    elif emotion == "punchline":
+        rate = "+16%"
+        pitch = "+2Hz" if speaker == "A" else "-2Hz"
+    else:
+        rate = "+20%" if speaker == "A" else "+17%"
+        pitch = "+0Hz"
     communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
     await communicate.save(out_path)
 
 
 def create_vignette_mask(width=1080, height=1920):
-    # 背景をシネマティックに引き締める暗転＋周辺減光オーバーレイ
     y, x = np.ogrid[:height, :width]
     cx, cy = width / 2.0, height / 2.0
     dist = np.sqrt(((x - cx) / (width * 0.55)) ** 2 + ((y - cy) / (height * 0.55)) ** 2)
@@ -320,18 +334,14 @@ VIGNETTE_IMG = create_vignette_mask()
 
 def draw_triple_stroked_text(draw, pos, text, font, fill_color, inner_stroke, outer_stroke=(0, 0, 0, 255)):
     x, y = pos
-    # ドロップシャドウ
     draw.text((x + 7, y + 9), text, font=font, fill=(0, 0, 0, 210))
-    # 外側縁取り（太め）
     for dx in range(-7, 8, 2):
         for dy in range(-7, 8, 2):
             if dx * dx + dy * dy <= 52:
                 draw.text((x + dx, y + dy), text, font=font, fill=outer_stroke)
-    # 内側縁取り
     for dx in range(-3, 4):
         for dy in range(-3, 4):
             draw.text((x + dx, y + dy), text, font=font, fill=inner_stroke)
-    # 本体文字
     draw.text((x, y), text, font=font, fill=fill_color)
 
 
@@ -346,14 +356,12 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
     font_badge = ImageFont.truetype(font_path, 34)
     font_banner = ImageFont.truetype(font_path, 52)
     font_role = ImageFont.truetype(font_path, 34)
-    font_size = 92 if style in ("hook", "highlight") else 84
+    font_size = 94 if style in ("hook", "highlight") else 86
     font_main = ImageFont.truetype(font_path, font_size)
 
-    # 上部：テレビ番組風の常設タイトルコーナー帯
     draw.rectangle([(0, 0), (width, 330)], fill=(10, 14, 26, 225))
     draw.rectangle([(0, 324), (width, 332)], fill=(255, 205, 0, 255))
 
-    # ジャンルバッジ
     badge_w = 360
     badge_x = (width - badge_w) // 2
     draw.rounded_rectangle(
@@ -366,7 +374,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
     b_box = draw.textbbox((0, 0), badge_text, font=font_badge)
     draw.text(((width - (b_box[2] - b_box[0])) // 2, 91), badge_text, font=font_badge, fill=(255, 255, 255, 255))
 
-    # 常設見出し（top_banner）
     bn_box = draw.textbbox((0, 0), banner_text, font=font_banner)
     bn_w = bn_box[2] - bn_box[0]
     if bn_w > width - 80:
@@ -382,7 +389,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
         inner_stroke=(25, 25, 35, 255),
     )
 
-    # 話者ロールタグ
     role_text = "疑問・リアクション" if speaker == "A" else "公式・科学的解説"
     role_bg = (225, 50, 85, 245) if speaker == "A" else (25, 115, 220, 245)
     r_w = 340
@@ -398,7 +404,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
     r_box = draw.textbbox((0, 0), role_text, font=font_role)
     draw.text(((width - (r_box[2] - r_box[0])) // 2, role_y + 7), role_text, font=font_role, fill=(255, 255, 255, 255))
 
-    # メイン字幕の自動改行（8文字目安で視認性最大化）
     lines = []
     current = ""
     for ch in text:
@@ -445,7 +450,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
         y = start_y + idx * line_height
         draw_triple_stroked_text(draw, (x, y), line, font_main, fill_color=fill_color, inner_stroke=inner_stroke)
 
-    # 下部プログレスバー（残り時間の可視化で離脱防止）
     draw.rectangle([(0, height - 240), (width, height)], fill=(10, 14, 26, 180))
     bar_margin = 90
     bar_w = width - (bar_margin * 2)
@@ -457,16 +461,14 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
     img.save(out_path)
 
 
-# 音声と長さの事前計算
 cut_audio_infos = []
 for idx, cut in enumerate(cuts):
     audio_path = f"cut_{idx}.mp3"
     speaker = cut.get("speaker", "B")
-    style = cut.get("style", "normal")
-    asyncio.run(generate_tts(cut["narration"], speaker, style, audio_path))
+    emotion = cut.get("emotion", "explain")
+    asyncio.run(generate_tts(cut["narration"], speaker, emotion, audio_path))
     voice_clip = AudioFileClip(audio_path)
-    # テンポを良くするため余白は極小（0.05秒）
-    dur = voice_clip.duration + 0.05
+    dur = voice_clip.duration + 0.04
     cut_audio_infos.append((voice_clip, dur))
 
 total_estimated_dur = sum(d for _, d in cut_audio_infos)
@@ -502,7 +504,6 @@ for idx, cut in enumerate(cuts):
             sub = base_bg.loop(duration=start_offset + dur).subclip(start_offset, start_offset + dur)
         else:
             sub = base_bg.subclip(start_offset, start_offset + dur)
-        # 交互にズームイン・ズームアウトを切り替えて映像にリズムを出す
         if idx % 2 == 0:
             bg_sub = sub.resize(lambda t: 1.0 + 0.09 * (t / max(0.1, dur))).set_position(("center", "center"))
         else:
@@ -521,7 +522,6 @@ for idx, cut in enumerate(cuts):
         out_path=img_path,
     )
 
-    # 最初の0.12秒でポンッと拡大出現するポップインアニメーション
     base_txt_clip = ImageClip(img_path).set_duration(dur)
     txt_clip = base_txt_clip.resize(
         lambda t: 0.92 + 0.08 * min(1.0, t / 0.12)
