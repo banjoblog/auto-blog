@@ -1,4 +1,5 @@
 import os
+import glob
 import json
 import time
 import asyncio
@@ -12,8 +13,10 @@ import requests
 import edge_tts
 import imageio_ffmpeg
 from PIL import Image, ImageDraw, ImageFont
+
 if not hasattr(Image, "ANTIALIAS"):
     Image.ANTIALIAS = Image.Resampling.LANCZOS
+
 from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
@@ -191,6 +194,7 @@ script_prompt = f"""
 - カット12〜15（オチ・余韻）：明日誰かに話したくなる一言オチで綺麗に締め、ループ再生したくなる終わり方にする
 
 【テロップと音声の分離ルール（超重要）】
+- `top_banner`（上部常設見出し）：サムネイル一覧でも1行で綺麗に収まる **12文字以内の短い見出し** にすること（例：「なぜ空は青い？」「土星に降る宝石」）。
 - `caption`（画面文字）：パッと見て0.5秒で意味が入る **7〜13文字の体言止め・インパクト重視テロップ** にする（例：「99%が勘違い！」「実は逆だった！？」）
 - `narration`（読み上げ音声）：人間が自然に喋る口語にし、感情が乗るように読点（、）や「えっ、」「実は…」を入れる。難読漢字は必ずひらがな・カタカナにする。
 - `emotion`：`"surprise"`（驚き・フック）、`"explain"`（落ち着いた解説）、`"punchline"`（決めゼリフ・オチ）のいずれかを指定。
@@ -203,7 +207,7 @@ script_prompt = f"""
 
 {{
   "title": "クリックしたくなる動画タイトル（26文字以内・#Shortsなし）",
-  "top_banner": "画面上部に常時固定する短い見出し（14文字以内）",
+  "top_banner": "1行で収まる短い見出し（12文字以内）",
   "description": "SEOを意識した動画説明文（110文字前後）",
   "tags": ["雑学", "豆知識", "教育", "{topic_keyword}"],
   "pinned_comment": "2択アンケート形式の固定コメント",
@@ -216,7 +220,7 @@ script_prompt = f"""
 
 script_data = call_gemini_json(script_prompt, temp=0.5)
 title = script_data["title"]
-top_banner = script_data.get("top_banner", f"【検証】{topic_keyword}の真実")
+top_banner = script_data.get("top_banner", f"{topic_keyword}の真実")
 description = script_data["description"]
 tags = script_data.get("tags", ["雑学", "豆知識"])
 pinned_comment = script_data.get("pinned_comment", "知らなかった人はコメントで教えてください！")
@@ -356,7 +360,7 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
         font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
 
     font_badge = ImageFont.truetype(font_path, 34)
-    font_banner = ImageFont.truetype(font_path, 52)
+    font_banner = ImageFont.truetype(font_path, 50)
     font_role = ImageFont.truetype(font_path, 34)
     font_size = 94 if style in ("hook", "highlight") else 86
     font_main = ImageFont.truetype(font_path, font_size)
@@ -376,15 +380,20 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
     b_box = draw.textbbox((0, 0), badge_text, font=font_badge)
     draw.text(((width - (b_box[2] - b_box[0])) // 2, 91), badge_text, font=font_badge, fill=(255, 255, 255, 255))
 
+    # 上部見出し（1行に収まるよう幅に応じて自動縮小）
+    banner_font_size = 50
+    font_banner = ImageFont.truetype(font_path, banner_font_size)
     bn_box = draw.textbbox((0, 0), banner_text, font=font_banner)
     bn_w = bn_box[2] - bn_box[0]
-    if bn_w > width - 80:
-        font_banner = ImageFont.truetype(font_path, 42)
+    while bn_w > width - 90 and banner_font_size > 32:
+        banner_font_size -= 2
+        font_banner = ImageFont.truetype(font_path, banner_font_size)
         bn_box = draw.textbbox((0, 0), banner_text, font=font_banner)
         bn_w = bn_box[2] - bn_box[0]
+
     draw_triple_stroked_text(
         draw,
-        ((width - bn_w) // 2, 168),
+        ((width - bn_w) // 2, 172),
         banner_text,
         font_banner,
         fill_color=(255, 230, 70, 255),
@@ -593,10 +602,16 @@ try:
 except Exception as ce:
     print(f"コメント投稿スキップ: {ce}")
 
-if os.path.exists("post_tiktok.py") and os.environ.get("TIKTOK_REFRESH_TOKEN"):
+tiktok_scripts = [f for f in glob.glob("*.py") if "tiktok" in f.lower()]
+print(f"TikTokチェック: scripts={tiktok_scripts}, token_set={bool(os.environ.get('TIKTOK_REFRESH_TOKEN'))}")
+
+if tiktok_scripts and os.environ.get("TIKTOK_REFRESH_TOKEN"):
     try:
-        subprocess.run(["python", "post_tiktok.py", output_mp4, title], check=True)
+        subprocess.run(["python", tiktok_scripts[0], output_mp4, title], check=True)
+        print("TikTok 投稿スクリプト実行完了！")
     except Exception as te:
         print(f"TikTok 投稿エラー: {te}")
+else:
+    print(f"TikTok 投稿スキップ: ルート上のpy一覧={glob.glob('*.py')}")
 
 save_used_topics([topic_keyword])
