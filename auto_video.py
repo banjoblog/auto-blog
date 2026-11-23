@@ -133,21 +133,26 @@ genre_badge = selected_genre.split("・")[0] + "の雑学"
 
 
 def call_gemini_json(prompt_text, temp=0.15):
-    # 精度維持のため上位モデル（gemini-3.8-flash）で最大6回リトライ
-    for attempt in range(6):
-        try:
-            res = client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=prompt_text,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    temperature=temp,
-                ),
-            )
-            return json.loads(res.text)
-        except Exception as e:
-            print(f"gemini-3.8-flash エラー、リトライ ({attempt+1}/6): {e}")
-            time.sleep(10)
+    models = ["gemini-3.8-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+    for model in models:
+        for attempt in range(3):
+            try:
+                res = client.models.generate_content(
+                    model=model,
+                    contents=prompt_text,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        temperature=temp,
+                    ),
+                )
+                return json.loads(res.text)
+            except Exception as e:
+                err_str = str(e)
+                print(f"{model} エラー ({attempt+1}/3): {err_str}")
+                if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    print(f"{model} の日次上限に達したため次のモデルへ切り替えます。")
+                    break
+                time.sleep(8)
     raise RuntimeError("Geminiでの生成に失敗しました。")
 
 
