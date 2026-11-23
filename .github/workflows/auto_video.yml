@@ -8,10 +8,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: "video-repo-push"
-  cancel-in-progress: false
-
 jobs:
   build-and-post:
     runs-on: ubuntu-latest
