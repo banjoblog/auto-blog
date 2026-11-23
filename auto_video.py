@@ -118,12 +118,12 @@ client = genai.Client(api_key=GEMINI_API_KEY)
 used_topics = load_used_topics()
 ng_list_text = "、".join(used_topics[-80:]) if used_topics else "なし"
 
+# デマ・都市伝説が混ざりやすい企業系を除外し、学術・辞書ベースの7ジャンルに厳選
 genres = [
     "科学・物理・化学の実験で証明されている驚くべき法則",
     "動物の生態・生物学で学術的に確立されている意外な能力",
     "宇宙・惑星・気象のNASAや天文台で観測されている確実な事実",
     "人体の仕組み・脳科学・睡眠に関する医学的に認められている雑学",
-    "日本の老舗企業や有名商品の公式に公開されている誕生秘話・社名の由来",
     "心理学・行動経済学・お金の判断に関する有名な実験",
     "食べ物・料理の科学的な成分や調理のメカニズム",
     "日本語の語源・漢字の成り立ち・身近な言葉の意外な由来",
@@ -132,60 +132,82 @@ selected_genre = pick_weighted_genre(genres)
 genre_badge = selected_genre.split("・")[0] + "の雑学"
 
 
-def call_gemini_json(prompt_text, temp=0.35):
-    for model in ["gemini-3.8-flash", "gemini-3.5-flash-lite"]:
-        for attempt in range(3):
-            try:
-                res = client.models.generate_content(
-                    model=model,
-                    contents=prompt_text,
-                    config=types.GenerateContentConfig(
-                        response_mime_type="application/json",
-                        temperature=temp,
-                    ),
-                )
-                return json.loads(res.text)
-            except Exception as e:
-                print(f"{model} エラー、リトライ ({attempt+1}/3): {e}")
-                time.sleep(6)
+def call_gemini_json(prompt_text, temp=0.15):
+    # 精度維持のため上位モデル（gemini-3.8-flash）で最大6回リトライ
+    for attempt in range(6):
+        try:
+            res = client.models.generate_content(
+                model="gemini-3.8-flash",
+                contents=prompt_text,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=temp,
+                ),
+            )
+            return json.loads(res.text)
+        except Exception as e:
+            print(f"gemini-3.8-flash エラー、リトライ ({attempt+1}/6): {e}")
+            time.sleep(10)
     raise RuntimeError("Geminiでの生成に失敗しました。")
 
 
+# Step 1: 教科書・学術・辞書ベースのネタ抽出
 fact_prompt = f"""
-あなたは人気テレビ雑学番組（チコちゃんに叱られる・水曜日のダウンタウン・林修の今でしょ講座など）のリサーチャー兼ファクトチェッカーです。
-「{selected_genre}」のジャンルから、教科書・学術論文・公式発表で100%事実と証明されている「9割の人が勘違いしている衝撃の雑学」を1つ厳選してください。
+あなたはNHK「チコちゃんに叱られる」や学術番組の厳格なファクトチェッカーです。
+「{selected_genre}」のジャンルから、教科書・学術論文・広辞苑などの公的資料で100%事実と証明されている「多くの人が勘違いしている雑学」を1つ厳選してください。
 
 【使用禁止リスト（過去投稿済み）】
 [{ng_list_text}]
 
-【厳守ルール】
-1. 都市伝説、俗説、曖昧な噂は絶対に除外すること。
-2. 「普通の人は〇〇だと思っているが、実は△△である」というギャップが強いネタを最優先すること。
-3. 以下のJSON形式のみで出力すること。
+【絶対厳守ルール】
+1. ネット上の都市伝説、俗説、商品ロゴの隠し文字などの噂話、不確かな豆知識は**絶対に禁止**。
+2. 意味不明な造語や、複数の雑学を勝手に合体させた作り話は**絶対に禁止**。
+3. 学校の理科・社会・国語や百科事典で裏付けが取れる「王道かつ確実な事実」のみを選ぶこと。
+4. 以下のJSON形式のみで出力すること。
 
 {{
   "topic_keyword": "主役キーワード（10文字以内）",
   "common_myth": "多くの人が勘違いしている常識（30文字以内）",
-  "verified_fact": "100%正確な結論と科学的・公式な理由（180文字以内）",
-  "practical_takeaway": "明日誰かに話したくなる一言オチ・豆知識（40文字以内）",
+  "verified_fact": "100%正確な結論と科学的・辞書的な根拠（180文字以内）",
+  "practical_takeaway": "明日誰かに話したくなる確実な一言豆知識（40文字以内）",
   "pexels_search_words": ["英語検索語1", "英語検索語2", "英語検索語3", "英語検索語4", "英語検索語5"]
 }}
 """
 
-fact_data = call_gemini_json(fact_prompt, temp=0.3)
+raw_fact_data = call_gemini_json(fact_prompt, temp=0.1)
+
+# Step 2: 2段階目の厳格ファクトチェック（嘘・造語・都市伝説の排除）
+verify_prompt = f"""
+あなたは厳格な科学・言語学の査読者です。以下の雑学データに「事実誤認」「都市伝説」「架空の造語」「不正確な数値・名称」が含まれていないか厳密に検証してください。
+
+【検証対象データ】
+{json.dumps(raw_fact_data, ensure_ascii=False)}
+
+【検証ルール】
+1. 少しでも怪しい点、ネットのデマ、架空の単語・名称が含まれている場合は、破棄して「{selected_genre}」における**100%確実で教科書レベルの有名な雑学**に丸ごと差し替えること。
+2. 問題がない場合も、表現をより正確かつ分かりやすく整えること。
+3. 入力と全く同じJSONキー構造で出力すること。
+"""
+
+fact_data = call_gemini_json(verify_prompt, temp=0.1)
 topic_keyword = fact_data.get("topic_keyword", "衝撃雑学")
 common_myth = fact_data.get("common_myth", "")
 verified_fact = fact_data["verified_fact"]
 practical_takeaway = fact_data.get("practical_takeaway", "")
 pexels_queries = fact_data.get("pexels_search_words", ["night sky", "ocean waves", "city lights", "abstract", "science"])
+print(f"ファクトチェック完了: [{topic_keyword}] {verified_fact}")
 
+# Step 3: 台本生成（検証済みの事実以外を勝手に足さないよう厳命）
 script_prompt = f"""
 あなたは登録者100万人超えのYouTubeショート専門構成作家です。
-以下の【検証済みの事実】のみを使い、視聴者が最初の1秒で指を止め、最後まで一気に見てコメントしたくなる「テレビ雑学番組風の2人掛け合い台本（約38秒）」を作成してください。
+以下の【検証済みの事実】**のみ**を使い、視聴者が最初の1秒で指を止め、最後まで一気に見てコメントしたくなる「テレビ雑学番組風の2人掛け合い台本（約38秒）」を作成してください。
 
 【世間の勘違い】{common_myth}
 【検証済みの事実】{verified_fact}
 【一言オチ】{practical_takeaway}
+
+【超重要ルール（ハルシネーション禁止）】
+- 上記の【検証済みの事実】に書かれていない固有名詞・数字・エピソードを**絶対に勝手に創作して付け足さないこと**。
 
 【構成の黄金ルール（全15カット）】
 - カット1〜2（フック）：世間の常識を否定する衝撃の一言（「えっ、まだ〇〇だと思ってるの？」「実はそれ、真っ赤なウソなんです！」など）
@@ -193,7 +215,7 @@ script_prompt = f"""
 - カット6〜11（種明かし・核心）：Bが科学・公式の理由をテンポよく解説し、Aが「うわ、マジか！」「なるほど〜！」とリアルに相槌を打つ
 - カット12〜15（オチ・余韻）：明日誰かに話したくなる一言オチで綺麗に締め、ループ再生したくなる終わり方にする
 
-【テロップと音声の分離ルール（超重要）】
+【テロップと音声の分離ルール】
 - `top_banner`（上部常設見出し）：サムネイル一覧でも1行で綺麗に収まる **12文字以内の短い見出し** にすること（例：「なぜ空は青い？」「土星に降る宝石」）。
 - `caption`（画面文字）：パッと見て0.5秒で意味が入る **7〜13文字の体言止め・インパクト重視テロップ** にする（例：「99%が勘違い！」「実は逆だった！？」）
 - `narration`（読み上げ音声）：人間が自然に喋る口語にし、感情が乗るように読点（、）や「えっ、」「実は…」を入れる。難読漢字は必ずひらがな・カタカナにする。
@@ -218,7 +240,7 @@ script_prompt = f"""
 }}
 """
 
-script_data = call_gemini_json(script_prompt, temp=0.5)
+script_data = call_gemini_json(script_prompt, temp=0.3)
 title = script_data["title"]
 top_banner = script_data.get("top_banner", f"{topic_keyword}の真実")
 description = script_data["description"]
@@ -360,7 +382,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
         font_path = "/usr/share/fonts/truetype/noto/NotoSansCJK-Bold.ttc"
 
     font_badge = ImageFont.truetype(font_path, 34)
-    font_banner = ImageFont.truetype(font_path, 50)
     font_role = ImageFont.truetype(font_path, 34)
     font_size = 94 if style in ("hook", "highlight") else 86
     font_main = ImageFont.truetype(font_path, font_size)
@@ -380,7 +401,6 @@ def create_tv_telop_overlay(text, speaker, style, badge_text, banner_text, progr
     b_box = draw.textbbox((0, 0), badge_text, font=font_badge)
     draw.text(((width - (b_box[2] - b_box[0])) // 2, 91), badge_text, font=font_badge, fill=(255, 255, 255, 255))
 
-    # 上部見出し（1行に収まるよう幅に応じて自動縮小）
     banner_font_size = 50
     font_banner = ImageFont.truetype(font_path, banner_font_size)
     bn_box = draw.textbbox((0, 0), banner_text, font=font_banner)
