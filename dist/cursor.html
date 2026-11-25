@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor の使い方・料金・特徴徹底レビュー | AI Tech Hub</title>
+    
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --text: #0f172a;
+    --muted: #475569;
+    --border: #e2e8f0;
+    --primary: #2563eb;
+    --primary-soft: #eff6ff;
+    --accent: #7c3aed;
+    --success-bg: #dcfce7;
+    --success-text: #166534;
+    --pending-bg: #f1f5f9;
+    --pending-text: #475569;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+  a { color: var(--primary); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .navbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .navbar-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .brand {
+    font-weight: 800;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .brand span {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+  }
+  .hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #312e81 100%);
+    color: #fff;
+    padding: 56px 20px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 1040px;
+    margin: 0 auto;
+  }
+  .hero h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.25;
+  }
+  .hero p {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 1.05rem;
+    max-width: 680px;
+  }
+  .container {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 0 20px 64px;
+  }
+  .article-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 44px);
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  }
+  .breadcrumb {
+    font-size: 0.88rem;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .pr-notice {
+    font-size: 0.78rem;
+    color: var(--muted);
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    display: inline-block;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    margin-bottom: 12px;
+  }
+  .article-header h1 {
+    margin: 0 0 12px;
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    line-height: 1.3;
+  }
+  .article-meta {
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .cta-box {
+    background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+    border: 1px solid #c7d2fe;
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .cta-box-text strong {
+    display: block;
+    font-size: 1.06rem;
+    color: #1e1b4b;
+    margin-bottom: 4px;
+  }
+  .cta-box-text span {
+    font-size: 0.88rem;
+    color: #475569;
+  }
+  .cta-btn {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 12px 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+    transition: transform 0.15s ease;
+    text-decoration: none !important;
+    white-space: nowrap;
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+  }
+  /* PRセクション */
+  .pr-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .pr-section-title {
+    font-size: 1.2rem;
+    margin: 0 0 18px;
+    color: var(--text);
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+  }
+  .pr-card {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .pr-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .pr-card h4 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .pr-card p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .pr-banner {
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+  .pr-wide-banner {
+    margin-top: 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .pr-wide-banner img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  .article-body h2 {
+    margin-top: 38px;
+    margin-bottom: 14px;
+    font-size: 1.35rem;
+    padding-left: 14px;
+    border-left: 4px solid var(--primary);
+  }
+  .article-body h3 {
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-size: 1.12rem;
+    color: #1e293b;
+  }
+  .article-body p {
+    margin: 0 0 16px;
+    color: #334155;
+  }
+  .article-body ul, .article-body ol {
+    margin: 0 0 20px;
+    padding-left: 22px;
+    color: #334155;
+  }
+  .article-body li {
+    margin-bottom: 8px;
+  }
+  .article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .article-body th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .article-body blockquote {
+    margin: 20px 0;
+    padding: 14px 20px;
+    background: var(--primary-soft);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 8px 8px 0;
+    color: #1e3a8a;
+  }
+  .section-title {
+    font-size: 1.45rem;
+    margin: 40px 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.07);
+  }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .cat-tag {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: #f1f5f9;
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .status-pill {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+  .status-live {
+    background: var(--success-bg);
+    color: var(--success-text);
+  }
+  .status-pending {
+    background: var(--pending-bg);
+    color: var(--pending-text);
+  }
+  .card h3 {
+    margin: 4px 0 8px;
+    font-size: 1.15rem;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .blog-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .blog-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .blog-date {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+  }
+  .footer {
+    text-align: center;
+    padding: 28px 20px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+</style>
+
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="brand"><span>AI</span> AI Tech Hub</a>
+            <nav><a href="index.html">ツール一覧へ</a></nav>
+        </div>
+    </header>
+
+    <main class="container" style="padding-top: 32px;">
+        <div class="breadcrumb"><a href="index.html">ホーム</a> &gt; <span>Code Editor</span> &gt; <span>Cursor</span></div>
+        <article class="article-card">
+            <div class="pr-notice">※当ページはプロモーション（アフィリエイト広告）を含みます。</div>
+            <header class="article-header">
+                <span class="badge">Code Editor</span>
+                <h1>Cursor の特徴・使い方・料金まとめ</h1>
+                <div class="article-meta">プロジェクト全体を理解して自律的に実装するAIエディタ</div>
+            </header>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Cursor 公式サイトをチェックする</strong>
+            <span>プロジェクト全体を理解して自律的に実装するAIエディタ</span>
+        </div>
+        <a href="https://www.cursor.com/" target="_blank" rel="noopener" class="cta-btn">Cursor 公式サイトへ →</a>
+    </div>
+    
+
+            <div class="article-body">
+                <!-- BODY_START -->
+                <h2>Cursorとは？（概要と注目される理由）</h2>
+<p>Cursorは、VS Codeをベースに構築された次世代のAI搭載コードエディタです。最大の特徴は、単なるチャットボットによるコード生成にとどまらず、プロジェクト全体を深く理解する「コンテキスト認識能力」にあります。フォルダ内の全ファイルをインデックス化することで、ファイル間を跨いだ修正や大規模なリファクタリングを高い精度で実行可能です。</p>
+<p>従来のCopilotなどの拡張機能とは異なり、エディタ自体がAIと深く統合されているため、コードの提案、デバッグ、ターミナル操作の自動化まで、開発のあらゆるフェーズをシームレスにサポートします。現在、世界中のソフトウェアエンジニアから「生産性が劇的に向上する」と大きな注目を集めています。</p>
+
+<h2>主な機能と強み</h2>
+<ul>
+<li><strong>Composer機能：</strong>複数のファイルを一括で作成・編集できるAI統合環境。要件を伝えるだけでプロジェクト全体を構築可能です。</li>
+<li><strong>コードベース認識（@Codebase）：</strong>プロジェクト内のファイルを横断的に検索・解析し、関連する箇所を自動的に抽出して回答を生成します。</li>
+<li><strong>タブ補完（Cursor Tab）：</strong>タイピング中にカーソルの先の変更を予測し、複数行にわたる修正を爆速で提案します。</li>
+<li><strong>高度なモデル選択：</strong>Claude 3.5 SonnetやGPT-4oなど、世界最高水準のLLMを自由に切り替えて使用できます。</li>
+</ul>
+
+<h2>料金プランの目安</h2>
+<table border="1" style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <th>プラン</th>
+    <th>月額料金（目安）</th>
+    <th>主な特徴</th>
+  </tr>
+  <tr>
+    <td>Hobby（無料）</td>
+    <td>$0</td>
+    <td>基本機能、一定回数の高性能モデル利用</td>
+  </tr>
+  <tr>
+    <td>Pro（有料）</td>
+    <td>$20</td>
+    <td>高性能モデルの利用回数大幅増、優先アクセス</td>
+  </tr>
+  <tr>
+    <td>Business（有料）</td>
+    <td>$40/ユーザー</td>
+    <td>チーム管理機能、プライバシー設定の強化</td>
+  </tr>
+</table>
+
+<h2>メリット・デメリット</h2>
+<h3>メリット</h3>
+<p>最大のメリットは開発速度の圧倒的な向上です。特に「@Codebase」機能を活用すれば、仕様書や既存の複雑なコードを読み込ませるだけで、AIが適切な修正箇所を特定してくれます。また、VS Codeの拡張機能がそのまま使えるため、移行コストがほぼゼロである点も非常に強力です。</p>
+
+<h3>デメリット</h3>
+<p>一方で、AIの提案を鵜呑みにすると、意図しないバグやセキュリティリスクのあるコードを生成する可能性があります。あくまで「優秀なパートナー」として、生成されたコードを最終的にレビューするエンジニアのスキルが不可欠です。また、プロジェクトが大規模すぎるとインデックス生成に時間がかかる場合があることも留意すべき点です。</p>
+
+<h2>具体的な活用シーン・実践プロンプト例</h2>
+<p>Cursorは「既存コードの理解」から「新規機能の実装」まで幅広く活用できます。特に強力なのは、複雑な機能を実装する際、AIに「既存の設計指針に従って」と指示することです。以下に具体的なプロンプト例を挙げます。</p>
+
+<blockquote>
+  @Codebase ユーザー認証機能の実装手順を確認し、現在ログイン中のユーザー情報に基づいてプロフィール編集画面を新規作成してください。既存のスタイルガイドとUIコンポーネントを再利用し、バリデーションロジックも追加してください。
+</blockquote>
+
+<h2>よくある質問（FAQ）</h2>
+<p><strong>Q：今使っているVS Codeの拡張機能はそのまま使えますか？</strong><br>
+A：はい、CursorはVS Codeをベースに開発されているため、プラグインや設定ファイルを完全に引き継ぐことが可能です。起動時にインポートするだけで、現在の開発環境をそのまま移行できます。</p>
+
+<p><strong>Q：セキュリティ上の懸念はありますか？</strong><br>
+A：有料プランのBusiness版などでは、コードを学習に利用しない設定（プライバシーモード）が可能です。機密情報を扱う業務で使用する場合は、設定画面からデータ共有ポリシーを確認・制御することをお勧めします。</p>
+                <!-- BODY_END -->
+            </div>
+
+            
+    <div class="cta-box">
+        <div class="cta-box-text">
+            <strong>Cursor 公式サイトをチェックする</strong>
+            <span>プロジェクト全体を理解して自律的に実装するAIエディタ</span>
+        </div>
+        <a href="https://www.cursor.com/" target="_blank" rel="noopener" class="cta-btn">Cursor 公式サイトへ →</a>
+    </div>
+    
+
+            
+    <section class="pr-section">
+        <h3 class="pr-section-title">📢 おすすめサービス・関連リソース（PR）</h3>
+        <div class="pr-grid">
+            
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🚀 AIで作ったWebサイト・ブログを公開するなら「エックスサーバー」</h4>
+                <p>国内シェアNo.1の高速レンタルサーバー。AIで生成した記事やアプリを安定・高速に公開できます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" rel="nofollow">
+<img border="0" width="350" height="240" alt="" src="https://www21.a8.net/svt/bgt?aid=200707134459&wid=001&eno=01&mid=s00000001642001066000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www17.a8.net/0.gif?a8mat=3BHUM6+7L9ZG2+CO4+6CHB5" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>🎧 AI・ビジネス最新トレンドを「耳」からインプット（Audible）</h4>
+                <p>作業中や移動時間に最新のAI解説書・ビジネス書を聴き放題で効率学習。無料体験から気軽に始められます。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://px.a8.net/svt/ejp?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" rel="nofollow">
+<img border="0" width="300" height="250" alt="" src="https://www22.a8.net/svt/bgt?aid=261107111593&wid=003&eno=01&mid=s00000027126001006000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www13.a8.net/0.gif?a8mat=4BGFJB+9T241U+5TB0+5ZMCH" alt="">
+            </div>
+        </div>
+        
+        <div class="pr-card">
+            <div class="pr-card-body">
+                <span class="pr-tag">PR</span>
+                <h4>📦 Amazon でAI関連書籍・PC周辺機器・ガジェットをチェック</h4>
+                <p>プロンプトエンジニアリング入門書やクリエイター向けデバイスをAmazonで検索。</p>
+            </div>
+            <div class="pr-banner">
+                <a href="https://www.amazon.co.jp?&linkCode=ll2&tag=ntklog0c-22&linkId=c7895fa240d32728460bada24cc0eeb6&ref_=as_li_ss_tl" target="_blank" rel="nofollow sponsored noopener" class="cta-btn" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Amazon.co.jp で詳細を見る →</a>
+            </div>
+        </div>
+        
+        </div>
+        <div class="pr-wide-banner">
+            <a href="https://px.a8.net/svt/ejp?a8mat=3BHUM6+7K348I+CO4+15THJ5" rel="nofollow">
+<img border="0" width="468" height="60" alt="" src="https://www25.a8.net/svt/bgt?aid=200707134457&wid=001&eno=01&mid=s00000001642007024000&mc=1"></a>
+<img border="0" width="1" height="1" src="https://www19.a8.net/0.gif?a8mat=3BHUM6+7K348I+CO4+15THJ5" alt="">
+        </div>
+    </section>
+    
+        </article>
+
+        
+    <section>
+        <h2 class="section-title">🔗 関連するおすすめAIツール</h2>
+        <div class="grid">
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Text Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='chatgpt.html'>ChatGPT</a></h3>
+                <p>対話・文章作成・プログラミングをこなす万能AI</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Text Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='claude.html'>Claude</a></h3>
+                <p>長文読解と自然な日本語表現・コーディングに強み</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div>
+                <div class="card-top">
+                    <span class="cat-tag">Image Generator</span>
+                    <span class='status-pill status-live'>公開中</span>
+                </div>
+                <h3><a href='midjourney.html'>Midjourney</a></h3>
+                <p>圧倒的なアート品質を誇る画像生成AIの定番</p>
+            </div>
+        </div>
+        </div>
+    </section>
+    
+    </main>
+
+    <footer class="footer">
+        &copy; 2026 AI Tech Hub - Automated AI Knowledge Base
+    </footer>
+</body>
+</html>
